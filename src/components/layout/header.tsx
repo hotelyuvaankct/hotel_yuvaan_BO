@@ -1,5 +1,6 @@
 import { LogOut, Menu, MoonStar, SunMedium } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useTheme } from '@/components/theme-provider';
 import { useAuth } from '@/lib/auth';
 
@@ -12,6 +13,7 @@ export type HeaderProps = {
 export function Header({ onMenuClick, title, subtitle }: HeaderProps) {
   const { resolvedTheme, toggleTheme } = useTheme();
   const { logout, session } = useAuth();
+  const { confirm } = useConfirm();
   const userName = session?.user?.fullName || session?.user?.email || 'Admin';
   const initials = userName
     .split(/[ @.]/)
@@ -19,6 +21,15 @@ export function Header({ onMenuClick, title, subtitle }: HeaderProps) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
+
+  async function confirmLogout() {
+    const confirmed = await confirm({
+      title: 'Sign out?',
+      description: 'You will be returned to the login screen and this browser session will be cleared.',
+      confirmLabel: 'Sign out',
+    });
+    if (confirmed) logout();
+  }
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur-xl">
@@ -51,7 +62,7 @@ export function Header({ onMenuClick, title, subtitle }: HeaderProps) {
           </div>
         </div>
 
-        <Button variant="outline" size="icon" onClick={logout} aria-label="Sign out">
+        <Button variant="outline" size="icon" onClick={() => void confirmLogout()} aria-label="Sign out">
           <LogOut className="h-5 w-5" />
         </Button>
       </div>

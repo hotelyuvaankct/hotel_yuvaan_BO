@@ -40,7 +40,8 @@ const routeMeta: Record<string, { title: string; subtitle: string }> = {
 };
 
 function getRouteMeta(pathname: string) {
-  return routeMeta[pathname] ?? {
+  const sectionPath = `/${pathname.split('/')[1] || 'dashboard'}`;
+  return routeMeta[pathname] ?? routeMeta[sectionPath] ?? {
     title: 'Dashboard',
     subtitle: 'API-backed overview of the connected admin modules.',
   };
@@ -55,7 +56,7 @@ export function AdminLayout() {
   }, [location.pathname]);
 
   const pageMeta = useMemo(() => getRouteMeta(location.pathname), [location.pathname]);
-  const activeNavItem = navigationItems.find((item) => item.href === location.pathname);
+  const activeNavItem = navigationItems.find((item) => location.pathname === item.href || location.pathname.startsWith(`${item.href}/`));
 
   return (
     <div className="min-h-screen bg-background text-foreground lg:pl-80">

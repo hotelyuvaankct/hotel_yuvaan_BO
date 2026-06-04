@@ -1,4 +1,5 @@
 import type { PermissionSet } from '@/lib/api-types';
+import { getStoredSession } from '@/lib/auth-storage';
 
 export type CrudAction = keyof PermissionSet;
 
@@ -7,7 +8,8 @@ export function hasPermission(
   moduleSlug: string,
   action: CrudAction,
 ) {
-  return Boolean(perms?.[moduleSlug]?.[action]);
+  const tokenPerms = getStoredSession()?.perms;
+  return Boolean((tokenPerms ?? perms)?.[moduleSlug]?.[action]);
 }
 
 export function permissionLabel(allowed: boolean) {

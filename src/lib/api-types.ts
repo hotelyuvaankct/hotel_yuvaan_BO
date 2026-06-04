@@ -82,6 +82,17 @@ export type AuthSession = {
   refreshToken: string;
   user?: User;
   perms?: Record<string, PermissionSet>;
+  roles?: string[];
+  uid?: number;
+};
+
+export type AuthTokenClaims = {
+  sub?: string;
+  uid?: number;
+  roles?: string[];
+  perms?: Record<string, PermissionSet>;
+  iat?: number;
+  exp?: number;
 };
 
 export type AssignedRole = {

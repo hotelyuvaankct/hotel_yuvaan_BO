@@ -21,9 +21,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const profile = await api.profile();
     setSession((current) => {
       if (!current) return current;
-      const nextSession = { ...current, user: profile.user, perms: profile.perms };
-      storeSession(nextSession);
-      return nextSession;
+      return storeSession({ ...current, ...profile, refreshToken: profile.refreshToken ?? current.refreshToken });
     });
   }
 
@@ -39,13 +37,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: Boolean(session?.token),
       async login(payload) {
         const nextSession = await api.login(payload);
-        storeSession(nextSession);
-        setSession(nextSession);
+        setSession(storeSession(nextSession));
       },
       async register(payload) {
         const nextSession = await api.register(payload);
-        storeSession(nextSession);
-        setSession(nextSession);
+        setSession(storeSession(nextSession));
       },
       refreshProfile,
       logout() {

@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { navigationItems } from '@/data/navigation';
+import { useAuth } from '@/lib/auth';
+import { hasPermission } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 
 export type SidebarProps = {
@@ -9,6 +11,12 @@ export type SidebarProps = {
 };
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { session } = useAuth();
+  const visibleNavigationItems = navigationItems.filter((item) => {
+    if (!item.moduleSlug) return true;
+    return hasPermission(session?.perms, item.moduleSlug, 'read');
+  });
+
   return (
     <>
       <aside
@@ -37,7 +45,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
           <div className="space-y-6 overflow-y-auto px-4 py-6">
             <nav className="space-y-1">
-              {navigationItems.map((item) => {
+              {visibleNavigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <NavLink

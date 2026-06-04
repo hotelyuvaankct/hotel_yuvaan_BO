@@ -5,8 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "vite --mode development",
+    "dev:prod": "vite --mode production",
     "build": "vite build",
+    "build:local": "vite build --mode development",
+    "build:prod": "vite build --mode production",
     "preview": "vite preview",
+    "preview:local": "vite preview --mode development",
+    "preview:prod": "vite preview --mode production",
     "typecheck": "tsc -p tsconfig.app.json --noEmit"
   },
   "dependencies": {

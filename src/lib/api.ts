@@ -119,6 +119,9 @@ export const api = {
   listUsers(page = 0, size = 20) {
     return apiRequest<PageResponse<User>>(`/users?page=${page}&size=${size}&sortBy=createdAt&sortDir=desc`);
   },
+  getUser(id: number) {
+    return apiRequest<User>(`/users/${id}`);
+  },
   createUser(payload: CreateUserPayload) {
     return apiRequest<User>('/users', { method: 'POST', body: JSON.stringify(payload) });
   },
@@ -136,6 +139,9 @@ export const api = {
   },
   listRoles() {
     return apiRequest<Role[]>('/roles');
+  },
+  getRole(id: number) {
+    return apiRequest<Role>(`/roles/${id}`);
   },
   createRole(payload: CreateRolePayload) {
     return apiRequest<Role>('/roles', { method: 'POST', body: JSON.stringify(payload) });
