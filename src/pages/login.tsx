@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { LockKeyhole, Mail, UserPlus } from 'lucide-react';
+import { LockKeyhole, Mail } from 'lucide-react';
 import { ApiError } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -11,15 +11,12 @@ type LocationState = {
 };
 
 export function LoginPage() {
-  const { isAuthenticated, login, register } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard';
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -33,11 +30,7 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      if (mode === 'login') {
-        await login({ email, password });
-      } else {
-        await register({ email, password, fullName, phone: phone || undefined });
-      }
+      await login({ email, password });
       navigate(from, { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to authenticate right now.');
@@ -56,27 +49,13 @@ export function LoginPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>{mode === 'login' ? 'Sign in' : 'Create admin user'}</CardTitle>
+            <CardTitle>Sign in</CardTitle>
             <CardDescription>
-              {mode === 'login'
-                ? 'Use your backend credentials to continue.'
-                : 'Registration uses the backend auth API and starts a session.'}
+              Use your backend credentials to continue.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={onSubmit}>
-              {mode === 'register' ? (
-                <label className="block space-y-2 text-sm font-medium">
-                  Full name
-                  <input
-                    required
-                    value={fullName}
-                    onChange={(event) => setFullName(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-input bg-background px-3 outline-none focus:ring-2 focus:ring-ring"
-                  />
-                </label>
-              ) : null}
-
               <label className="block space-y-2 text-sm font-medium">
                 Email
                 <span className="flex h-11 items-center gap-2 rounded-xl border border-input bg-background px-3 focus-within:ring-2 focus-within:ring-ring">
@@ -106,18 +85,6 @@ export function LoginPage() {
                 </span>
               </label>
 
-              {mode === 'register' ? (
-                <label className="block space-y-2 text-sm font-medium">
-                  Phone
-                  <input
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-input bg-background px-3 outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="10 digit mobile number"
-                  />
-                </label>
-              ) : null}
-
               {error ? (
                 <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
@@ -125,21 +92,10 @@ export function LoginPage() {
               ) : null}
 
               <Button type="submit" variant="gold" className="w-full" disabled={loading}>
-                {mode === 'login' ? <LockKeyhole className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
-                {loading ? 'Please wait' : mode === 'login' ? 'Sign in' : 'Register'}
+                <LockKeyhole className="h-4 w-4" />
+                {loading ? 'Please wait' : 'Sign in'}
               </Button>
             </form>
-
-            <Button
-              variant="ghost"
-              className="mt-3 w-full"
-              onClick={() => {
-                setError('');
-                setMode(mode === 'login' ? 'register' : 'login');
-              }}
-            >
-              {mode === 'login' ? 'Create first admin user' : 'Back to sign in'}
-            </Button>
           </CardContent>
         </Card>
       </div>
