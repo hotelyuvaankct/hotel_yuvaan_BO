@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const baseFromEnv = env.VITE_BASE ?? process.env.VITE_BASE ?? '/dashboard/';
+  const baseFromEnv = env.VITE_BASE ?? process.env.VITE_BASE ?? '/';
   const base = baseFromEnv.endsWith('/') ? baseFromEnv : baseFromEnv + '/';
 
   return {
