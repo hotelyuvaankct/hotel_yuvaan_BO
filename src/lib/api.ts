@@ -21,7 +21,9 @@ import type {
   User,
 } from '@/lib/api-types';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api/v1.0.0').replace(/\/$/, '');
+import { API_BASE_URL as CONSTANT_API_BASE_URL } from '@/lib/constants';
+
+const API_BASE_URL = CONSTANT_API_BASE_URL.replace(/\/$/, '');
 
 export class ApiError extends Error {
   status: number;
