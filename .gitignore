@@ -1,0 +1,26 @@
+node_modules
+dist
+.vite
+.turbo
+coverage
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Misc
+vite.svg
