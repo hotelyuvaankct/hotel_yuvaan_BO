@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.539.0",
     "react": "^19.1.1",
