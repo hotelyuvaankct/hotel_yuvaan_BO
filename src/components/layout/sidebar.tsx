@@ -36,21 +36,6 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
 
           <div className="space-y-6 overflow-y-auto px-4 py-6">
-            <div className="rounded-2xl border border-sidebar-border bg-gradient-to-br from-gold-500/15 to-bronze-500/10 p-4">
-              <p className="text-xs font-medium uppercase tracking-[0.24em] text-sidebar-foreground/60">
-                Occupancy
-              </p>
-              <div className="mt-3 flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-3xl font-semibold">84%</p>
-                  <p className="text-sm text-sidebar-foreground/70">Weekend rooms filled</p>
-                </div>
-                <span className="rounded-full bg-sidebar-primary px-3 py-1 text-xs font-semibold text-sidebar-primary-foreground">
-                  +12% vs last week
-                </span>
-              </div>
-            </div>
-
             <nav className="space-y-1">
               {navigationItems.map((item) => {
                 const Icon = item.icon;

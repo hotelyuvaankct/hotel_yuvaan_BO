@@ -3,6 +3,7 @@ import {
   CalendarRange,
   BedDouble,
   Users,
+  ShieldCheck,
   ChartColumnIncreasing,
   Settings,
 } from 'lucide-react';
@@ -34,6 +35,18 @@ export const navigationItems: NavigationItem[] = [
     icon: BedDouble,
   },
   {
+    label: 'Users',
+    href: '/users',
+    description: 'Accounts, assigned roles, and permissions',
+    icon: Users,
+  },
+  {
+    label: 'Roles',
+    href: '/roles',
+    description: 'Module CRUD permission matrix',
+    icon: ShieldCheck,
+  },
+  {
     label: 'Guests',
     href: '/guests',
     description: 'Guest records and loyalty tiers',
@@ -42,7 +55,7 @@ export const navigationItems: NavigationItem[] = [
   {
     label: 'Reports',
     href: '/reports',
-    description: 'Occupancy, revenue, and trends',
+    description: 'No backend reports API available',
     icon: ChartColumnIncreasing,
   },
   {

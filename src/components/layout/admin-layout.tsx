@@ -7,34 +7,42 @@ import { navigationItems } from '@/data/navigation';
 const routeMeta: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
     title: 'Dashboard',
-    subtitle: 'A live overview of arrivals, occupancy, and revenue.',
+    subtitle: 'API-backed overview of the connected admin modules.',
   },
   '/bookings': {
     title: 'Bookings',
-    subtitle: 'Track reservations, check-ins, and payment status.',
+    subtitle: 'No backend bookings API is available yet.',
   },
   '/rooms': {
     title: 'Rooms',
-    subtitle: 'Monitor availability, housekeeping, and rate plans.',
+    subtitle: 'Manage room records from the backend rooms API.',
+  },
+  '/users': {
+    title: 'Users',
+    subtitle: 'Create users, assign roles, and verify effective permissions.',
+  },
+  '/roles': {
+    title: 'Roles',
+    subtitle: 'Create roles and manage CRUD access by module.',
   },
   '/guests': {
     title: 'Guests',
-    subtitle: 'Review guest history, notes, and loyalty details.',
+    subtitle: 'View user records returned by the backend users API.',
   },
   '/reports': {
     title: 'Reports',
-    subtitle: 'Measure occupancy trends, ADR, and monthly performance.',
+    subtitle: 'No backend reports API is available yet.',
   },
   '/settings': {
     title: 'Settings',
-    subtitle: 'Tune operational defaults and branding preferences.',
+    subtitle: 'View authenticated profile and current permissions.',
   },
 };
 
 function getRouteMeta(pathname: string) {
   return routeMeta[pathname] ?? {
     title: 'Dashboard',
-    subtitle: 'A live overview of arrivals, occupancy, and revenue.',
+    subtitle: 'API-backed overview of the connected admin modules.',
   };
 }
 
