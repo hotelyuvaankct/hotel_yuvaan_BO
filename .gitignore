@@ -26,3 +26,16 @@ Thumbs.db
 
 # Misc
 vite.svg
+# AI assistant config
+.agents/
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md
+.graphifyignore
+
+# Graphify generated output
+graphify-out/
+
+# Graphify cache/output
+.graphify/

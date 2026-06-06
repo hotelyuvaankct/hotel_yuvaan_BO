@@ -9,7 +9,7 @@ import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LoadingState } from '@/components/common/loading-state';
+import { FullPageLoader } from '@/components/common/loading-state';
 
 const inputClass = 'h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring';
 
@@ -25,7 +25,7 @@ export function UserFormPage() {
   const canSave = isEdit ? canUpdate : canCreate;
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
-  const [loading, setLoading] = useState(isEdit);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     fullName: '',
@@ -102,6 +102,10 @@ export function UserFormPage() {
     }
   }
 
+  if (loading) {
+    return <FullPageLoader label={isEdit ? 'Loading user...' : 'Preparing user form...'} />;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Button variant="ghost" onClick={() => navigate('/users')}>
@@ -115,10 +119,7 @@ export function UserFormPage() {
           <CardDescription>Role and gender values are selected from backend-compatible enums.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <LoadingState />
-          ) : (
-            <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
               <label className="space-y-2 text-sm font-medium">
                 Full name
                 <input className={inputClass} required value={form.fullName} onChange={(event) => setForm((value) => ({ ...value, fullName: event.target.value }))} />
@@ -180,8 +181,7 @@ export function UserFormPage() {
                   Cancel
                 </Link>
               </div>
-            </form>
-          )}
+          </form>
         </CardContent>
       </Card>
     </div>

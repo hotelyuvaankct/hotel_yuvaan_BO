@@ -43,9 +43,9 @@ export const router = createBrowserRouter([
           { path: 'guests', element: <GuestsPage /> },
           { path: 'reports', element: <ReportsPage /> },
           { path: 'settings', element: <SettingsPage /> },
-          { path: '*', element: <NotFoundPage /> },
         ],
       },
     ],
   },
+  { path: '*', element: <NotFoundPage /> },
 ]);

@@ -5,6 +5,7 @@ import type { User } from '@/lib/api-types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingState } from '@/components/common/loading-state';
 
 export function GuestsPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -43,7 +44,7 @@ export function GuestsPage() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          {loading ? <p className="text-sm text-muted-foreground">Loading profiles...</p> : null}
+          {loading ? <LoadingState label="Loading profiles..." className="md:col-span-2 xl:col-span-4" /> : null}
           {!loading && users.length === 0 ? <p className="text-sm text-muted-foreground">No users found.</p> : null}
           {users.map((guest) => (
             <div key={guest.id} className="rounded-2xl border border-border bg-muted/40 p-4">

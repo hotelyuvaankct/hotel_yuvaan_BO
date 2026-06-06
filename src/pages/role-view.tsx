@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
-import { LoadingState } from '@/components/common/loading-state';
+import { FullPageLoader } from '@/components/common/loading-state';
 import { PageToolbar } from '@/components/common/page-toolbar';
 
 export function RoleViewPage() {
@@ -48,6 +48,10 @@ export function RoleViewPage() {
     return <PermissionCard module="roles" />;
   }
 
+  if (loading) {
+    return <FullPageLoader label="Loading role details..." />;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Button variant="ghost" onClick={() => navigate('/roles')}>
@@ -70,8 +74,7 @@ export function RoleViewPage() {
         }
       />
 
-      {loading ? <LoadingState /> : null}
-      {!loading && !role ? <EmptyState label="No role details found." /> : null}
+      {!role ? <EmptyState label="No role details found." /> : null}
       {role ? (
         <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
           <Card>

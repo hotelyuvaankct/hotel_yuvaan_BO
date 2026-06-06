@@ -13,6 +13,7 @@ import type {
   PermissionPayload,
   Role,
   Room,
+  RoomImage,
   RoomType,
   UpdateRolePayload,
   UpdateUserPayload,
@@ -45,7 +46,21 @@ type RequestOptions = RequestInit & {
 async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
   const payload = (await response.json().catch(() => null)) as ApiResponse<T> | null;
   if (!response.ok || payload?.success === false) {
-    throw new ApiError(payload?.message ?? response.statusText, response.status, payload?.errors);
+    const validationMessage = payload?.errors
+      ? Object.entries(payload.errors)
+          .filter(([field]) => field !== 'errorCode')
+          .flatMap(([, messages]) => messages)
+          .find(Boolean)
+      : undefined;
+    const fallbackMessage =
+      response.status === 401
+        ? 'Authentication is required. Please log in and try again.'
+        : response.status === 403
+          ? 'You do not have permission to perform this action.'
+          : response.status >= 500
+            ? 'The server could not complete the request. Please try again.'
+            : 'The request could not be completed. Please check the entered values.';
+    throw new ApiError(payload?.message || validationMessage || fallbackMessage, response.status, payload?.errors);
   }
   return payload ?? { success: true, code: response.status, message: response.statusText };
 }
@@ -168,8 +183,21 @@ export const api = {
   deletePermission(roleId: number, moduleId: number) {
     return apiRequest<void>(`/roles/${roleId}/permissions/${moduleId}`, { method: 'DELETE' });
   },
-  listRooms() {
-    return apiRequest<Room[]>('/rooms');
+  listRooms(filters: {
+    page?: number;
+    size?: number;
+    roomTypeId?: number;
+    roomNumber?: string;
+    roomStatus?: number;
+  } = {}) {
+    const params = new URLSearchParams({
+      page: String(filters.page ?? 0),
+      size: String(filters.size ?? 10),
+    });
+    if (filters.roomTypeId) params.set('roomTypeId', String(filters.roomTypeId));
+    if (filters.roomNumber?.trim()) params.set('roomNumber', filters.roomNumber.trim());
+    if (filters.roomStatus) params.set('roomStatus', String(filters.roomStatus));
+    return apiRequest<PageResponse<Room>>(`/rooms?${params.toString()}`);
   },
   getRoom(id: number) {
     return apiRequest<Room>(`/rooms/${id}`);
@@ -182,6 +210,22 @@ export const api = {
   },
   deleteRoom(id: number) {
     return apiRequest<void>(`/rooms/${id}`, { method: 'DELETE' });
+  },
+  uploadRoomImage(roomId: number, file: File, primary = false) {
+    const body = new FormData();
+    body.append('file', file);
+    return apiRequest<RoomImage>(`/rooms/${roomId}/images?primary=${primary}`, { method: 'POST', body });
+  },
+  replaceRoomImage(roomId: number, imageId: number, file: File) {
+    const body = new FormData();
+    body.append('file', file);
+    return apiRequest<RoomImage>(`/rooms/${roomId}/images/${imageId}`, { method: 'PUT', body });
+  },
+  setPrimaryRoomImage(roomId: number, imageId: number) {
+    return apiRequest<RoomImage>(`/rooms/${roomId}/images/${imageId}/primary`, { method: 'PUT' });
+  },
+  deleteRoomImage(roomId: number, imageId: number) {
+    return apiRequest<void>(`/rooms/${roomId}/images/${imageId}`, { method: 'DELETE' });
   },
   listHotels() {
     return apiRequest<HotelSummary[]>('/rooms/hotels');
