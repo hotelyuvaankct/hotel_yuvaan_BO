@@ -9,7 +9,7 @@ import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LoadingState } from '@/components/common/loading-state';
+import { FullPageLoader } from '@/components/common/loading-state';
 
 const inputClass = 'h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring';
 
@@ -141,6 +141,10 @@ export function RoleFormPage() {
     }));
   }
 
+  if (loading) {
+    return <FullPageLoader label={isEdit ? 'Loading role...' : 'Preparing role form...'} />;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Button variant="ghost" onClick={() => navigate('/roles')}>
@@ -154,10 +158,7 @@ export function RoleFormPage() {
           <CardDescription>Select modules and CRUD permissions for this role.</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <LoadingState />
-          ) : (
-            <form className="space-y-6" onSubmit={onSubmit}>
+          <form className="space-y-6" onSubmit={onSubmit}>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="space-y-2 text-sm font-medium">
                   Role name
@@ -228,8 +229,7 @@ export function RoleFormPage() {
                   Cancel
                 </Link>
               </div>
-            </form>
-          )}
+          </form>
         </CardContent>
       </Card>
     </div>

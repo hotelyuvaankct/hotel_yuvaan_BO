@@ -1,16 +1,19 @@
 import { NavLink } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { navigationItems } from '@/data/navigation';
 import { useAuth } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
+import faviconSrc from '@/assests/Images/favicon.ico';
 
 export type SidebarProps = {
-  open: boolean;
-  onClose: () => void;
+  collapsed: boolean;
+  mobileOpen: boolean;
+  onToggleCollapse: () => void;
+  onMobileClose: () => void;
 };
 
-export function Sidebar({ open, onClose }: SidebarProps) {
+export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onMobileClose }: SidebarProps) {
   const { session } = useAuth();
   const visibleNavigationItems = navigationItems.filter((item) => {
     if (!item.moduleSlug) return true;
@@ -19,73 +22,104 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
   return (
     <>
-      <aside
-        className={cn(
-          'fixed inset-y-0 left-0 z-40 w-80 border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-2xl transition-transform duration-300 lg:translate-x-0 lg:shadow-none',
-          open ? 'translate-x-0' : '-translate-x-full',
-        )}
-      >
-        <div className="flex h-full flex-col">
-          <div className="flex items-start justify-between border-b border-sidebar-border px-6 py-6 lg:justify-start">
-            <div>
-              <p className="font-playfair text-2xl font-bold tracking-wide text-sidebar-foreground">
-                Hotel Yuvaan
-              </p>
-              <p className="mt-1 text-sm text-sidebar-foreground/70">Admin backoffice</p>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full p-2 text-sidebar-foreground/70 transition hover:bg-sidebar-accent hover:text-sidebar-foreground lg:hidden"
-              aria-label="Close sidebar"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <div className="space-y-6 overflow-y-auto px-4 py-6">
-            <nav className="space-y-1">
-              {visibleNavigationItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    onClick={onClose}
-                    className={({ isActive }) =>
-                      cn(
-                        'group flex items-center gap-3 rounded-2xl border border-transparent px-4 py-3 transition-all duration-200',
-                        isActive
-                          ? 'border-sidebar-border bg-sidebar-accent text-sidebar-foreground shadow-sm'
-                          : 'text-sidebar-foreground/75 hover:border-sidebar-border hover:bg-sidebar-accent/80 hover:text-sidebar-foreground',
-                      )
-                    }
-                  >
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sidebar-accent text-sidebar-foreground transition group-hover:bg-sidebar-primary group-hover:text-sidebar-primary-foreground">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-medium">{item.label}</span>
-                      <span className="block truncate text-xs text-sidebar-foreground/60">
-                        {item.description}
-                      </span>
-                    </span>
-                  </NavLink>
-                );
-              })}
-            </nav>
-          </div>
-        </div>
-      </aside>
-
-      {open ? (
+      {/* Mobile overlay */}
+      {mobileOpen && (
         <button
           type="button"
           className="fixed inset-0 z-30 bg-black/45 backdrop-blur-sm lg:hidden"
-          onClick={onClose}
+          onClick={onMobileClose}
           aria-label="Close sidebar overlay"
         />
-      ) : null}
+      )}
+
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 lg:translate-x-0',
+          /* width */
+          collapsed ? 'w-[60px]' : 'w-60',
+          /* mobile: slide in/out */
+          mobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0',
+        )}
+      >
+        {/* Logo row */}
+        <div
+          className={cn(
+            'flex h-14 shrink-0 items-center border-b border-sidebar-border',
+            collapsed ? 'justify-center px-0' : 'justify-between px-4',
+          )}
+        >
+          {/* Logo + name */}
+          <div className={cn('flex items-center gap-2', collapsed && 'justify-center')}>
+            <img
+              src={faviconSrc}
+              alt="Hotel Yuvaan"
+              className="h-7 w-7 shrink-0 rounded-md object-contain"
+            />
+            {!collapsed && (
+              <span className="font-playfair text-base font-bold tracking-wide text-sidebar-foreground truncate">
+                Hotel Yuvaan
+              </span>
+            )}
+          </div>
+
+          {/* Collapse toggle — desktop only */}
+          {!collapsed && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="hidden lg:flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/60 transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Nav */}
+        <div className="flex-1 overflow-y-auto py-4 px-2">
+          <nav className="space-y-1">
+            {visibleNavigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  onClick={onMobileClose}
+                  title={collapsed ? item.label : undefined}
+                  className={({ isActive }) =>
+                    cn(
+                      'group flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition-all duration-150',
+                      collapsed && 'justify-center',
+                      isActive
+                        ? 'bg-sidebar-accent text-sidebar-foreground font-medium'
+                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground',
+                    )
+                  }
+                >
+                  <Icon className="h-[18px] w-[18px] shrink-0" />
+                  {!collapsed && (
+                    <span className="truncate">{item.label}</span>
+                  )}
+                </NavLink>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Expand button when collapsed (desktop) */}
+        {collapsed && (
+          <div className="hidden lg:flex justify-center border-t border-sidebar-border py-3">
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-sidebar-foreground/60 transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              aria-label="Expand sidebar"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+      </aside>
     </>
   );
 }

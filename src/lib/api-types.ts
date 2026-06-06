@@ -142,6 +142,17 @@ export type Room = {
   roomStatus?: number;
   status?: number;
   notes?: string;
+  images?: RoomImage[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type RoomImage = {
+  id: number;
+  objectKey: string;
+  publicUrl: string;
+  primary: boolean;
+  displayOrder: number;
   createdAt?: string;
   updatedAt?: string;
 };

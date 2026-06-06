@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
-import { LoadingState } from '@/components/common/loading-state';
+import { FullPageLoader } from '@/components/common/loading-state';
 import { PageToolbar } from '@/components/common/page-toolbar';
 
 const genderOptions = [
@@ -52,6 +52,10 @@ export function UserViewPage() {
     return <PermissionCard module="users" />;
   }
 
+  if (loading) {
+    return <FullPageLoader label="Loading user details..." />;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Button variant="ghost" onClick={() => navigate('/users')}>
@@ -74,8 +78,7 @@ export function UserViewPage() {
         }
       />
 
-      {loading ? <LoadingState /> : null}
-      {!loading && !access ? <EmptyState label="No user details found." /> : null}
+      {!access ? <EmptyState label="No user details found." /> : null}
       {access ? (
         <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
           <Card>

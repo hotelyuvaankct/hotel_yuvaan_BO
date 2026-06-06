@@ -1,19 +1,19 @@
-import { LogOut, Menu, MoonStar, SunMedium } from 'lucide-react';
+import { Menu, MoonStar, SunMedium, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useTheme } from '@/components/theme-provider';
 import { useAuth } from '@/lib/auth';
+import faviconSrc from '@/assests/Images/favicon.ico';
 
 export type HeaderProps = {
   onMenuClick: () => void;
-  title: string;
-  subtitle: string;
 };
 
-export function Header({ onMenuClick, title, subtitle }: HeaderProps) {
+export function Header({ onMenuClick }: HeaderProps) {
   const { resolvedTheme, toggleTheme } = useTheme();
   const { logout, session } = useAuth();
   const { confirm } = useConfirm();
+
   const userName = session?.user?.fullName || session?.user?.email || 'Admin';
   const initials = userName
     .split(/[ @.]/)
@@ -32,38 +32,54 @@ export function Header({ onMenuClick, title, subtitle }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur-xl">
-      <div className="flex items-center gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenuClick} aria-label="Open sidebar">
-          <Menu className="h-5 w-5" />
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/70 bg-background/90 px-3 backdrop-blur-xl sm:px-4">
+      {/* Mobile hamburger */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden shrink-0"
+        onClick={onMenuClick}
+        aria-label="Open sidebar"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
+      {/* Mobile logo (only visible when sidebar is hidden on mobile) */}
+      <div className="flex items-center gap-2 lg:hidden">
+        <img src={faviconSrc} alt="Hotel Yuvaan" className="h-6 w-6 rounded object-contain" />
+        <span className="font-playfair text-sm font-bold tracking-wide">Hotel Yuvaan</span>
+      </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
+
+      {/* Right-side actions */}
+      <div className="flex items-center gap-1.5">
+        {/* Theme toggle */}
+        <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme" className="rounded-lg">
+          {resolvedTheme === 'dark' ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
         </Button>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-            Hotel Yuvaan
-          </p>
-          <div className="mt-1 flex items-center gap-3">
-            <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
-        </div>
+        {/* Divider */}
+        <div className="mx-1 h-5 w-px bg-border" />
 
-        <Button variant="outline" size="icon" onClick={toggleTheme} aria-label="Toggle theme">
-          {resolvedTheme === 'dark' ? <SunMedium className="h-5 w-5" /> : <MoonStar className="h-5 w-5" />}
-        </Button>
-
-        <div className="hidden items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2 shadow-sm sm:flex">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-gold-400 to-bronze-600 text-sm font-bold text-white">
+        {/* User chip */}
+        <div className="flex items-center gap-2 rounded-lg px-2 py-1">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-600 text-xs font-bold text-white shrink-0">
             {initials || 'HY'}
           </div>
-          <div className="leading-tight">
-            <p className="max-w-36 truncate text-sm font-semibold">{userName}</p>
-            <p className="text-xs text-muted-foreground">Authenticated</p>
-          </div>
+          <span className="hidden max-w-[120px] truncate text-sm font-medium sm:block">{userName}</span>
         </div>
 
-        <Button variant="outline" size="icon" onClick={() => void confirmLogout()} aria-label="Sign out">
-          <LogOut className="h-5 w-5" />
+        {/* Logout */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => void confirmLogout()}
+          aria-label="Sign out"
+          className="rounded-lg text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="h-4 w-4" />
         </Button>
       </div>
     </header>
