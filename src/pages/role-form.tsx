@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Save } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { Module, Permission } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -38,6 +38,8 @@ export function RoleFormPage() {
   const { showToast } = useToast();
   const canCreate = hasPermission(session?.perms, 'roles', 'create');
   const canUpdate = hasPermission(session?.perms, 'roles', 'update');
+  const canReadModules = hasPermission(session?.perms, 'modules', 'read');
+  const canCreateModules = hasPermission(session?.perms, 'modules', 'create');
   const canSave = isEdit ? canUpdate : canCreate;
   const [modules, setModules] = useState<Module[]>([]);
   const [permissions, setPermissions] = useState<Record<number, PermissionDraft>>({});
@@ -49,6 +51,10 @@ export function RoleFormPage() {
 
   useEffect(() => {
     async function load() {
+      if (!canReadModules) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
         const moduleList = await api.listModules();
@@ -85,7 +91,7 @@ export function RoleFormPage() {
     }
 
     void load();
-  }, [roleId, showToast]);
+  }, [canReadModules, roleId, showToast]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -145,6 +151,17 @@ export function RoleFormPage() {
     return <FullPageLoader label={isEdit ? 'Loading role...' : 'Preparing role form...'} />;
   }
 
+  if (!canReadModules) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Access denied</CardTitle>
+          <CardDescription>Module read permission is required to configure role permissions.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Button variant="ghost" onClick={() => navigate('/roles')}>
@@ -178,6 +195,19 @@ export function RoleFormPage() {
                     {recordStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">Module permissions</p>
+                  <p className="text-sm text-muted-foreground">New active modules appear here automatically.</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" disabled={!canCreateModules} onClick={() => undefined}>
+                  <Link to="/modules/new" className="inline-flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add module
+                  </Link>
+                </Button>
               </div>
 
               <div className="overflow-x-auto">

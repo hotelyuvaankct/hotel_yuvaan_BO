@@ -2,6 +2,7 @@ import { clearStoredSession, getStoredSession, storeSession } from '@/lib/auth-s
 import type {
   ApiResponse,
   AuthSession,
+  BulkCreateRoomsPayload,
   CreateRolePayload,
   CreateUserPayload,
   AssignUserRolesPayload,
@@ -17,7 +18,9 @@ import type {
   RoomType,
   UpdateRolePayload,
   UpdateUserPayload,
+  UpsertModulePayload,
   UpsertRoomPayload,
+  UpsertRoomTypePayload,
   UserAccess,
   User,
 } from '@/lib/api-types';
@@ -172,6 +175,18 @@ export const api = {
   listModules() {
     return apiRequest<Module[]>('/modules');
   },
+  getModule(id: number) {
+    return apiRequest<Module>(`/modules/${id}`);
+  },
+  createModule(payload: UpsertModulePayload) {
+    return apiRequest<Module>('/modules', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateModule(id: number, payload: UpsertModulePayload) {
+    return apiRequest<Module>(`/modules/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deleteModule(id: number) {
+    return apiRequest<void>(`/modules/${id}`, { method: 'DELETE' });
+  },
   listPermissions(roleId: number) {
     return apiRequest<Permission[]>(`/roles/${roleId}/permissions`);
   },
@@ -186,6 +201,7 @@ export const api = {
   listRooms(filters: {
     page?: number;
     size?: number;
+    hotelId?: number;
     roomTypeId?: number;
     roomNumber?: string;
     roomStatus?: number;
@@ -194,6 +210,7 @@ export const api = {
       page: String(filters.page ?? 0),
       size: String(filters.size ?? 10),
     });
+    if (filters.hotelId) params.set('hotelId', String(filters.hotelId));
     if (filters.roomTypeId) params.set('roomTypeId', String(filters.roomTypeId));
     if (filters.roomNumber?.trim()) params.set('roomNumber', filters.roomNumber.trim());
     if (filters.roomStatus) params.set('roomStatus', String(filters.roomStatus));
@@ -205,11 +222,17 @@ export const api = {
   createRoom(payload: UpsertRoomPayload) {
     return apiRequest<Room>('/rooms', { method: 'POST', body: JSON.stringify(payload) });
   },
+  createRooms(payload: BulkCreateRoomsPayload) {
+    return apiRequest<Room[]>('/rooms/bulk', { method: 'POST', body: JSON.stringify(payload) });
+  },
   updateRoom(id: number, payload: UpsertRoomPayload) {
     return apiRequest<Room>(`/rooms/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
   },
   deleteRoom(id: number) {
     return apiRequest<void>(`/rooms/${id}`, { method: 'DELETE' });
+  },
+  deleteRooms(roomIds: number[]) {
+    return apiRequest<void>('/rooms/bulk', { method: 'DELETE', body: JSON.stringify({ roomIds }) });
   },
   uploadRoomImage(roomId: number, file: File, primary = false) {
     const body = new FormData();
@@ -231,6 +254,18 @@ export const api = {
     return apiRequest<HotelSummary[]>('/rooms/hotels');
   },
   listRoomTypes(hotelId?: number) {
-    return apiRequest<RoomType[]>(hotelId ? `/rooms/types?hotelId=${hotelId}` : '/rooms/types');
+    return apiRequest<RoomType[]>(hotelId ? `/room-types?hotelId=${hotelId}` : '/room-types');
+  },
+  getRoomType(id: number) {
+    return apiRequest<RoomType>(`/room-types/${id}`);
+  },
+  createRoomType(payload: UpsertRoomTypePayload) {
+    return apiRequest<RoomType>('/room-types', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateRoomType(id: number, payload: UpsertRoomTypePayload) {
+    return apiRequest<RoomType>(`/room-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deleteRoomType(id: number) {
+    return apiRequest<void>(`/room-types/${id}`, { method: 'DELETE' });
   },
 };
