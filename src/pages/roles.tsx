@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { PageToolbar } from '@/components/common/page-toolbar';
+import { Status } from '@/lib/constants';
 
 export function RolesPage() {
   const { session } = useAuth();
@@ -119,7 +120,7 @@ export function RolesPage() {
                     <td className="px-3 py-3 text-muted-foreground">{role.name}</td>
                     <td className="px-3 py-3 text-muted-foreground">{role.description || '-'}</td>
                     <td className="px-3 py-3">
-                      <Badge variant={role.status === 1 ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, role.status)}</Badge>
+                      <Badge variant={role.status === Status.ACTIVE ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, role.status)}</Badge>
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex justify-end gap-2">

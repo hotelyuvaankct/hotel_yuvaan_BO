@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, Save, Star, Trash2, Upload } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
-import type { BulkCreateRoomsPayload, HotelSummary, RoomImage, RoomType, UpsertRoomPayload } from '@/lib/api-types';
+import type { BulkCreateRoomsPayload, HotelSummary, RoomType, UpsertRoomPayload } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { recordStatusOptions, roomStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
@@ -31,8 +31,6 @@ export function RoomFormPage() {
   const [saving, setSaving] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
   const [bulkRoomNumbers, setBulkRoomNumbers] = useState('');
-  const [images, setImages] = useState<RoomImage[]>([]);
-  const [newImages, setNewImages] = useState<File[]>([]);
   const [form, setForm] = useState({
     hotelId: '',
     roomTypeId: '',
@@ -66,7 +64,6 @@ export function RoomFormPage() {
             status: String(room.status ?? 1),
             notes: room.notes ?? '',
           });
-          setImages(room.images ?? []);
         } else {
           setForm((current) => ({
             ...current,
@@ -139,57 +136,18 @@ export function RoomFormPage() {
         return;
       }
 
-      let savedRoomId: number;
       if (isEdit && roomId) {
-        const room = await api.updateRoom(roomId, payload);
-        savedRoomId = room.id;
+        await api.updateRoom(roomId, payload);
       } else {
-        const room = await api.createRoom(payload);
-        savedRoomId = room.id;
+        await api.createRoom(payload);
       }
 
-      for (const [index, file] of newImages.entries()) {
-        await api.uploadRoomImage(savedRoomId, file, images.length === 0 && index === 0);
-      }
       showToast(isEdit ? 'Room updated.' : 'Room added.', 'success');
       navigate('/rooms');
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Unable to save room.', 'error');
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function replaceImage(imageId: number, file: File) {
-    if (!roomId || !canUpdate) return;
-    try {
-      const updated = await api.replaceRoomImage(roomId, imageId, file);
-      setImages((current) => current.map((image) => image.id === imageId ? updated : image));
-      showToast('Room image replaced.', 'success');
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Unable to replace room image.', 'error');
-    }
-  }
-
-  async function setPrimaryImage(imageId: number) {
-    if (!roomId || !canUpdate) return;
-    try {
-      await api.setPrimaryRoomImage(roomId, imageId);
-      setImages((current) => current.map((image) => ({ ...image, primary: image.id === imageId })));
-      showToast('Primary room image updated.', 'success');
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Unable to update primary image.', 'error');
-    }
-  }
-
-  async function deleteImage(imageId: number) {
-    if (!roomId || !canDelete) return;
-    try {
-      await api.deleteRoomImage(roomId, imageId);
-      setImages((current) => current.filter((image) => image.id !== imageId));
-      showToast('Room image deleted.', 'success');
-    } catch (err) {
-      showToast(err instanceof ApiError ? err.message : 'Unable to delete room image.', 'error');
     }
   }
 
@@ -219,7 +177,7 @@ export function RoomFormPage() {
         <CardHeader>
           <CardTitle>{isEdit ? 'Update room' : 'Add room'}</CardTitle>
           <CardDescription>
-            {isEdit ? 'Update room details and images.' : 'Create one room or add up to 100 rooms in a single request.'}
+            {isEdit ? 'Update room details and images.' : 'Create one room or add up to 500 rooms in a single request.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -249,16 +207,49 @@ export function RoomFormPage() {
                 </select>
               </label>
               {bulkMode && !isEdit ? (
-                <label className="space-y-2 text-sm font-medium md:col-span-2">
-                  Room numbers
-                  <textarea
-                    className="min-h-28 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    required
-                    placeholder={'101, 102, 103\nOr enter one room number per line'}
-                    value={bulkRoomNumbers}
-                    onChange={(event) => setBulkRoomNumbers(event.target.value)}
-                  />
-                </label>
+                <div className="space-y-4 md:col-span-2">
+                  
+                  <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-muted/20 p-4">
+                    <div className="space-y-1.5 flex-1 min-w-[120px]">
+                      <label htmlFor="range-start" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Start number</label>
+                      <input id="range-start" type="number" placeholder="e.g. 101" className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                    </div>
+                    <div className="space-y-1.5 flex-1 min-w-[120px]">
+                      <label htmlFor="range-end" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">End number</label>
+                      <input id="range-end" type="number" placeholder="e.g. 110" className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring" />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="h-9"
+                      onClick={() => {
+                        const start = parseInt((document.getElementById('range-start') as HTMLInputElement)?.value, 10);
+                        const end = parseInt((document.getElementById('range-end') as HTMLInputElement)?.value, 10);
+                        if (!isNaN(start) && !isNaN(end) && start <= end && end - start <= 500) {
+                          const range = Array.from({ length: end - start + 1 }, (_, i) => String(start + i));
+                          setBulkRoomNumbers(range.join(', '));
+                        } else if (end - start > 500) {
+                          showToast('Maximum range is 500 rooms at a time.', 'warning');
+                        } else {
+                          showToast('Please enter a valid start and end number.', 'warning');
+                        }
+                      }}
+                    >
+                      Generate range
+                    </Button>
+                  </div>
+                  <label className="block space-y-2 text-sm font-medium">
+                    Room numbers
+                    <textarea
+                      className="min-h-28 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      required
+                      placeholder={'101, 102, 103\nOr enter one room number per line'}
+                      value={bulkRoomNumbers}
+                      onChange={(event) => setBulkRoomNumbers(event.target.value)}
+                    />
+                  </label>
+                </div>
               ) : (
                 <label className="space-y-2 text-sm font-medium">
                   Room number
@@ -275,70 +266,10 @@ export function RoomFormPage() {
                   {roomStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </label>
-              <label className="space-y-2 text-sm font-medium">
-                Record status
-                <select className={inputClass} value={form.status} onChange={(event) => setForm((value) => ({ ...value, status: event.target.value }))}>
-                  {recordStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
               <label className="space-y-2 text-sm font-medium md:col-span-2">
                 Notes
                 <input className={inputClass} value={form.notes} onChange={(event) => setForm((value) => ({ ...value, notes: event.target.value }))} />
               </label>
-              {!bulkMode || isEdit ? <div className="space-y-3 md:col-span-2">
-                <div>
-                  <p className="text-sm font-medium">Room images</p>
-                  <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each.</p>
-                </div>
-                {images.length > 0 ? (
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {images.map((image) => (
-                      <div key={image.id} className="overflow-hidden rounded-xl border border-border bg-muted/20">
-                        <img src={image.publicUrl} alt="Room" className="h-36 w-full object-cover" />
-                        <div className="flex flex-wrap gap-2 p-3">
-                          <Button type="button" size="sm" variant={image.primary ? 'gold' : 'outline'} disabled={!canUpdate || image.primary} onClick={() => void setPrimaryImage(image.id)}>
-                            <Star className="h-4 w-4" />
-                            {image.primary ? 'Primary' : 'Set primary'}
-                          </Button>
-                          <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-input px-3 text-xs font-semibold">
-                            <Upload className="h-4 w-4" />
-                            Replace
-                            <input
-                              className="hidden"
-                              type="file"
-                              accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-                              disabled={!canUpdate}
-                              onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file) void replaceImage(image.id, file);
-                                event.target.value = '';
-                              }}
-                            />
-                          </label>
-                          <Button type="button" size="icon" variant="ghost" disabled={!canDelete} onClick={() => void deleteImage(image.id)} aria-label="Delete image">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-input p-5 text-sm font-semibold hover:bg-muted/40">
-                  <ImagePlus className="h-5 w-5" />
-                  Add room images
-                  <input
-                    className="hidden"
-                    type="file"
-                    multiple
-                    accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
-                    disabled={!canSave}
-                    onChange={(event) => setNewImages(Array.from(event.target.files ?? []))}
-                  />
-                </label>
-                {newImages.length > 0 ? (
-                  <p className="text-sm text-muted-foreground">{newImages.length} image{newImages.length === 1 ? '' : 's'} ready to upload.</p>
-                ) : null}
-              </div> : null}
               <div className="flex gap-2 md:col-span-2">
                 <Button type="submit" variant="gold" disabled={!canSave || saving}>
                   <Save className="h-4 w-4" />

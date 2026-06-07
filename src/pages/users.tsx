@@ -14,6 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { PageToolbar } from '@/components/common/page-toolbar';
+import { Pagination } from '@/components/common/pagination';
+import { Status } from '@/lib/constants';
 
 export function UsersPage() {
   const { session } = useAuth();
@@ -26,12 +28,16 @@ export function UsersPage() {
   const currentUserId = session?.uid ?? session?.user?.id;
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  async function load() {
+  async function load(targetPage = page) {
     setLoading(true);
     try {
-      const userPage = await api.listUsers(0, 100);
+      const userPage = await api.listUsers(targetPage, 10);
       setUsers(userPage.content ?? []);
+      setPage(userPage.number ?? targetPage);
+      setTotalPages(userPage.totalPages ?? 0);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load users.', 'error');
     } finally {
@@ -125,6 +131,12 @@ export function UsersPage() {
                 </tbody>
               </table>
             ) : null}
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              loading={loading}
+              onPageChange={(p) => void load(p)}
+            />
           </CardContent>
         </Card>
       </section>
@@ -149,7 +161,7 @@ function UserRow({
       <td className="px-3 py-3 text-muted-foreground">{user.email}</td>
       <td className="px-3 py-3 text-muted-foreground">{optionLabel([{ value: 1, label: 'Male' }, { value: 2, label: 'Female' }, { value: 3, label: 'Other' }, { value: 4, label: 'Prefer not to say' }], user.gender)}</td>
       <td className="px-3 py-3">
-        <Badge variant={user.status === 1 ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, user.status)}</Badge>
+        <Badge variant={user.status === Status.ACTIVE ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, user.status)}</Badge>
       </td>
       <td className="px-3 py-3">
         <div className="flex justify-end gap-2">

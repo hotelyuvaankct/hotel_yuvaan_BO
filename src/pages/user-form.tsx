@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageLoader } from '@/components/common/loading-state';
+import { Status } from '@/lib/constants';
 
 const inputClass = 'h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring';
 
@@ -36,7 +37,7 @@ export function UserFormPage() {
     status: '1',
   });
 
-  const activeRoles = useMemo(() => roles.filter((role) => role.status !== 3), [roles]);
+  const activeRoles = useMemo(() => roles.filter((role) => role.status !== Status.DELETED), [roles]);
 
   useEffect(() => {
     async function load() {

@@ -1,8 +1,9 @@
+import { createPortal } from 'react-dom';
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, X, Image as ImageIcon } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
-import type { HotelSummary, UpsertRoomTypePayload } from '@/lib/api-types';
+import type { HotelSummary, UpsertRoomTypePayload, RoomImage } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { recordStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
@@ -27,6 +28,10 @@ export function RoomTypeFormPage() {
   const [hotels, setHotels] = useState<HotelSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<RoomImage[]>([]);
+  const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [form, setForm] = useState({
     hotelId: '',
     name: '',
@@ -59,6 +64,9 @@ export function RoomTypeFormPage() {
             amenities: parseAmenities(roomType.amenities).join(', '),
             status: String(roomType.status ?? 1),
           });
+          if (roomType.images) {
+            setExistingImages(roomType.images);
+          }
         } else {
           setForm((current) => ({ ...current, hotelId: String(hotelList[0]?.id ?? '') }));
         }
@@ -71,9 +79,30 @@ export function RoomTypeFormPage() {
     void load();
   }, [canRead, roomTypeId, showToast]);
 
+  function handleRemoveFile(index: number) {
+    if (existingImages.length + files.length <= 1) {
+      showToast('At least one image is required for this room type.', 'error');
+      return;
+    }
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleRemoveExisting(id: number) {
+    if (existingImages.length + files.length <= 1) {
+      showToast('At least one image is required for this room type.', 'error');
+      return;
+    }
+    setExistingImages((prev) => prev.filter((img) => img.id !== id));
+    setDeletedImageIds((prev) => [...prev, id]);
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSave) return;
+    if (existingImages.length + files.length < 1) {
+      showToast('At least one image is required.', 'error');
+      return;
+    }
     setSaving(true);
     const amenities = form.amenities.split(',').map((value) => value.trim()).filter(Boolean);
     const payload: UpsertRoomTypePayload = {
@@ -85,12 +114,13 @@ export function RoomTypeFormPage() {
       basePrice: Number(form.basePrice),
       amenities: JSON.stringify(amenities),
       status: Number(form.status),
+      deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
     };
     try {
       if (isEdit && roomTypeId) {
-        await api.updateRoomType(roomTypeId, payload);
+        await api.updateRoomType(roomTypeId, payload, files.length > 0 ? files : undefined);
       } else {
-        await api.createRoomType(payload);
+        await api.createRoomType(payload, files.length > 0 ? files : undefined);
       }
       showToast(isEdit ? 'Room type updated.' : 'Room type added.', 'success');
       navigate('/room-types');
@@ -165,6 +195,84 @@ export function RoomTypeFormPage() {
               <input className={inputClass} placeholder="Wi-Fi, Air conditioning, Television" value={form.amenities} onChange={(event) => setForm((value) => ({ ...value, amenities: event.target.value }))} />
               <span className="block text-xs font-normal text-muted-foreground">Separate amenities with commas.</span>
             </label>
+            <div className="space-y-2 md:col-span-2">
+              <span className="text-sm font-medium">Images</span>
+              <label className="flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 py-6 transition-colors hover:bg-muted">
+                <div className="text-center">
+                  <ImageIcon className="mx-auto h-8 w-8 text-muted-foreground" />
+                  <span className="mt-2 block text-sm font-medium text-foreground">Click to upload images</span>
+                  <span className="block text-xs text-muted-foreground">PNG, JPG up to 5MB</span>
+                </div>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/png, image/jpeg, image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      const newFiles = Array.from(e.target.files);
+                      const uniqueNewFiles = newFiles.filter(
+                        (newFile) => !files.some((prevFile) => prevFile.name === newFile.name && prevFile.size === newFile.size)
+                      );
+                      
+                      if (uniqueNewFiles.length < newFiles.length) {
+                        showToast('Duplicate images were ignored.', 'error');
+                      }
+                      
+                      const totalFiles = [...files, ...uniqueNewFiles];
+                      if (totalFiles.length > 5) {
+                        showToast('You can only upload a maximum of 5 images.', 'error');
+                        setFiles(totalFiles.slice(0, 5));
+                      } else {
+                        setFiles(totalFiles);
+                      }
+                    }
+                    // Reset the input value so the same file can be selected again if removed
+                    e.target.value = '';
+                  }}
+                />
+              </label>
+              {(existingImages.length > 0 || files.length > 0) ? (
+                <div className="flex flex-wrap gap-4 pt-2">
+                  {existingImages.map((img) => (
+                    <div key={img.id} className="relative h-20 w-20 overflow-hidden rounded-lg border border-border group">
+                      <img
+                        src={img.publicUrl}
+                        alt="Existing"
+                        className="h-full w-full cursor-pointer object-cover hover:opacity-80"
+                        onClick={() => setPreviewImage(img.publicUrl)}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-destructive"
+                        onClick={() => handleRemoveExisting(img.id)}
+                        aria-label="Remove image"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {files.map((file, index) => (
+                    <div key={index} className="relative h-20 w-20 overflow-hidden rounded-lg border border-border group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index}`}
+                        className="h-full w-full cursor-pointer object-cover hover:opacity-80"
+                        onClick={() => setPreviewImage(URL.createObjectURL(file))}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-destructive"
+                        onClick={() => handleRemoveFile(index)}
+                        aria-label="Remove image"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
             <div className="flex gap-2 md:col-span-2">
               <Button type="submit" variant="gold" disabled={!canSave || saving}>
                 <Save className="h-4 w-4" />
@@ -175,6 +283,19 @@ export function RoomTypeFormPage() {
           </form>
         </CardContent>
       </Card>
+      {previewImage && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 animate-in fade-in zoom-in-95 duration-200">
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+            onClick={() => setPreviewImage(null)}
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img src={previewImage} alt="Preview" className="max-h-full max-w-full rounded-xl object-contain shadow-2xl" />
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

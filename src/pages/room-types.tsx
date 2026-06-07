@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { HotelSummary, RoomType } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
+import { Status } from '@/lib/constants';
 
 export function RoomTypesPage() {
   const { session } = useAuth();
@@ -139,14 +140,20 @@ export function RoomTypesPage() {
                       <td className="px-3 py-3 text-muted-foreground">{formatCurrency(roomType.basePrice)}</td>
                       <td className="px-3 py-3 text-muted-foreground">{roomType.totalRooms ?? 0}</td>
                       <td className="px-3 py-3">
-                        <Badge variant={roomType.status === 1 ? 'success' : 'secondary'}>
+                        <Badge variant={roomType.status === Status.ACTIVE ? 'success' : 'secondary'}>
                           {optionLabel(recordStatusOptions, roomType.status)}
                         </Badge>
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" disabled={!canUpdate} onClick={() => undefined}>
-                            <Link to={`/room-types/${roomType.id}/edit`} className="inline-flex items-center gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/room-types/${roomType.id}`} className="inline-flex items-center gap-2">
+                              <Eye className="h-4 w-4" />
+                              View
+                            </Link>
+                          </Button>
+                          <Button variant="outline" size="sm" disabled={!canUpdate} asChild>
+                            <Link to={canUpdate ? `/room-types/${roomType.id}/edit` : '#'} className="inline-flex items-center gap-2">
                               <Edit className="h-4 w-4" />
                               Edit
                             </Link>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
+import { Pagination } from '@/components/common/pagination';
+import { Status } from '@/lib/constants';
 
 const emptyFilters = { hotelId: '', roomNumber: '', roomTypeId: '', roomStatus: '' };
 
@@ -266,7 +268,7 @@ export function RoomsPage() {
                         </Badge>
                       </td>
                       <td className="px-3 py-3">
-                        <Badge variant={room.status === 1 ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, room.status)}</Badge>
+                        <Badge variant={room.status === Status.ACTIVE ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, room.status)}</Badge>
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex justify-end gap-2">
@@ -288,17 +290,12 @@ export function RoomsPage() {
             ) : null}
           </div>
 
-          <div className="flex items-center justify-between border-t border-border pt-4">
-            <p className="text-sm text-muted-foreground">Page {totalPages === 0 ? 0 : page + 1} of {totalPages}</p>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" disabled={loading || page === 0} onClick={() => void load(page - 1)}>
-                Previous
-              </Button>
-              <Button type="button" variant="outline" size="sm" disabled={loading || page + 1 >= totalPages} onClick={() => void load(page + 1)}>
-                Next
-              </Button>
-            </div>
-          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            loading={loading}
+            onPageChange={(p) => void load(p)}
+          />
         </CardContent>
       </Card>
     </div>

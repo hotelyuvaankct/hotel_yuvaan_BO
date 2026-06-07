@@ -21,7 +21,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const profile = await api.profile();
     setSession((current) => {
       if (!current) return current;
-      return storeSession({ ...current, ...profile, refreshToken: profile.refreshToken ?? current.refreshToken });
+      const roleNames = profile.roles?.map((r) => r.roleName) || [];
+      return storeSession({
+        ...current,
+        user: profile.user,
+        perms: profile.perms,
+        roles: roleNames,
+      });
     });
   }
 
