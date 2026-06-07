@@ -2,6 +2,8 @@ import {
   LayoutDashboard,
   CalendarRange,
   BedDouble,
+  Tags,
+  Blocks,
   Users,
   ShieldCheck,
   ChartColumnIncreasing,
@@ -38,6 +40,13 @@ export const navigationItems: NavigationItem[] = [
     moduleSlug: 'rooms',
   },
   {
+    label: 'Room Types',
+    href: '/room-types',
+    description: 'Room categories, occupancy, and pricing',
+    icon: Tags,
+    moduleSlug: 'room-types',
+  },
+  {
     label: 'Users',
     href: '/users',
     description: 'Accounts, assigned roles, and permissions',
@@ -50,6 +59,13 @@ export const navigationItems: NavigationItem[] = [
     description: 'Module CRUD permission matrix',
     icon: ShieldCheck,
     moduleSlug: 'roles',
+  },
+  {
+    label: 'Modules',
+    href: '/modules',
+    description: 'Create modules for the role permission matrix',
+    icon: Blocks,
+    moduleSlug: 'modules',
   },
   {
     label: 'Guests',

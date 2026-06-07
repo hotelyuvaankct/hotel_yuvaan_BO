@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { Room, RoomType } from '@/lib/api-types';
+import type { HotelSummary, Room, RoomType } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { optionLabel, recordStatusOptions, roomStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
@@ -14,6 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 
+const emptyFilters = { hotelId: '', roomNumber: '', roomTypeId: '', roomStatus: '' };
+
 export function RoomsPage() {
   const { session } = useAuth();
   const { showToast } = useToast();
@@ -22,26 +24,30 @@ export function RoomsPage() {
   const canRead = hasPermission(session?.perms, 'rooms', 'read');
   const canUpdate = hasPermission(session?.perms, 'rooms', 'update');
   const canDelete = hasPermission(session?.perms, 'rooms', 'delete');
+  const canReadRoomTypes = hasPermission(session?.perms, 'room-types', 'read');
   const [rooms, setRooms] = useState<Room[]>([]);
+  const [hotels, setHotels] = useState<HotelSummary[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [filters, setFilters] = useState({ roomNumber: '', roomTypeId: '', roomStatus: '' });
-  const [appliedFilters, setAppliedFilters] = useState(filters);
+  const [filters, setFilters] = useState(emptyFilters);
 
-  async function load(targetPage = page, activeFilters = appliedFilters) {
+  async function load(targetPage = page, activeFilters = filters) {
     setLoading(true);
     try {
       const result = await api.listRooms({
         page: targetPage,
         size: 10,
+        hotelId: activeFilters.hotelId ? Number(activeFilters.hotelId) : undefined,
         roomNumber: activeFilters.roomNumber,
         roomTypeId: activeFilters.roomTypeId ? Number(activeFilters.roomTypeId) : undefined,
         roomStatus: activeFilters.roomStatus ? Number(activeFilters.roomStatus) : undefined,
       });
       setRooms(result.content ?? []);
+      setSelectedIds([]);
       setPage(result.number ?? targetPage);
       setTotalPages(result.totalPages ?? 0);
       setTotalElements(result.totalElements ?? 0);
@@ -62,36 +68,63 @@ export function RoomsPage() {
     try {
       await api.deleteRoom(room.id);
       showToast('Room deleted.', 'success');
-      const nextPage = rooms.length === 1 && page > 0 ? page - 1 : page;
-      await load(nextPage);
+      await load(rooms.length === 1 && page > 0 ? page - 1 : page);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to delete room.', 'error');
     }
   }
 
+  async function deleteSelectedRooms() {
+    if (selectedIds.length === 0) return;
+    const confirmed = await confirm({
+      title: `Delete ${selectedIds.length} rooms?`,
+      description: 'All selected rooms will be removed from the active room listing.',
+      confirmLabel: 'Delete rooms',
+    });
+    if (!confirmed) return;
+    try {
+      await api.deleteRooms(selectedIds);
+      showToast(`${selectedIds.length} rooms deleted.`, 'success');
+      await load(page);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to delete selected rooms.', 'error');
+    }
+  }
+
   useEffect(() => {
     if (!canRead) return;
-    void Promise.all([
-      load(0, appliedFilters),
-      api.listRoomTypes().then(setRoomTypes),
-    ]).catch((err) => {
-      showToast(err instanceof Error ? err.message : 'Unable to load room filters.', 'error');
-    });
-  }, [canRead]);
+    void Promise.all([api.listHotels(), canReadRoomTypes ? api.listRoomTypes() : Promise.resolve([])])
+      .then(([hotelList, roomTypeList]) => {
+        setHotels(hotelList ?? []);
+        setRoomTypes(roomTypeList ?? []);
+      })
+      .catch((err) => showToast(err instanceof Error ? err.message : 'Unable to load room filters.', 'error'));
+  }, [canRead, canReadRoomTypes, showToast]);
 
-  function applyFilters() {
-    setAppliedFilters(filters);
-    setPage(0);
-    void load(0, filters);
-  }
+  useEffect(() => {
+    if (!canRead) return;
+    const timeout = window.setTimeout(() => {
+      setPage(0);
+      void load(0, filters);
+    }, 350);
+    return () => window.clearTimeout(timeout);
+  }, [canRead, filters]);
 
-  function clearFilters() {
-    const emptyFilters = { roomNumber: '', roomTypeId: '', roomStatus: '' };
-    setFilters(emptyFilters);
-    setAppliedFilters(emptyFilters);
-    setPage(0);
-    void load(0, emptyFilters);
-  }
+  useEffect(() => {
+    if (!canReadRoomTypes) return;
+    const hotelId = Number(filters.hotelId);
+    api.listRoomTypes(hotelId || undefined)
+      .then((items) => {
+        setRoomTypes(items ?? []);
+        setFilters((current) => ({
+          ...current,
+          roomTypeId: items.some((item) => String(item.id) === current.roomTypeId)
+            ? current.roomTypeId
+            : '',
+        }));
+      })
+      .catch(() => undefined);
+  }, [canReadRoomTypes, filters.hotelId]);
 
   if (!canRead) {
     return (
@@ -104,15 +137,23 @@ export function RoomsPage() {
     );
   }
 
+  const allVisibleSelected = rooms.length > 0 && rooms.every((room) => selectedIds.includes(room.id));
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Card>
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
           <div>
             <CardTitle>Room listing</CardTitle>
-            <CardDescription>{totalElements} room{totalElements === 1 ? '' : 's'} found. Showing 10 per page.</CardDescription>
+            <CardDescription>{totalElements} room{totalElements === 1 ? '' : 's'} found. Filters update automatically.</CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
+            {selectedIds.length > 0 ? (
+              <Button variant="outline" size="sm" disabled={!canDelete} onClick={() => void deleteSelectedRooms()}>
+                <Trash2 className="h-4 w-4" />
+                Delete selected ({selectedIds.length})
+              </Button>
+            ) : null}
             <Button variant="outline" size="sm" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
               Refresh
@@ -126,27 +167,31 @@ export function RoomsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <form
-            className="grid gap-3 md:grid-cols-[1fr_220px_220px_auto]"
-            onSubmit={(event) => {
-              event.preventDefault();
-              applyFilters();
-            }}
-          >
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[220px_1fr_220px_220px_auto]">
+            <select
+              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+              value={filters.hotelId}
+              onChange={(event) => setFilters((current) => ({ ...current, hotelId: event.target.value }))}
+            >
+              <option value="">All hotels</option>
+              {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
+            </select>
             <input
               className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
               placeholder="Search room number"
               value={filters.roomNumber}
               onChange={(event) => setFilters((current) => ({ ...current, roomNumber: event.target.value }))}
             />
-            <select
-              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
-              value={filters.roomTypeId}
-              onChange={(event) => setFilters((current) => ({ ...current, roomTypeId: event.target.value }))}
-            >
-              <option value="">All room types</option>
-              {roomTypes.map((roomType) => <option key={roomType.id} value={roomType.id}>{roomType.name}</option>)}
-            </select>
+            {canReadRoomTypes ? (
+              <select
+                className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+                value={filters.roomTypeId}
+                onChange={(event) => setFilters((current) => ({ ...current, roomTypeId: event.target.value }))}
+              >
+                <option value="">All room types</option>
+                {roomTypes.map((roomType) => <option key={roomType.id} value={roomType.id}>{roomType.name}</option>)}
+              </select>
+            ) : <div className="hidden xl:block" />}
             <select
               className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
               value={filters.roomStatus}
@@ -155,94 +200,101 @@ export function RoomsPage() {
               <option value="">All room statuses</option>
               {roomStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
-            <div className="flex gap-2">
-              <Button type="submit" variant="gold">
-                <Search className="h-4 w-4" />
-                Search
-              </Button>
-              <Button type="button" variant="outline" onClick={clearFilters}>Clear</Button>
-            </div>
-          </form>
-          <div className="overflow-x-auto">
-          {loading ? <LoadingState /> : null}
-          {!loading ? (
-            <table className="w-full min-w-[860px] text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Image</th>
-                  <th className="px-3 py-2 font-medium">Room</th>
-                  <th className="px-3 py-2 font-medium">Hotel</th>
-                  <th className="px-3 py-2 font-medium">Type</th>
-                  <th className="px-3 py-2 font-medium">Floor</th>
-                  <th className="px-3 py-2 font-medium">Room status</th>
-                  <th className="px-3 py-2 font-medium">Record status</th>
-                  <th className="px-3 py-2 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rooms.length === 0 ? (
-                  <tr>
-                    <td className="px-3 py-6" colSpan={8}><EmptyState /></td>
-                  </tr>
-                ) : null}
-                {rooms.map((room) => (
-                  <tr key={room.id} className="border-t border-border">
-                    <td className="px-3 py-3">
-                      {room.images?.[0] ? (
-                        <img
-                          src={(room.images.find((image) => image.primary) ?? room.images[0]).publicUrl}
-                          alt={`Room ${room.roomNumber}`}
-                          className="h-12 w-16 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="h-12 w-16 rounded-lg bg-muted" />
-                      )}
-                    </td>
-                    <td className="px-3 py-3 font-medium">{room.roomNumber}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{room.hotelName}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{room.roomTypeName}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{room.floor ?? '-'}</td>
-                    <td className="px-3 py-3">
-                      <Badge variant={room.roomStatus === 1 ? 'success' : room.roomStatus === 2 ? 'gold' : 'warning'}>{optionLabel(roomStatusOptions, room.roomStatus)}</Badge>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Badge variant={room.status === 1 ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, room.status)}</Badge>
-                    </td>
-                    <td className="px-3 py-3">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" disabled={!canUpdate} onClick={() => undefined}>
-                          <Link to={`/rooms/${room.id}/edit`} className="inline-flex items-center gap-2"><Edit className="h-4 w-4" />Edit</Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => void deleteRoom(room)} disabled={!canDelete} aria-label="Delete room"><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : null}
+            <Button type="button" variant="outline" onClick={() => setFilters(emptyFilters)}>Clear</Button>
           </div>
+
+          <div className="overflow-x-auto">
+            {loading ? <LoadingState /> : null}
+            {!loading ? (
+              <table className="w-full min-w-[940px] text-sm">
+                <thead className="text-left text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 accent-amber-500"
+                        checked={allVisibleSelected}
+                        onChange={(event) => setSelectedIds(event.target.checked ? rooms.map((room) => room.id) : [])}
+                        aria-label="Select all visible rooms"
+                      />
+                    </th>
+                    <th className="px-3 py-2 font-medium">Image</th>
+                    <th className="px-3 py-2 font-medium">Room</th>
+                    <th className="px-3 py-2 font-medium">Hotel</th>
+                    <th className="px-3 py-2 font-medium">Type</th>
+                    <th className="px-3 py-2 font-medium">Floor</th>
+                    <th className="px-3 py-2 font-medium">Room status</th>
+                    <th className="px-3 py-2 font-medium">Record status</th>
+                    <th className="px-3 py-2 text-right font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rooms.length === 0 ? (
+                    <tr>
+                      <td className="px-3 py-6" colSpan={9}><EmptyState /></td>
+                    </tr>
+                  ) : null}
+                  {rooms.map((room) => (
+                    <tr key={room.id} className="border-t border-border">
+                      <td className="px-3 py-3">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 accent-amber-500"
+                          checked={selectedIds.includes(room.id)}
+                          onChange={(event) => setSelectedIds((current) => event.target.checked
+                            ? [...current, room.id]
+                            : current.filter((id) => id !== room.id))}
+                          aria-label={`Select room ${room.roomNumber}`}
+                        />
+                      </td>
+                      <td className="px-3 py-3">
+                        {room.images?.[0] ? (
+                          <img
+                            src={(room.images.find((image) => image.primary) ?? room.images[0]).publicUrl}
+                            alt={`Room ${room.roomNumber}`}
+                            className="h-12 w-16 rounded-lg object-cover"
+                          />
+                        ) : <div className="h-12 w-16 rounded-lg bg-muted" />}
+                      </td>
+                      <td className="px-3 py-3 font-medium">{room.roomNumber}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{room.hotelName}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{room.roomTypeName}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{room.floor ?? '-'}</td>
+                      <td className="px-3 py-3">
+                        <Badge variant={room.roomStatus === 1 ? 'success' : room.roomStatus === 2 ? 'gold' : 'warning'}>
+                          {optionLabel(roomStatusOptions, room.roomStatus)}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-3">
+                        <Badge variant={room.status === 1 ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, room.status)}</Badge>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => undefined}>
+                            <Link to={`/rooms/${room.id}`} className="inline-flex items-center gap-2"><Eye className="h-4 w-4" />View</Link>
+                          </Button>
+                          <Button variant="outline" size="sm" disabled={!canUpdate} onClick={() => undefined}>
+                            <Link to={`/rooms/${room.id}/edit`} className="inline-flex items-center gap-2"><Edit className="h-4 w-4" />Edit</Link>
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => void deleteRoom(room)} disabled={!canDelete} aria-label="Delete room">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : null}
+          </div>
+
           <div className="flex items-center justify-between border-t border-border pt-4">
-            <p className="text-sm text-muted-foreground">
-              Page {totalPages === 0 ? 0 : page + 1} of {totalPages}
-            </p>
+            <p className="text-sm text-muted-foreground">Page {totalPages === 0 ? 0 : page + 1} of {totalPages}</p>
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={loading || page === 0}
-                onClick={() => void load(page - 1)}
-              >
+              <Button type="button" variant="outline" size="sm" disabled={loading || page === 0} onClick={() => void load(page - 1)}>
                 Previous
               </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={loading || page + 1 >= totalPages}
-                onClick={() => void load(page + 1)}
-              >
+              <Button type="button" variant="outline" size="sm" disabled={loading || page + 1 >= totalPages} onClick={() => void load(page + 1)}>
                 Next
               </Button>
             </div>

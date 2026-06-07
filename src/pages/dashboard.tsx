@@ -4,8 +4,14 @@ import { api } from '@/lib/api';
 import type { Module, Role, User } from '@/lib/api-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/lib/auth';
+import { hasPermission } from '@/lib/permissions';
 
 export function DashboardPage() {
+  const { session } = useAuth();
+  const canReadUsers = hasPermission(session?.perms, 'users', 'read');
+  const canReadRoles = hasPermission(session?.perms, 'roles', 'read');
+  const canReadModules = hasPermission(session?.perms, 'modules', 'read');
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
@@ -15,9 +21,9 @@ export function DashboardPage() {
     async function loadDashboard() {
       try {
         const [userPage, rolesList, modulesList] = await Promise.all([
-          api.listUsers(0, 5),
-          api.listRoles(),
-          api.listModules(),
+          canReadUsers ? api.listUsers(0, 5) : Promise.resolve({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 5 }),
+          canReadRoles ? api.listRoles() : Promise.resolve([]),
+          canReadModules ? api.listModules() : Promise.resolve([]),
         ]);
         setUsers(userPage.content ?? []);
         setRoles(rolesList ?? []);
@@ -28,15 +34,15 @@ export function DashboardPage() {
     }
 
     void loadDashboard();
-  }, []);
+  }, [canReadModules, canReadRoles, canReadUsers]);
 
   const stats = useMemo(
     () => [
-      { label: 'Users', value: String(users.length), delta: 'Loaded from /users', icon: Users },
-      { label: 'Roles', value: String(roles.length), delta: 'Loaded from /roles', icon: ShieldCheck },
-      { label: 'Modules', value: String(modules.length), delta: 'Loaded from /modules', icon: KeyRound },
+      ...(canReadUsers ? [{ label: 'Users', value: String(users.length), delta: 'Loaded from /users', icon: Users }] : []),
+      ...(canReadRoles ? [{ label: 'Roles', value: String(roles.length), delta: 'Loaded from /roles', icon: ShieldCheck }] : []),
+      ...(canReadModules ? [{ label: 'Modules', value: String(modules.length), delta: 'Loaded from /modules', icon: KeyRound }] : []),
     ],
-    [modules.length, roles.length, users.length],
+    [canReadModules, canReadRoles, canReadUsers, modules.length, roles.length, users.length],
   );
 
   return (
@@ -47,7 +53,7 @@ export function DashboardPage() {
         </div>
       ) : null}
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <Card>
+        {canReadModules ? <Card>
           <CardHeader>
             <CardTitle>API summary</CardTitle>
             <CardDescription>Counts are loaded from authenticated backend APIs.</CardDescription>
@@ -74,7 +80,7 @@ export function DashboardPage() {
               })}
             </div>
           </CardContent>
-        </Card>
+        </Card> : null}
 
         <Card>
           <CardHeader>
@@ -95,7 +101,7 @@ export function DashboardPage() {
         </Card>
       </section>
 
-      <section>
+      {canReadUsers ? <section>
         <Card>
           <CardHeader>
             <CardTitle>Recent users</CardTitle>
@@ -118,7 +124,7 @@ export function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      </section> : null}
     </div>
   );
 }

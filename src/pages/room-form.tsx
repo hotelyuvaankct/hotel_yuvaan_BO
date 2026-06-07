@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ImagePlus, Save, Star, Trash2, Upload } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
-import type { HotelSummary, RoomImage, RoomType, UpsertRoomPayload } from '@/lib/api-types';
+import type { BulkCreateRoomsPayload, HotelSummary, RoomImage, RoomType, UpsertRoomPayload } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { recordStatusOptions, roomStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
@@ -23,11 +23,14 @@ export function RoomFormPage() {
   const canCreate = hasPermission(session?.perms, 'rooms', 'create');
   const canUpdate = hasPermission(session?.perms, 'rooms', 'update');
   const canDelete = hasPermission(session?.perms, 'rooms', 'delete');
-  const canSave = isEdit ? canUpdate : canCreate;
+  const canReadRoomTypes = hasPermission(session?.perms, 'room-types', 'read');
+  const canSave = (isEdit ? canUpdate : canCreate) && canReadRoomTypes;
   const [hotels, setHotels] = useState<HotelSummary[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [bulkMode, setBulkMode] = useState(false);
+  const [bulkRoomNumbers, setBulkRoomNumbers] = useState('');
   const [images, setImages] = useState<RoomImage[]>([]);
   const [newImages, setNewImages] = useState<File[]>([]);
   const [form, setForm] = useState({
@@ -42,14 +45,18 @@ export function RoomFormPage() {
 
   useEffect(() => {
     async function load() {
+      if (!canReadRoomTypes) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       try {
-        const [hotelList, roomTypeList] = await Promise.all([api.listHotels(), api.listRoomTypes()]);
+        const hotelList = await api.listHotels();
         setHotels(hotelList ?? []);
-        setRoomTypes(roomTypeList ?? []);
 
         if (roomId) {
           const room = await api.getRoom(roomId);
+          setRoomTypes(await api.listRoomTypes(room.hotelId));
           setForm({
             hotelId: String(room.hotelId),
             roomTypeId: String(room.roomTypeId),
@@ -64,7 +71,6 @@ export function RoomFormPage() {
           setForm((current) => ({
             ...current,
             hotelId: current.hotelId || String(hotelList?.[0]?.id ?? ''),
-            roomTypeId: current.roomTypeId || String(roomTypeList?.[0]?.id ?? ''),
           }));
         }
       } catch (err) {
@@ -75,7 +81,28 @@ export function RoomFormPage() {
     }
 
     void load();
-  }, [roomId, showToast]);
+  }, [canReadRoomTypes, roomId, showToast]);
+
+  useEffect(() => {
+    const hotelId = Number(form.hotelId);
+    if (!canReadRoomTypes || !hotelId || isEdit && loading) return;
+    let active = true;
+    api.listRoomTypes(hotelId)
+      .then((items) => {
+        if (!active) return;
+        setRoomTypes(items ?? []);
+        setForm((current) => ({
+          ...current,
+          roomTypeId: items.some((item) => String(item.id) === current.roomTypeId)
+            ? current.roomTypeId
+            : String(items[0]?.id ?? ''),
+        }));
+      })
+      .catch((err) => showToast(err instanceof Error ? err.message : 'Unable to load room types.', 'error'));
+    return () => {
+      active = false;
+    };
+  }, [canReadRoomTypes, form.hotelId, isEdit, loading, showToast]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -91,6 +118,26 @@ export function RoomFormPage() {
         status: Number(form.status),
         notes: form.notes || undefined,
       };
+
+      if (!isEdit && bulkMode) {
+        const roomNumbers = bulkRoomNumbers
+          .split(/[\n,]+/)
+          .map((value) => value.trim())
+          .filter(Boolean);
+        const bulkPayload: BulkCreateRoomsPayload = {
+          hotelId: payload.hotelId,
+          roomTypeId: payload.roomTypeId,
+          roomNumbers,
+          floor: payload.floor,
+          roomStatus: payload.roomStatus,
+          status: payload.status,
+          notes: payload.notes,
+        };
+        await api.createRooms(bulkPayload);
+        showToast(`${roomNumbers.length} rooms added.`, 'success');
+        navigate('/rooms');
+        return;
+      }
 
       let savedRoomId: number;
       if (isEdit && roomId) {
@@ -150,6 +197,17 @@ export function RoomFormPage() {
     return <FullPageLoader label={isEdit ? 'Loading room...' : 'Preparing room form...'} />;
   }
 
+  if (!canReadRoomTypes) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Access denied</CardTitle>
+          <CardDescription>Room Types read permission is required to create or update rooms.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Button variant="ghost" onClick={() => navigate('/rooms')}>
@@ -160,10 +218,22 @@ export function RoomFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update room' : 'Add room'}</CardTitle>
-          <CardDescription>Room status and record status use backend enum values.</CardDescription>
+          <CardDescription>
+            {isEdit ? 'Update room details and images.' : 'Create one room or add up to 100 rooms in a single request.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+              {!isEdit ? (
+                <div className="flex gap-2 md:col-span-2">
+                  <Button type="button" variant={!bulkMode ? 'gold' : 'outline'} onClick={() => setBulkMode(false)}>
+                    Single room
+                  </Button>
+                  <Button type="button" variant={bulkMode ? 'gold' : 'outline'} onClick={() => setBulkMode(true)}>
+                    Bulk rooms
+                  </Button>
+                </div>
+              ) : null}
               <label className="space-y-2 text-sm font-medium">
                 Hotel
                 <select className={inputClass} required value={form.hotelId} onChange={(event) => setForm((value) => ({ ...value, hotelId: event.target.value }))}>
@@ -178,10 +248,23 @@ export function RoomFormPage() {
                   {roomTypes.map((roomType) => <option key={roomType.id} value={roomType.id}>{roomType.name}</option>)}
                 </select>
               </label>
-              <label className="space-y-2 text-sm font-medium">
-                Room number
-                <input className={inputClass} required value={form.roomNumber} onChange={(event) => setForm((value) => ({ ...value, roomNumber: event.target.value }))} />
-              </label>
+              {bulkMode && !isEdit ? (
+                <label className="space-y-2 text-sm font-medium md:col-span-2">
+                  Room numbers
+                  <textarea
+                    className="min-h-28 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                    required
+                    placeholder={'101, 102, 103\nOr enter one room number per line'}
+                    value={bulkRoomNumbers}
+                    onChange={(event) => setBulkRoomNumbers(event.target.value)}
+                  />
+                </label>
+              ) : (
+                <label className="space-y-2 text-sm font-medium">
+                  Room number
+                  <input className={inputClass} required value={form.roomNumber} onChange={(event) => setForm((value) => ({ ...value, roomNumber: event.target.value }))} />
+                </label>
+              )}
               <label className="space-y-2 text-sm font-medium">
                 Floor
                 <input className={inputClass} type="number" value={form.floor} onChange={(event) => setForm((value) => ({ ...value, floor: event.target.value }))} />
@@ -202,7 +285,7 @@ export function RoomFormPage() {
                 Notes
                 <input className={inputClass} value={form.notes} onChange={(event) => setForm((value) => ({ ...value, notes: event.target.value }))} />
               </label>
-              <div className="space-y-3 md:col-span-2">
+              {!bulkMode || isEdit ? <div className="space-y-3 md:col-span-2">
                 <div>
                   <p className="text-sm font-medium">Room images</p>
                   <p className="text-xs text-muted-foreground">JPEG, PNG, WebP, GIF, or AVIF. Maximum 10 MB each.</p>
@@ -255,11 +338,11 @@ export function RoomFormPage() {
                 {newImages.length > 0 ? (
                   <p className="text-sm text-muted-foreground">{newImages.length} image{newImages.length === 1 ? '' : 's'} ready to upload.</p>
                 ) : null}
-              </div>
+              </div> : null}
               <div className="flex gap-2 md:col-span-2">
                 <Button type="submit" variant="gold" disabled={!canSave || saving}>
                   <Save className="h-4 w-4" />
-                  {saving ? 'Saving...' : 'Save room'}
+                  {saving ? 'Saving...' : bulkMode && !isEdit ? 'Add rooms' : 'Save room'}
                 </Button>
                 <Link to="/rooms" className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold">
                   Cancel

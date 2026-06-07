@@ -121,6 +121,7 @@ export type HotelSummary = {
 export type RoomType = {
   id: number;
   hotelId: number;
+  hotelName?: string;
   name: string;
   description?: string;
   maxAdults?: number;
@@ -205,6 +206,14 @@ export type PermissionPayload = {
   isOnApp: boolean;
 };
 
+export type UpsertModulePayload = {
+  moduleName: string;
+  slug: string;
+  order?: number;
+  isActive?: boolean;
+  onApp?: boolean;
+};
+
 export type UpsertRoomPayload = {
   hotelId: number;
   roomTypeId: number;
@@ -213,4 +222,19 @@ export type UpsertRoomPayload = {
   roomStatus?: number;
   status?: number;
   notes?: string;
+};
+
+export type BulkCreateRoomsPayload = Omit<UpsertRoomPayload, 'roomNumber'> & {
+  roomNumbers: string[];
+};
+
+export type UpsertRoomTypePayload = {
+  hotelId: number;
+  name: string;
+  description?: string;
+  maxAdults?: number;
+  maxChildren?: number;
+  basePrice: number;
+  amenities?: string;
+  status?: number;
 };
