@@ -6,19 +6,24 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/common/loading-state';
+import { Pagination } from '@/components/common/pagination';
 import { Status } from '@/lib/constants';
 
 export function GuestsPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  async function loadUsers() {
+  async function loadUsers(targetPage = page) {
     setLoading(true);
     setError('');
     try {
-      const page = await api.listUsers(0, 24);
-      setUsers(page.content ?? []);
+      const result = await api.listUsers(targetPage, 24);
+      setUsers(result.content ?? []);
+      setPage(result.number ?? targetPage);
+      setTotalPages(result.totalPages ?? 0);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to load guests.');
     } finally {
@@ -38,7 +43,7 @@ export function GuestsPage() {
             <CardTitle>User and guest profiles</CardTitle>
             <CardDescription>Live records from the authenticated users API.</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={loadUsers} disabled={loading}>
+          <Button variant="outline" size="sm" onClick={() => void loadUsers(page)} disabled={loading}>
             <RefreshCw className="h-4 w-4" />
             Refresh
           </Button>
@@ -62,6 +67,14 @@ export function GuestsPage() {
               <p className="mt-3 text-sm text-muted-foreground">{guest.phone || 'No phone saved'}</p>
             </div>
           ))}
+          <div className="md:col-span-2 xl:col-span-4 mt-2">
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              loading={loading}
+              onPageChange={(p) => void loadUsers(p)}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { PageToolbar } from '@/components/common/page-toolbar';
+import { Pagination } from '@/components/common/pagination';
 import { Status } from '@/lib/constants';
 
 export function UsersPage() {
@@ -27,12 +28,16 @@ export function UsersPage() {
   const currentUserId = session?.uid ?? session?.user?.id;
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  async function load() {
+  async function load(targetPage = page) {
     setLoading(true);
     try {
-      const userPage = await api.listUsers(0, 100);
+      const userPage = await api.listUsers(targetPage, 10);
       setUsers(userPage.content ?? []);
+      setPage(userPage.number ?? targetPage);
+      setTotalPages(userPage.totalPages ?? 0);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load users.', 'error');
     } finally {
@@ -126,6 +131,12 @@ export function UsersPage() {
                 </tbody>
               </table>
             ) : null}
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              loading={loading}
+              onPageChange={(p) => void load(p)}
+            />
           </CardContent>
         </Card>
       </section>

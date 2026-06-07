@@ -1,4 +1,18 @@
 import { clearStoredSession, getStoredSession, storeSession } from '@/lib/auth-storage';
+
+export const globalLoaderState = {
+  activeRequests: 0,
+  show() {
+    this.activeRequests++;
+    window.dispatchEvent(new CustomEvent('global-loader', { detail: true }));
+  },
+  hide() {
+    this.activeRequests = Math.max(0, this.activeRequests - 1);
+    if (this.activeRequests === 0) {
+      window.dispatchEvent(new CustomEvent('global-loader', { detail: false }));
+    }
+  }
+};
 import type {
   ApiResponse,
   AuthSession,
@@ -117,19 +131,26 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     headers.set('Authorization', `Bearer ${session.token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+  const isMutation = options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE';
+  if (isMutation) globalLoaderState.show();
 
-  if (response.status === 401 && !options.skipAuth && options.retry !== false) {
-    const token = await refreshAccessToken();
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-      const retryResponse = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
-      return (await parseResponse<T>(retryResponse)).data as T;
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+
+    if (response.status === 401 && !options.skipAuth && options.retry !== false) {
+      const token = await refreshAccessToken();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+        const retryResponse = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+        return (await parseResponse<T>(retryResponse)).data as T;
+      }
+      clearStoredSession();
     }
-    clearStoredSession();
-  }
 
-  return (await parseResponse<T>(response)).data as T;
+    return (await parseResponse<T>(response)).data as T;
+  } finally {
+    if (isMutation) globalLoaderState.hide();
+  }
 }
 
 export const api = {
@@ -148,7 +169,7 @@ export const api = {
     });
   },
   profile() {
-    return apiRequest<AuthSession>('/auth/profile');
+    return apiRequest<UserAccess>('/auth/profile');
   },
   listUsers(page = 0, size = 20) {
     return apiRequest<PageResponse<User>>(`/users?page=${page}&size=${size}&sortBy=createdAt&sortDir=desc`);
@@ -247,22 +268,6 @@ export const api = {
   },
   deleteRooms(roomIds: number[]) {
     return apiRequest<void>('/rooms/bulk', { method: 'DELETE', body: JSON.stringify({ roomIds }) });
-  },
-  uploadRoomImage(roomId: number, file: File, primary = false) {
-    const body = new FormData();
-    body.append('file', file);
-    return apiRequest<RoomImage>(`/rooms/${roomId}/images?primary=${primary}`, { method: 'POST', body });
-  },
-  replaceRoomImage(roomId: number, imageId: number, file: File) {
-    const body = new FormData();
-    body.append('file', file);
-    return apiRequest<RoomImage>(`/rooms/${roomId}/images/${imageId}`, { method: 'PUT', body });
-  },
-  setPrimaryRoomImage(roomId: number, imageId: number) {
-    return apiRequest<RoomImage>(`/rooms/${roomId}/images/${imageId}/primary`, { method: 'PUT' });
-  },
-  deleteRoomImage(roomId: number, imageId: number) {
-    return apiRequest<void>(`/rooms/${roomId}/images/${imageId}`, { method: 'DELETE' });
   },
   listHotels() {
     return apiRequest<HotelSummary[]>('/rooms/hotels');
