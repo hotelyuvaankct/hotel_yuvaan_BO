@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
+import { Status } from '@/lib/constants';
 
 export function DashboardPage() {
   const { session } = useAuth();
@@ -117,7 +118,7 @@ export function DashboardPage() {
                     <p className="text-sm text-muted-foreground">{item.email}</p>
                   </div>
                   <div className="flex items-center gap-3 text-sm">
-                    <Badge variant={item.status === 1 ? 'success' : 'secondary'}>{item.status === 1 ? 'Active' : 'Inactive'}</Badge>
+                    <Badge variant={item.status === Status.ACTIVE ? 'success' : 'secondary'}>{item.status === Status.ACTIVE ? 'Active' : 'Inactive'}</Badge>
                   </div>
                 </div>
               ))}

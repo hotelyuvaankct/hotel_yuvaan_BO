@@ -68,27 +68,41 @@ async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
   return payload ?? { success: true, code: response.status, message: response.statusText };
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
 async function refreshAccessToken(): Promise<string | null> {
-  const session = getStoredSession();
-  if (!session?.refreshToken) return null;
-
-  const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken: session.refreshToken }),
-  });
-
-  if (!response.ok) {
-    clearStoredSession();
-    return null;
+  if (refreshPromise) {
+    return refreshPromise;
   }
 
-  const payload = await parseResponse<AuthSession>(response);
-  if (!payload.data?.token) return null;
+  refreshPromise = (async () => {
+    try {
+      const session = getStoredSession();
+      if (!session?.refreshToken) return null;
 
-  const nextSession = { ...session, ...payload.data };
-  storeSession(nextSession);
-  return nextSession.token;
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: session.refreshToken }),
+      });
+
+      if (!response.ok) {
+        clearStoredSession();
+        return null;
+      }
+
+      const payload = await parseResponse<AuthSession>(response);
+      if (!payload.data?.token) return null;
+
+      const nextSession = { ...session, ...payload.data };
+      storeSession(nextSession);
+      return nextSession.token;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -259,11 +273,21 @@ export const api = {
   getRoomType(id: number) {
     return apiRequest<RoomType>(`/room-types/${id}`);
   },
-  createRoomType(payload: UpsertRoomTypePayload) {
-    return apiRequest<RoomType>('/room-types', { method: 'POST', body: JSON.stringify(payload) });
+  createRoomType(payload: UpsertRoomTypePayload, images?: File[]) {
+    const body = new FormData();
+    body.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    if (images) {
+      images.forEach((img) => body.append('images', img));
+    }
+    return apiRequest<RoomType>('/room-types', { method: 'POST', body });
   },
-  updateRoomType(id: number, payload: UpsertRoomTypePayload) {
-    return apiRequest<RoomType>(`/room-types/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  updateRoomType(id: number, payload: UpsertRoomTypePayload, images?: File[]) {
+    const body = new FormData();
+    body.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    if (images) {
+      images.forEach((img) => body.append('images', img));
+    }
+    return apiRequest<RoomType>(`/room-types/${id}`, { method: 'PUT', body });
   },
   deleteRoomType(id: number) {
     return apiRequest<void>(`/room-types/${id}`, { method: 'DELETE' });

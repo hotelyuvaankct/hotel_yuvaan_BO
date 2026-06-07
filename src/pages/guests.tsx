@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoadingState } from '@/components/common/loading-state';
+import { Status } from '@/lib/constants';
 
 export function GuestsPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -52,8 +53,8 @@ export function GuestsPage() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gold-100 text-gold-800 dark:bg-gold-500/15 dark:text-gold-100">
                   <UserRound className="h-5 w-5" />
                 </div>
-                <Badge variant={guest.status === 1 ? 'success' : 'secondary'}>
-                  {guest.status === 1 ? 'Active' : 'Inactive'}
+                <Badge variant={guest.status === Status.ACTIVE ? 'success' : 'secondary'}>
+                  {guest.status === Status.ACTIVE ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
               <p className="mt-4 text-lg font-semibold">{guest.fullName || 'Unnamed user'}</p>

@@ -130,6 +130,7 @@ export type RoomType = {
   totalRooms?: number;
   amenities?: string;
   status?: number;
+  images?: RoomImage[];
 };
 
 export type Room = {
@@ -237,4 +238,5 @@ export type UpsertRoomTypePayload = {
   basePrice: number;
   amenities?: string;
   status?: number;
+  deletedImageIds?: number[];
 };

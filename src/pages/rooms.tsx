@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
+import { Status } from '@/lib/constants';
 
 const emptyFilters = { hotelId: '', roomNumber: '', roomTypeId: '', roomStatus: '' };
 
@@ -266,7 +267,7 @@ export function RoomsPage() {
                         </Badge>
                       </td>
                       <td className="px-3 py-3">
-                        <Badge variant={room.status === 1 ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, room.status)}</Badge>
+                        <Badge variant={room.status === Status.ACTIVE ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, room.status)}</Badge>
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex justify-end gap-2">
