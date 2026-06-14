@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { Pagination } from '@/components/common/pagination';
+import { SelectField, TextField } from '@/components/ui/form-fields';
 import { Status } from '@/lib/constants';
 
 const emptyFilters = { hotelId: '', roomNumber: '', roomTypeId: '', roomStatus: '' };
@@ -95,13 +96,26 @@ export function RoomsPage() {
 
   useEffect(() => {
     if (!canRead) return;
-    void Promise.all([api.listHotels(), canReadRoomTypes ? api.listRoomTypes() : Promise.resolve([])])
-      .then(([hotelList, roomTypeList]) => {
-        setHotels(hotelList ?? []);
-        setRoomTypes(roomTypeList ?? []);
+    void api.listHotels()
+      .then((hotelList) => setHotels(hotelList ?? []))
+      .catch((err) => showToast(err instanceof Error ? err.message : 'Unable to load hotels.', 'error'));
+  }, [canRead, showToast]);
+
+  useEffect(() => {
+    if (!canReadRoomTypes) return;
+    const hotelId = filters.hotelId ? Number(filters.hotelId) : undefined;
+    void api.listRoomTypes(hotelId)
+      .then((items) => {
+        setRoomTypes(items ?? []);
+        setFilters((current) => {
+          const nextRoomTypeId = items.some((item) => String(item.id) === current.roomTypeId)
+            ? current.roomTypeId
+            : '';
+          return nextRoomTypeId === current.roomTypeId ? current : { ...current, roomTypeId: nextRoomTypeId };
+        });
       })
-      .catch((err) => showToast(err instanceof Error ? err.message : 'Unable to load room filters.', 'error'));
-  }, [canRead, canReadRoomTypes, showToast]);
+      .catch(() => undefined);
+  }, [canReadRoomTypes, filters.hotelId]);
 
   useEffect(() => {
     if (!canRead) return;
@@ -110,23 +124,7 @@ export function RoomsPage() {
       void load(0, filters);
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [canRead, filters]);
-
-  useEffect(() => {
-    if (!canReadRoomTypes) return;
-    const hotelId = Number(filters.hotelId);
-    api.listRoomTypes(hotelId || undefined)
-      .then((items) => {
-        setRoomTypes(items ?? []);
-        setFilters((current) => ({
-          ...current,
-          roomTypeId: items.some((item) => String(item.id) === current.roomTypeId)
-            ? current.roomTypeId
-            : '',
-        }));
-      })
-      .catch(() => undefined);
-  }, [canReadRoomTypes, filters.hotelId]);
+  }, [canRead, filters.hotelId, filters.roomNumber, filters.roomTypeId, filters.roomStatus]);
 
   if (!canRead) {
     return (
@@ -170,38 +168,34 @@ export function RoomsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[220px_1fr_220px_220px_auto]">
-            <select
-              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            <SelectField
+              variant="filter"
               value={filters.hotelId}
+              placeholder="All hotels"
+              options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
               onChange={(event) => setFilters((current) => ({ ...current, hotelId: event.target.value }))}
-            >
-              <option value="">All hotels</option>
-              {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
-            </select>
-            <input
-              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            />
+            <TextField
               placeholder="Search room number"
               value={filters.roomNumber}
               onChange={(event) => setFilters((current) => ({ ...current, roomNumber: event.target.value }))}
             />
             {canReadRoomTypes ? (
-              <select
-                className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+              <SelectField
+                variant="filter"
                 value={filters.roomTypeId}
+                placeholder="All room types"
+                options={roomTypes.map((roomType) => ({ value: roomType.id, label: roomType.name }))}
                 onChange={(event) => setFilters((current) => ({ ...current, roomTypeId: event.target.value }))}
-              >
-                <option value="">All room types</option>
-                {roomTypes.map((roomType) => <option key={roomType.id} value={roomType.id}>{roomType.name}</option>)}
-              </select>
+              />
             ) : <div className="hidden xl:block" />}
-            <select
-              className="h-10 rounded-xl border border-input bg-background px-3 text-sm"
+            <SelectField
+              variant="filter"
               value={filters.roomStatus}
+              placeholder="All room statuses"
+              options={roomStatusOptions.map((option) => ({ value: option.value, label: option.label }))}
               onChange={(event) => setFilters((current) => ({ ...current, roomStatus: event.target.value }))}
-            >
-              <option value="">All room statuses</option>
-              {roomStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+            />
             <Button type="button" variant="outline" onClick={() => setFilters(emptyFilters)}>Clear</Button>
           </div>
 

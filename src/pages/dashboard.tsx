@@ -1,50 +1,80 @@
 import { useEffect, useMemo, useState } from 'react';
-import { KeyRound, ShieldCheck, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { BedDouble, CalendarRange, CircleDollarSign, DoorOpen, LogIn, LogOut } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { Module, Role, User } from '@/lib/api-types';
+import type { DashboardStats } from '@/lib/api-types';
+import { useAuth } from '@/lib/auth';
+import { bookingStatusOptions, optionLabel } from '@/lib/enums';
+import { hasPermission } from '@/lib/permissions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/lib/auth';
-import { hasPermission } from '@/lib/permissions';
-import { Status } from '@/lib/constants';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/common/empty-state';
+import { FullPageLoader } from '@/components/common/loading-state';
+
+function formatCurrency(value?: number) {
+  if (value == null) return '₹0';
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
+}
+
+function formatDate(value?: string) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(value));
+}
 
 export function DashboardPage() {
   const { session } = useAuth();
-  const canReadUsers = hasPermission(session?.perms, 'users', 'read');
-  const canReadRoles = hasPermission(session?.perms, 'roles', 'read');
-  const canReadModules = hasPermission(session?.perms, 'modules', 'read');
-  const [users, setUsers] = useState<User[]>([]);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [modules, setModules] = useState<Module[]>([]);
+  const canReadBookings = hasPermission(session?.perms, 'bookings', 'read');
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadDashboard() {
+      if (!canReadBookings) {
+        setLoading(false);
+        return;
+      }
       try {
-        const [userPage, rolesList, modulesList] = await Promise.all([
-          canReadUsers ? api.listUsers(0, 5) : Promise.resolve({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 5 }),
-          canReadRoles ? api.listRoles() : Promise.resolve([]),
-          canReadModules ? api.listModules() : Promise.resolve([]),
-        ]);
-        setUsers(userPage.content ?? []);
-        setRoles(rolesList ?? []);
-        setModules(modulesList ?? []);
+        setStats(await api.getDashboardStats());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unable to load dashboard data.');
+      } finally {
+        setLoading(false);
       }
     }
 
     void loadDashboard();
-  }, [canReadModules, canReadRoles, canReadUsers]);
+  }, [canReadBookings]);
 
-  const stats = useMemo(
-    () => [
-      ...(canReadUsers ? [{ label: 'Users', value: String(users.length), delta: 'Loaded from /users', icon: Users }] : []),
-      ...(canReadRoles ? [{ label: 'Roles', value: String(roles.length), delta: 'Loaded from /roles', icon: ShieldCheck }] : []),
-      ...(canReadModules ? [{ label: 'Modules', value: String(modules.length), delta: 'Loaded from /modules', icon: KeyRound }] : []),
-    ],
-    [canReadModules, canReadRoles, canReadUsers, modules.length, roles.length, users.length],
+  const cards = useMemo(
+    () => stats ? [
+      { label: 'Total bookings', value: String(stats.totalBookings), icon: CalendarRange },
+      { label: 'Pending', value: String(stats.pendingBookings), icon: CalendarRange },
+      { label: 'Confirmed', value: String(stats.confirmedBookings), icon: CalendarRange },
+      { label: 'Checked in', value: String(stats.checkedInBookings), icon: DoorOpen },
+      { label: 'Today check-ins', value: String(stats.todayCheckIns), icon: LogIn },
+      { label: 'Today check-outs', value: String(stats.todayCheckOuts), icon: LogOut },
+      { label: 'Total rooms', value: String(stats.totalRooms), icon: BedDouble },
+      { label: 'Revenue', value: formatCurrency(stats.totalRevenue), icon: CircleDollarSign },
+    ] : [],
+    [stats],
   );
+
+  if (!canReadBookings) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Dashboard</CardTitle>
+          <CardDescription>Booking read permission is required to view dashboard statistics.</CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+
+  if (loading) {
+    return <FullPageLoader label="Loading dashboard..." />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -53,83 +83,57 @@ export function DashboardPage() {
           {error}
         </div>
       ) : null}
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        {canReadModules ? <Card>
-          <CardHeader>
-            <CardTitle>API summary</CardTitle>
-            <CardDescription>Counts are loaded from authenticated backend APIs.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {stats.length === 0 ? <NoData /> : null}
-            <div className="grid gap-4 sm:grid-cols-3">
-              {stats.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.label} className="rounded-xl border border-border bg-muted/40 p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">{item.label}</p>
-                        <p className="mt-2 text-3xl font-semibold">{item.value}</p>
-                      </div>
-                      <div className="rounded-xl bg-gold-100 p-3 text-gold-700 dark:bg-gold-500/15 dark:text-gold-100">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                    </div>
-                    <p className="mt-3 text-xs text-muted-foreground">{item.delta}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card> : null}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>API modules</CardTitle>
-            <CardDescription>Modules available for role permissions.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {modules.length === 0 ? <NoData /> : null}
-            {modules.map((item) => (
-              <div key={item.id} className="rounded-xl border border-border bg-muted/40 px-4 py-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{item.moduleName}</span>
-                  <span className="text-muted-foreground">{item.slug}</span>
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {cards.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Card key={item.label}>
+              <CardContent className="flex items-center justify-between gap-4 p-5">
+                <div>
+                  <p className="text-sm text-muted-foreground">{item.label}</p>
+                  <p className="mt-2 text-2xl font-semibold">{item.value}</p>
                 </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+                <div className="rounded-xl bg-gold-100 p-3 text-gold-700 dark:bg-gold-500/15 dark:text-gold-100">
+                  <Icon className="h-5 w-5" />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
 
-      {canReadUsers ? <section>
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent users</CardTitle>
-            <CardDescription>Latest records returned by the users API.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {users.length === 0 ? <NoData /> : null}
-              {users.map((item) => (
-                <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-muted/50 px-4 py-3">
-                  <div>
-                    <p className="font-semibold">{item.fullName || 'Unnamed user'}</p>
-                    <p className="text-sm text-muted-foreground">{item.email}</p>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Badge variant={item.status === Status.ACTIVE ? 'success' : 'secondary'}>{item.status === Status.ACTIVE ? 'Active' : 'Inactive'}</Badge>
-                  </div>
-                </div>
-              ))}
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>Recent bookings</CardTitle>
+            <CardDescription>Latest reservations from the booking API.</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => undefined}>
+            <Link to="/bookings">View all bookings</Link>
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {(stats?.recentBookings ?? []).length === 0 ? <EmptyState /> : null}
+          {(stats?.recentBookings ?? []).map((booking) => (
+            <div key={booking.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-muted/50 px-4 py-3">
+              <div>
+                <p className="font-semibold">{booking.bookingCode} · {booking.guestName}</p>
+                <p className="text-sm text-muted-foreground">
+                  {booking.hotelName} · {formatDate(booking.checkIn)} to {formatDate(booking.checkOut)}
+                </p>
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Badge variant="gold">{optionLabel(bookingStatusOptions, booking.bookingStatus)}</Badge>
+                <span className="font-medium">{formatCurrency(booking.totalAmount)}</span>
+                <Link to={`/bookings/${booking.id}`} className="font-semibold text-gold-700 hover:underline dark:text-gold-200">
+                  View
+                </Link>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </section> : null}
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
-}
-
-function NoData() {
-  return <p className="text-sm text-muted-foreground">No data available.</p>;
 }

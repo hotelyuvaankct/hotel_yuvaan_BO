@@ -73,7 +73,7 @@ export function ModuleFormPage() {
       moduleName: form.moduleName.trim(),
       slug: form.slug.trim(),
       order: form.order ? Number(form.order) : undefined,
-      isActive: form.isActive,
+      isActive: isEdit ? form.isActive : true,
       onApp: form.onApp,
     };
     try {
@@ -127,22 +127,29 @@ export function ModuleFormPage() {
               Display order
               <input className={inputClass} min="0" type="number" value={form.order} onChange={(event) => setForm((value) => ({ ...value, order: event.target.value }))} />
             </label>
-            <div className="flex flex-wrap items-center gap-6 pt-7 text-sm font-medium">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 accent-amber-500"
-                  checked={form.isActive}
-                  disabled={systemModule}
-                  onChange={(event) => setForm((value) => ({ ...value, isActive: event.target.checked }))}
-                />
-                Active
-              </label>
-              <label className="flex items-center gap-2">
+            {isEdit ? (
+              <div className="flex flex-wrap items-center gap-6 pt-7 text-sm font-medium">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-amber-500"
+                    checked={form.isActive}
+                    disabled={systemModule}
+                    onChange={(event) => setForm((value) => ({ ...value, isActive: event.target.checked }))}
+                  />
+                  Active
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" className="h-4 w-4 accent-amber-500" checked={form.onApp} onChange={(event) => setForm((value) => ({ ...value, onApp: event.target.checked }))} />
+                  Available on app
+                </label>
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 pt-7 text-sm font-medium">
                 <input type="checkbox" className="h-4 w-4 accent-amber-500" checked={form.onApp} onChange={(event) => setForm((value) => ({ ...value, onApp: event.target.checked }))} />
                 Available on app
               </label>
-            </div>
+            )}
             <div className="flex flex-wrap gap-2 md:col-span-2">
               <Button type="submit" variant="gold" disabled={!canSave || saving}>
                 <Save className="h-4 w-4" />

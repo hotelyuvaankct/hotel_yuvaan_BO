@@ -5,14 +5,13 @@ import { ArrowLeft, Save, X, Image as ImageIcon } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { HotelSummary, UpsertRoomTypePayload, RoomImage } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { recordStatusOptions } from '@/lib/enums';
+import { Status } from '@/lib/constants';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageLoader } from '@/components/common/loading-state';
-
-const inputClass = 'h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring';
+import { SelectField, TextField, inputClass } from '@/components/ui/form-fields';
 
 export function RoomTypeFormPage() {
   const { id } = useParams();
@@ -40,7 +39,6 @@ export function RoomTypeFormPage() {
     maxChildren: '0',
     basePrice: '',
     amenities: '',
-    status: '1',
   });
 
   useEffect(() => {
@@ -62,7 +60,6 @@ export function RoomTypeFormPage() {
             maxChildren: String(roomType.maxChildren ?? 0),
             basePrice: String(roomType.basePrice ?? ''),
             amenities: parseAmenities(roomType.amenities).join(', '),
-            status: String(roomType.status ?? 1),
           });
           if (roomType.images) {
             setExistingImages(roomType.images);
@@ -113,7 +110,7 @@ export function RoomTypeFormPage() {
       maxChildren: Number(form.maxChildren),
       basePrice: Number(form.basePrice),
       amenities: JSON.stringify(amenities),
-      status: Number(form.status),
+      ...(isEdit ? {} : { status: Status.ACTIVE }),
       deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
     };
     try {
@@ -157,44 +154,59 @@ export function RoomTypeFormPage() {
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-            <label className="space-y-2 text-sm font-medium">
-              Hotel
-              <select className={inputClass} required value={form.hotelId} onChange={(event) => setForm((value) => ({ ...value, hotelId: event.target.value }))}>
-                <option value="">Select hotel</option>
-                {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
-              </select>
-            </label>
-            <label className="space-y-2 text-sm font-medium">
-              Name
-              <input className={inputClass} required value={form.name} onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))} />
-            </label>
-            <label className="space-y-2 text-sm font-medium">
-              Maximum adults
-              <input className={inputClass} required min="1" type="number" value={form.maxAdults} onChange={(event) => setForm((value) => ({ ...value, maxAdults: event.target.value }))} />
-            </label>
-            <label className="space-y-2 text-sm font-medium">
-              Maximum children
-              <input className={inputClass} required min="0" type="number" value={form.maxChildren} onChange={(event) => setForm((value) => ({ ...value, maxChildren: event.target.value }))} />
-            </label>
-            <label className="space-y-2 text-sm font-medium">
-              Base price
-              <input className={inputClass} required min="0" step="0.01" type="number" value={form.basePrice} onChange={(event) => setForm((value) => ({ ...value, basePrice: event.target.value }))} />
-            </label>
-            <label className="space-y-2 text-sm font-medium">
-              Status
-              <select className={inputClass} value={form.status} onChange={(event) => setForm((value) => ({ ...value, status: event.target.value }))}>
-                {recordStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-            </label>
-            <label className="space-y-2 text-sm font-medium md:col-span-2">
-              Description
-              <input className={inputClass} value={form.description} onChange={(event) => setForm((value) => ({ ...value, description: event.target.value }))} />
-            </label>
-            <label className="space-y-2 text-sm font-medium md:col-span-2">
-              Amenities
-              <input className={inputClass} placeholder="Wi-Fi, Air conditioning, Television" value={form.amenities} onChange={(event) => setForm((value) => ({ ...value, amenities: event.target.value }))} />
-              <span className="block text-xs font-normal text-muted-foreground">Separate amenities with commas.</span>
-            </label>
+            <SelectField
+              label="Hotel"
+              required
+              value={form.hotelId}
+              placeholder="Select hotel"
+              options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
+              onChange={(event) => setForm((value) => ({ ...value, hotelId: event.target.value }))}
+            />
+            <TextField
+              label="Name"
+              required
+              value={form.name}
+              onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))}
+            />
+            <TextField
+              label="Maximum adults"
+              required
+              min={1}
+              type="number"
+              value={form.maxAdults}
+              onChange={(event) => setForm((value) => ({ ...value, maxAdults: event.target.value }))}
+            />
+            <TextField
+              label="Maximum children"
+              required
+              min={0}
+              type="number"
+              value={form.maxChildren}
+              onChange={(event) => setForm((value) => ({ ...value, maxChildren: event.target.value }))}
+            />
+            <TextField
+              label="Base price"
+              required
+              min={0}
+              step="0.01"
+              type="number"
+              value={form.basePrice}
+              onChange={(event) => setForm((value) => ({ ...value, basePrice: event.target.value }))}
+            />
+            <TextField
+              label="Description"
+              wrapperClassName="md:col-span-2"
+              value={form.description}
+              onChange={(event) => setForm((value) => ({ ...value, description: event.target.value }))}
+            />
+            <TextField
+              label="Amenities"
+              wrapperClassName="md:col-span-2"
+              placeholder="Wi-Fi, Air conditioning, Television"
+              hint="Separate amenities with commas."
+              value={form.amenities}
+              onChange={(event) => setForm((value) => ({ ...value, amenities: event.target.value }))}
+            />
             <div className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium">Images</span>
               <label className="flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 py-6 transition-colors hover:bg-muted">

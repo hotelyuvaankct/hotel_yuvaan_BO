@@ -16,22 +16,33 @@ export const globalLoaderState = {
 import type {
   ApiResponse,
   AuthSession,
+  AssignUserRolesPayload,
+  AvailableRoomType,
+  Booking,
+  BookingQuote,
   BulkCreateRoomsPayload,
+  CancelBookingPayload,
+  CheckoutBookingPayload,
+  CreateBookingPayload,
   CreateRolePayload,
   CreateUserPayload,
-  AssignUserRolesPayload,
+  DashboardStats,
+  ExtraService,
   HotelSummary,
   LoginPayload,
   Module,
   PageResponse,
   Permission,
   PermissionPayload,
+  RatePlan,
   Role,
   Room,
   RoomImage,
   RoomType,
+  RoomUpgrade,
   UpdateRolePayload,
   UpdateUserPayload,
+  UpdateBookingPayload,
   UpsertModulePayload,
   UpsertRoomPayload,
   UpsertRoomTypePayload,
@@ -296,5 +307,93 @@ export const api = {
   },
   deleteRoomType(id: number) {
     return apiRequest<void>(`/room-types/${id}`, { method: 'DELETE' });
+  },
+  listBookings(filters: {
+    page?: number;
+    size?: number;
+    hotelId?: number;
+    bookingStatus?: number;
+    guestName?: string;
+    checkInFrom?: string;
+    checkInTo?: string;
+  } = {}) {
+    const params = new URLSearchParams({
+      page: String(filters.page ?? 0),
+      size: String(filters.size ?? 10),
+    });
+    if (filters.hotelId) params.set('hotelId', String(filters.hotelId));
+    if (filters.bookingStatus) params.set('bookingStatus', String(filters.bookingStatus));
+    if (filters.guestName?.trim()) params.set('guestName', filters.guestName.trim());
+    if (filters.checkInFrom) params.set('checkInFrom', filters.checkInFrom);
+    if (filters.checkInTo) params.set('checkInTo', filters.checkInTo);
+    return apiRequest<PageResponse<Booking>>(`/bookings?${params.toString()}`);
+  },
+  getBooking(id: number) {
+    return apiRequest<Booking>(`/bookings/${id}`);
+  },
+  createBooking(payload: CreateBookingPayload) {
+    return apiRequest<Booking>('/bookings', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateBooking(id: number, payload: UpdateBookingPayload) {
+    return apiRequest<Booking>(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  cancelBooking(id: number, payload: CancelBookingPayload = {}) {
+    return apiRequest<Booking>(`/bookings/${id}/cancel`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  searchAvailability(params: {
+    hotelId: number;
+    checkIn: string;
+    checkOut: string;
+    adults?: number;
+    children?: number;
+    rooms?: number;
+  }) {
+    const query = new URLSearchParams({
+      hotelId: String(params.hotelId),
+      checkIn: params.checkIn,
+      checkOut: params.checkOut,
+      adults: String(params.adults ?? 2),
+      children: String(params.children ?? 0),
+      rooms: String(params.rooms ?? 1),
+    });
+    return apiRequest<AvailableRoomType[]>(`/bookings/availability?${query.toString()}`);
+  },
+  getRatePlans(roomTypeId: number, params: { checkIn: string; checkOut: string; rooms?: number }) {
+    const query = new URLSearchParams({
+      checkIn: params.checkIn,
+      checkOut: params.checkOut,
+      rooms: String(params.rooms ?? 1),
+    });
+    return apiRequest<RatePlan[]>(`/bookings/room-types/${roomTypeId}/rate-plans?${query.toString()}`);
+  },
+  getExtraServices(hotelId: number) {
+    return apiRequest<ExtraService[]>(`/bookings/extra-services?hotelId=${hotelId}`);
+  },
+  getRoomUpgrades(params: {
+    hotelId: number;
+    roomTypeId: number;
+    checkIn: string;
+    checkOut: string;
+    adults?: number;
+    children?: number;
+  }) {
+    const query = new URLSearchParams({
+      hotelId: String(params.hotelId),
+      roomTypeId: String(params.roomTypeId),
+      checkIn: params.checkIn,
+      checkOut: params.checkOut,
+      adults: String(params.adults ?? 2),
+      children: String(params.children ?? 0),
+    });
+    return apiRequest<RoomUpgrade[]>(`/bookings/room-upgrades?${query.toString()}`);
+  },
+  quoteBooking(payload: CheckoutBookingPayload) {
+    return apiRequest<BookingQuote>('/bookings/quote', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  checkoutBooking(payload: CheckoutBookingPayload) {
+    return apiRequest<Booking>('/bookings/checkout', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  getDashboardStats() {
+    return apiRequest<DashboardStats>('/dashboard/stats');
   },
 };

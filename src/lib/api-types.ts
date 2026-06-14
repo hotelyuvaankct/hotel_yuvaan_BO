@@ -240,3 +240,177 @@ export type UpsertRoomTypePayload = {
   status?: number;
   deletedImageIds?: number[];
 };
+
+export type BookingRoomLine = {
+  id?: number;
+  roomTypeId: number;
+  roomTypeName?: string;
+  roomId?: number;
+  roomNumber?: string;
+  quantity?: number;
+  pricePerNight?: number;
+  totalNights?: number;
+  lineTotal?: number;
+};
+
+export type Booking = {
+  id: number;
+  bookingCode: string;
+  hotelId: number;
+  hotelName?: string;
+  userId?: number;
+  source?: number;
+  bookingStatus?: number;
+  checkIn: string;
+  checkOut: string;
+  guestName: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  totalRooms?: number;
+  totalGuests?: number;
+  subtotalAmount?: number;
+  discountAmount?: number;
+  taxAmount?: number;
+  totalAmount?: number;
+  notes?: string;
+  cancellationReason?: string;
+  cancelledAt?: string;
+  status?: number;
+  rooms?: BookingRoomLine[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CreateBookingPayload = {
+  hotelId: number;
+  source?: number;
+  checkIn: string;
+  checkOut: string;
+  guestName: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  totalGuests?: number;
+  notes?: string;
+  rooms: Array<{
+    roomTypeId: number;
+    quantity?: number;
+    pricePerNight?: number;
+  }>;
+};
+
+export type UpdateBookingPayload = {
+  checkIn?: string;
+  checkOut?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  totalGuests?: number;
+  bookingStatus?: number;
+  notes?: string;
+};
+
+export type CancelBookingPayload = {
+  cancellationReason?: string;
+};
+
+export type DashboardStats = {
+  totalBookings: number;
+  pendingBookings: number;
+  confirmedBookings: number;
+  checkedInBookings: number;
+  todayCheckIns: number;
+  todayCheckOuts: number;
+  totalRooms: number;
+  totalRoomTypes: number;
+  totalRevenue: number;
+  recentBookings: Booking[];
+};
+
+export type AvailableRoomType = {
+  roomTypeId: number;
+  name: string;
+  description?: string;
+  maxAdults?: number;
+  maxChildren?: number;
+  maxGuests?: number;
+  availableRooms?: number;
+  totalRooms?: number;
+  basePricePerNight?: number;
+  fromPrice?: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  totalNights?: number;
+  primaryImageUrl?: string;
+  amenities?: string[];
+  badges?: string[];
+};
+
+export type RatePlan = {
+  code: string;
+  label: string;
+  features?: string[];
+  pricePerNight?: number;
+  totalPrice?: number;
+  originalPrice?: number;
+  discountPercent?: number;
+  totalNights?: number;
+};
+
+export type ExtraService = {
+  id: number;
+  name: string;
+  description?: string;
+  price?: number;
+  free?: boolean;
+  forAllGuests?: boolean;
+};
+
+export type RoomUpgrade = {
+  roomTypeId: number;
+  name: string;
+  description?: string;
+  maxGuests?: number;
+  availableRooms?: number;
+  upgradePrice?: number;
+  primaryImageUrl?: string;
+  amenities?: string[];
+  badges?: string[];
+};
+
+export type BookingQuote = {
+  hotelId: number;
+  hotelName?: string;
+  checkIn: string;
+  checkOut: string;
+  totalNights?: number;
+  adults?: number;
+  children?: number;
+  rooms?: number;
+  roomTypeId: number;
+  roomTypeName?: string;
+  ratePlanCode?: string;
+  ratePlanLabel?: string;
+  roomSubtotal?: number;
+  extrasSubtotal?: number;
+  subtotalAmount?: number;
+  taxAmount?: number;
+  totalAmount?: number;
+  selectedExtras?: ExtraService[];
+};
+
+export type CheckoutBookingPayload = {
+  hotelId: number;
+  checkIn: string;
+  checkOut: string;
+  roomTypeId: number;
+  ratePlanCode: string;
+  adults?: number;
+  children?: number;
+  rooms?: number;
+  extraServiceIds?: number[];
+  upgradeRoomTypeId?: number;
+  guestName: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  notes?: string;
+};
