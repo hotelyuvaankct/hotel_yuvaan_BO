@@ -68,16 +68,9 @@ export const navigationItems: NavigationItem[] = [
     moduleSlug: 'modules',
   },
   {
-    label: 'Guests',
-    href: '/guests',
-    description: 'Guest records and loyalty tiers',
-    icon: Users,
-    moduleSlug: 'users',
-  },
-  {
     label: 'Reports',
     href: '/reports',
-    description: 'No backend reports API available',
+    description: 'Booking and revenue reports',
     icon: ChartColumnIncreasing,
     moduleSlug: 'reports',
   },

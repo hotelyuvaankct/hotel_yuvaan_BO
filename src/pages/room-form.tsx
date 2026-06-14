@@ -4,14 +4,14 @@ import { ArrowLeft, ImagePlus, Save, Star, Trash2, Upload } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { BulkCreateRoomsPayload, HotelSummary, RoomType, UpsertRoomPayload } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { recordStatusOptions, roomStatusOptions } from '@/lib/enums';
+import { Status } from '@/lib/constants';
+import { roomStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageLoader } from '@/components/common/loading-state';
-
-const inputClass = 'h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring';
+import { SelectField, TextField, inputClass } from '@/components/ui/form-fields';
 
 export function RoomFormPage() {
   const { id } = useParams();
@@ -37,7 +37,6 @@ export function RoomFormPage() {
     roomNumber: '',
     floor: '',
     roomStatus: '1',
-    status: '1',
     notes: '',
   });
 
@@ -61,7 +60,6 @@ export function RoomFormPage() {
             roomNumber: room.roomNumber,
             floor: room.floor ? String(room.floor) : '',
             roomStatus: String(room.roomStatus ?? 1),
-            status: String(room.status ?? 1),
             notes: room.notes ?? '',
           });
         } else {
@@ -112,7 +110,7 @@ export function RoomFormPage() {
         roomNumber: form.roomNumber,
         floor: form.floor ? Number(form.floor) : undefined,
         roomStatus: Number(form.roomStatus),
-        status: Number(form.status),
+        ...(isEdit ? {} : { status: Status.ACTIVE }),
         notes: form.notes || undefined,
       };
 
@@ -127,7 +125,7 @@ export function RoomFormPage() {
           roomNumbers,
           floor: payload.floor,
           roomStatus: payload.roomStatus,
-          status: payload.status,
+          status: Status.ACTIVE,
           notes: payload.notes,
         };
         await api.createRooms(bulkPayload);
@@ -192,20 +190,22 @@ export function RoomFormPage() {
                   </Button>
                 </div>
               ) : null}
-              <label className="space-y-2 text-sm font-medium">
-                Hotel
-                <select className={inputClass} required value={form.hotelId} onChange={(event) => setForm((value) => ({ ...value, hotelId: event.target.value }))}>
-                  <option value="">Select hotel</option>
-                  {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
-                </select>
-              </label>
-              <label className="space-y-2 text-sm font-medium">
-                Room type
-                <select className={inputClass} required value={form.roomTypeId} onChange={(event) => setForm((value) => ({ ...value, roomTypeId: event.target.value }))}>
-                  <option value="">Select room type</option>
-                  {roomTypes.map((roomType) => <option key={roomType.id} value={roomType.id}>{roomType.name}</option>)}
-                </select>
-              </label>
+              <SelectField
+                label="Hotel"
+                required
+                value={form.hotelId}
+                placeholder="Select hotel"
+                options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
+                onChange={(event) => setForm((value) => ({ ...value, hotelId: event.target.value }))}
+              />
+              <SelectField
+                label="Room type"
+                required
+                value={form.roomTypeId}
+                placeholder="Select room type"
+                options={roomTypes.map((roomType) => ({ value: roomType.id, label: roomType.name }))}
+                onChange={(event) => setForm((value) => ({ ...value, roomTypeId: event.target.value }))}
+              />
               {bulkMode && !isEdit ? (
                 <div className="space-y-4 md:col-span-2">
                   
@@ -256,20 +256,25 @@ export function RoomFormPage() {
                   <input className={inputClass} required value={form.roomNumber} onChange={(event) => setForm((value) => ({ ...value, roomNumber: event.target.value }))} />
                 </label>
               )}
-              <label className="space-y-2 text-sm font-medium">
-                Floor
-                <input className={inputClass} type="number" value={form.floor} onChange={(event) => setForm((value) => ({ ...value, floor: event.target.value }))} />
-              </label>
-              <label className="space-y-2 text-sm font-medium">
-                Room status
-                <select className={inputClass} value={form.roomStatus} onChange={(event) => setForm((value) => ({ ...value, roomStatus: event.target.value }))}>
-                  {roomStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
-              <label className="space-y-2 text-sm font-medium md:col-span-2">
-                Notes
-                <input className={inputClass} value={form.notes} onChange={(event) => setForm((value) => ({ ...value, notes: event.target.value }))} />
-              </label>
+              <TextField
+                label="Floor"
+                type="number"
+                value={form.floor}
+                onChange={(event) => setForm((value) => ({ ...value, floor: event.target.value }))}
+              />
+              <SelectField
+                label="Room status"
+                value={form.roomStatus}
+                placeholder=""
+                options={roomStatusOptions.map((option) => ({ value: option.value, label: option.label }))}
+                onChange={(event) => setForm((value) => ({ ...value, roomStatus: event.target.value }))}
+              />
+              <TextField
+                label="Notes"
+                wrapperClassName="md:col-span-2"
+                value={form.notes}
+                onChange={(event) => setForm((value) => ({ ...value, notes: event.target.value }))}
+              />
               <div className="flex gap-2 md:col-span-2">
                 <Button type="submit" variant="gold" disabled={!canSave || saving}>
                   <Save className="h-4 w-4" />

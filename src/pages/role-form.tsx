@@ -1,10 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Save } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { Module, Permission } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { recordStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
@@ -39,14 +38,13 @@ export function RoleFormPage() {
   const canCreate = hasPermission(session?.perms, 'roles', 'create');
   const canUpdate = hasPermission(session?.perms, 'roles', 'update');
   const canReadModules = hasPermission(session?.perms, 'modules', 'read');
-  const canCreateModules = hasPermission(session?.perms, 'modules', 'create');
   const canSave = isEdit ? canUpdate : canCreate;
   const [modules, setModules] = useState<Module[]>([]);
   const [permissions, setPermissions] = useState<Record<number, PermissionDraft>>({});
   const [existingPermissions, setExistingPermissions] = useState<Map<number, Permission>>(new Map());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', displayName: '', description: '', status: '1' });
+  const [form, setForm] = useState({ name: '', displayName: '', description: '' });
   const normalizedRoleName = useMemo(() => form.name.trim().toUpperCase().replace(/\s+/g, '_'), [form.name]);
 
   useEffect(() => {
@@ -65,7 +63,6 @@ export function RoleFormPage() {
             name: role.name,
             displayName: role.displayName,
             description: role.description ?? '',
-            status: String(role.status ?? 1),
           });
           setExistingPermissions(new Map(permissionList.map((permission) => [permission.moduleId, permission])));
           setPermissions(
@@ -103,7 +100,6 @@ export function RoleFormPage() {
         await api.updateRole(roleId, {
           displayName: form.displayName,
           description: form.description || undefined,
-          status: Number(form.status),
         });
       } else {
         const role = await api.createRole({
@@ -185,29 +181,15 @@ export function RoleFormPage() {
                   Display name
                   <input className={inputClass} required value={form.displayName} onChange={(event) => setForm((value) => ({ ...value, displayName: event.target.value }))} />
                 </label>
-                <label className="space-y-2 text-sm font-medium">
+                <label className="space-y-2 text-sm font-medium md:col-span-2">
                   Description
                   <input className={inputClass} value={form.description} onChange={(event) => setForm((value) => ({ ...value, description: event.target.value }))} />
                 </label>
-                <label className="space-y-2 text-sm font-medium">
-                  Status
-                  <select className={inputClass} value={form.status} onChange={(event) => setForm((value) => ({ ...value, status: event.target.value }))}>
-                    {recordStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                  </select>
-                </label>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="font-medium">Module permissions</p>
-                  <p className="text-sm text-muted-foreground">New active modules appear here automatically.</p>
-                </div>
-                <Button type="button" variant="outline" size="sm" disabled={!canCreateModules} onClick={() => undefined}>
-                  <Link to="/modules/new" className="inline-flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add module
-                  </Link>
-                </Button>
+              <div>
+                <p className="font-medium">Module permissions</p>
+                <p className="text-sm text-muted-foreground">Assign read, create, update, and delete access for each module.</p>
               </div>
 
               <div className="overflow-x-auto">

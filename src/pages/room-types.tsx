@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
+import { SelectField } from '@/components/ui/form-fields';
 import { Status } from '@/lib/constants';
 
 export function RoomTypesPage() {
@@ -101,14 +102,14 @@ export function RoomTypesPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <select
-            className="h-10 w-full max-w-sm rounded-xl border border-input bg-background px-3 text-sm"
+          <SelectField
+            variant="filter"
+            wrapperClassName="max-w-sm"
             value={hotelId}
+            placeholder="All hotels"
+            options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
             onChange={(event) => setHotelId(event.target.value)}
-          >
-            <option value="">All hotels</option>
-            {hotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name}</option>)}
-          </select>
+          />
 
           <div className="overflow-x-auto">
             {loading ? <LoadingState /> : null}

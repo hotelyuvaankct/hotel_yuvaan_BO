@@ -4,15 +4,15 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { Role } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { genderOptions, recordStatusOptions } from '@/lib/enums';
+import { SYSTEM_ROLE_NAMES, Status } from '@/lib/constants';
+import { genderOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { Status } from '@/lib/constants';
-
-const inputClass = 'h-10 w-full rounded-xl border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring';
+import { SelectField, TextField } from '@/components/ui/form-fields';
+import { isValidEmail, isValidPhone } from '@/lib/form-validation';
 
 export function UserFormPage() {
   const { id } = useParams();
@@ -25,16 +25,17 @@ export function UserFormPage() {
   const canUpdate = hasPermission(session?.perms, 'users', 'update');
   const canSave = isEdit ? canUpdate : canCreate;
   const [roles, setRoles] = useState<Role[]>([]);
-  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState('');
+  const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
     fullName: '',
     email: '',
     password: '',
     phone: '',
     gender: '',
-    status: '1',
   });
 
   const activeRoles = useMemo(() => roles.filter((role) => role.status !== Status.DELETED), [roles]);
@@ -47,14 +48,17 @@ export function UserFormPage() {
         setRoles(roleList ?? []);
         if (userId) {
           const access = await api.getUserAccess(userId);
-          setSelectedRoleIds(access.roles.map((role) => role.roleId));
+          const superAdmin = access.roles.some(
+            (role) => role.roleName.toUpperCase() === SYSTEM_ROLE_NAMES.SUPER_ADMIN,
+          );
+          setIsSuperAdminUser(superAdmin);
+          setSelectedRoleId(access.roles[0] ? String(access.roles[0].roleId) : '');
           setForm({
             fullName: access.user.fullName ?? '',
             email: access.user.email ?? '',
             password: '',
             phone: access.user.phone ?? '',
             gender: access.user.gender ? String(access.user.gender) : '',
-            status: String(access.user.status ?? 1),
           });
         }
       } catch (err) {
@@ -70,13 +74,27 @@ export function UserFormPage() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSave) return;
+
+    const nextErrors: Record<string, string> = {};
+    if (!form.fullName.trim()) nextErrors.fullName = 'Full name is required.';
+    if (!isEdit && !form.email.trim()) nextErrors.email = 'Email is required.';
+    if (!isEdit && form.email.trim() && !isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
+    if (!isEdit && form.password.length < 6) nextErrors.password = 'Password must be at least 6 characters.';
+    if (form.phone.trim() && !isValidPhone(form.phone)) nextErrors.phone = 'Enter a valid phone number.';
+    if (!isEdit && !selectedRoleId) nextErrors.role = 'Select a role for the user.';
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      showToast('Please fix the highlighted fields.', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
         fullName: form.fullName,
         phone: form.phone || undefined,
         gender: form.gender ? Number(form.gender) : undefined,
-        status: Number(form.status),
       };
 
       let savedUserId = userId;
@@ -91,8 +109,10 @@ export function UserFormPage() {
         savedUserId = user.id;
       }
 
-      if (savedUserId) {
-        await api.assignUserRoles(savedUserId, { roleIds: selectedRoleIds });
+      if (savedUserId && !isSuperAdminUser) {
+        await api.assignUserRoles(savedUserId, {
+          roleIds: selectedRoleId ? [Number(selectedRoleId)] : [],
+        });
       }
       showToast(isEdit ? 'User updated.' : 'User created.', 'success');
       navigate('/users');
@@ -117,62 +137,63 @@ export function UserFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update user' : 'Add user'}</CardTitle>
-          <CardDescription>Role and gender values are selected from backend-compatible enums.</CardDescription>
+          <CardDescription>Each user is assigned exactly one role. Super admin roles cannot be changed.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-              <label className="space-y-2 text-sm font-medium">
-                Full name
-                <input className={inputClass} required value={form.fullName} onChange={(event) => setForm((value) => ({ ...value, fullName: event.target.value }))} />
-              </label>
-              <label className="space-y-2 text-sm font-medium">
-                Email
-                <input className={inputClass} type="email" required disabled={isEdit} value={form.email} onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))} />
-              </label>
+          <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit} noValidate>
+              <TextField
+                label="Full name"
+                required
+                value={form.fullName}
+                error={errors.fullName}
+                onChange={(event) => setForm((value) => ({ ...value, fullName: event.target.value }))}
+              />
+              <TextField
+                label="Email"
+                type="email"
+                required
+                disabled={isEdit}
+                value={form.email}
+                error={errors.email}
+                onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))}
+              />
               {!isEdit ? (
-                <label className="space-y-2 text-sm font-medium">
-                  Password
-                  <input className={inputClass} type="password" minLength={6} required value={form.password} onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))} />
-                </label>
+                <TextField
+                  label="Password"
+                  type="password"
+                  minLength={6}
+                  required
+                  value={form.password}
+                  error={errors.password}
+                  onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))}
+                />
               ) : null}
-              <label className="space-y-2 text-sm font-medium">
-                Phone
-                <input className={inputClass} value={form.phone} onChange={(event) => setForm((value) => ({ ...value, phone: event.target.value }))} />
-              </label>
-              <label className="space-y-2 text-sm font-medium">
-                Gender
-                <select className={inputClass} value={form.gender} onChange={(event) => setForm((value) => ({ ...value, gender: event.target.value }))}>
-                  <option value="">Select gender</option>
-                  {genderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
-              <label className="space-y-2 text-sm font-medium">
-                Status
-                <select className={inputClass} value={form.status} onChange={(event) => setForm((value) => ({ ...value, status: event.target.value }))}>
-                  {recordStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-                </select>
-              </label>
-              <div className="space-y-2 md:col-span-2">
-                <p className="text-sm font-medium">Roles</p>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {activeRoles.length === 0 ? <p className="text-sm text-muted-foreground">No data available.</p> : null}
-                  {activeRoles.map((role) => (
-                    <label key={role.id} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm">
-                      <span>{role.displayName}</span>
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-amber-500"
-                        checked={selectedRoleIds.includes(role.id)}
-                        onChange={(event) =>
-                          setSelectedRoleIds((current) =>
-                            event.target.checked ? [...current, role.id] : current.filter((roleId) => roleId !== role.id),
-                          )
-                        }
-                      />
-                    </label>
-                  ))}
-                </div>
-              </div>
+              <TextField
+                label="Phone"
+                type="tel"
+                value={form.phone}
+                error={errors.phone}
+                onChange={(event) => setForm((value) => ({ ...value, phone: event.target.value }))}
+              />
+              <SelectField
+                label="Gender"
+                value={form.gender}
+                placeholder="Select gender"
+                options={genderOptions.map((option) => ({ value: option.value, label: option.label }))}
+                onChange={(event) => setForm((value) => ({ ...value, gender: event.target.value }))}
+              />
+              <SelectField
+                label="Role"
+                required={!isEdit}
+                disabled={isSuperAdminUser}
+                wrapperClassName="md:col-span-2"
+                value={selectedRoleId}
+                error={errors.role}
+                hint={isSuperAdminUser ? 'Super admin role is locked and cannot be changed.' : undefined}
+                placeholder="Select role"
+                options={activeRoles.map((role) => ({ value: role.id, label: role.displayName }))}
+                onChange={(event) => setSelectedRoleId(event.target.value)}
+              />
               <div className="flex gap-2 md:col-span-2">
                 <Button type="submit" variant="gold" disabled={!canSave || saving}>
                   <Save className="h-4 w-4" />

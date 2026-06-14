@@ -19,6 +19,11 @@ export enum Status {
     UPDATE = 15
 }
 
+export const SYSTEM_ROLE_NAMES = {
+    SUPER_ADMIN: 'SUPER_ADMIN',
+    ADMIN: 'ADMIN',
+} as const;
+
 export enum RoomStatus {
     AVAILABLE = 1,
     OCCUPIED = 2,
