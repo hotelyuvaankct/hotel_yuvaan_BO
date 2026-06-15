@@ -40,6 +40,9 @@ import type {
   RoomImage,
   RoomType,
   RoomUpgrade,
+  SendTestEmailPayload,
+  EmailTestSendResult,
+  EmailTestTemplateSample,
   UpdateRolePayload,
   UpdateUserPayload,
   UpdateBookingPayload,
@@ -395,5 +398,14 @@ export const api = {
   },
   getDashboardStats() {
     return apiRequest<DashboardStats>('/dashboard/stats');
+  },
+  getEmailTestSamples() {
+    return apiRequest<EmailTestTemplateSample[]>('/emails/test/samples');
+  },
+  sendTestEmail(payload: SendTestEmailPayload) {
+    return apiRequest<EmailTestSendResult>('/emails/test/send', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 };

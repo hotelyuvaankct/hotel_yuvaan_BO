@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   ChartColumnIncreasing,
   Settings,
+  Mail,
 } from 'lucide-react';
 
 export type NavigationItem = {
@@ -79,5 +80,11 @@ export const navigationItems: NavigationItem[] = [
     href: '/settings',
     description: 'Branding, users, and preferences',
     icon: Settings,
+  },
+  {
+    label: 'Email Test',
+    href: '/email-test',
+    description: 'Send test Brevo transactional emails',
+    icon: Mail,
   },
 ];
