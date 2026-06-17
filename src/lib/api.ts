@@ -43,19 +43,22 @@ import type {
   SendTestEmailPayload,
   EmailTestSendResult,
   EmailTestTemplateSample,
+  GalleryImage,
   UpdateRolePayload,
   UpdateUserPayload,
   UpdateBookingPayload,
   UpsertModulePayload,
+  UpsertGalleryImagePayload,
+  UploadGalleryImagesPayload,
   UpsertRoomPayload,
   UpsertRoomTypePayload,
   UserAccess,
   User,
 } from '@/lib/api-types';
 
-import { API_BASE_URL as CONSTANT_API_BASE_URL } from '@/lib/constants';
+import { getApiBaseUrl } from '@/config/env';
 
-const API_BASE_URL = CONSTANT_API_BASE_URL.replace(/\/$/, '');
+const API_BASE_URL = getApiBaseUrl();
 
 export class ApiError extends Error {
   status: number;
@@ -406,6 +409,41 @@ export const api = {
     return apiRequest<EmailTestSendResult>('/emails/test/send', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+  listGalleryImages(filters: {
+    page?: number;
+    size?: number;
+    category?: string;
+    type?: string;
+  } = {}) {
+    const params = new URLSearchParams({
+      page: String(filters.page ?? 0),
+      size: String(filters.size ?? 12),
+    });
+    if (filters.category?.trim()) params.set('category', filters.category.trim());
+    else if (filters.type?.trim()) params.set('type', filters.type.trim());
+    return apiRequest<PageResponse<GalleryImage>>(`/gallery?${params.toString()}`);
+  },
+  getGalleryImage(id: number) {
+    return apiRequest<GalleryImage>(`/gallery/${id}`);
+  },
+  uploadGalleryImages(payload: UploadGalleryImagesPayload, files: File[]) {
+    const body = new FormData();
+    body.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    files.forEach((file) => body.append('files', file));
+    return apiRequest<GalleryImage[]>('/gallery', { method: 'POST', body });
+  },
+  updateGalleryImage(id: number, payload: UpsertGalleryImagePayload) {
+    return apiRequest<GalleryImage>(`/gallery/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deleteGalleryImage(id: number) {
+    return apiRequest<void>(`/gallery/${id}`, { method: 'DELETE' });
+  },
+  reorderGalleryImages(orderedIds: number[]) {
+    return apiRequest<GalleryImage[]>('/gallery/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ orderedIds }),
     });
   },
 };

@@ -9,6 +9,7 @@ import {
   ChartColumnIncreasing,
   Settings,
   Mail,
+  Images,
 } from 'lucide-react';
 
 export type NavigationItem = {
@@ -46,6 +47,13 @@ export const navigationItems: NavigationItem[] = [
     description: 'Room categories, occupancy, and pricing',
     icon: Tags,
     moduleSlug: 'room-types',
+  },
+  {
+    label: 'Gallery',
+    href: '/gallery',
+    description: 'Website gallery photos for the public site',
+    icon: Images,
+    moduleSlug: 'gallery',
   },
   {
     label: 'Users',

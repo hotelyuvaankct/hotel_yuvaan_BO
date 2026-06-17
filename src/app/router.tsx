@@ -12,6 +12,8 @@ import { RoomViewPage } from '@/pages/room-view';
 import { RoomTypesPage } from '@/pages/room-types';
 import { RoomTypeFormPage } from '@/pages/room-type-form';
 import { RoomTypeViewPage } from '@/pages/room-type-view';
+import { GalleryPage } from '@/pages/gallery';
+import { GalleryFormPage } from '@/pages/gallery-form';
 import { UsersPage } from '@/pages/users';
 import { UserFormPage } from '@/pages/user-form';
 import { UserViewPage } from '@/pages/user-view';
@@ -50,6 +52,9 @@ export const router = createBrowserRouter([
           { path: 'room-types/new', element: <RoomTypeFormPage /> },
           { path: 'room-types/:id', element: <RoomTypeViewPage /> },
           { path: 'room-types/:id/edit', element: <RoomTypeFormPage /> },
+          { path: 'gallery', element: <GalleryPage /> },
+          { path: 'gallery/new', element: <GalleryFormPage /> },
+          { path: 'gallery/:id/edit', element: <GalleryFormPage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'users/new', element: <UserFormPage /> },
           { path: 'users/:id', element: <UserViewPage /> },

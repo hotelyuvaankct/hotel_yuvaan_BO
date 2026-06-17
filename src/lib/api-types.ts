@@ -444,3 +444,30 @@ export type EmailTestSendResult = {
   brevoTemplateId: number;
   message: string;
 };
+
+export type GalleryImage = {
+  id: number;
+  title: string;
+  category: string;
+  publicUrl: string;
+  displayOrder: number;
+  status?: number;
+};
+
+export type UpsertGalleryImagePayload = {
+  title: string;
+  category: string;
+  displayOrder?: number;
+  status?: number;
+};
+
+export type UploadGalleryImagesPayload = {
+  title?: string;
+  category: string;
+  displayOrder?: number;
+  status?: number;
+};
+
+export type ReorderGalleryImagesPayload = {
+  orderedIds: number[];
+};
