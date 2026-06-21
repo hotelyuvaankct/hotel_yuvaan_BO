@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarPlus, Eye, Plus, RefreshCw } from 'lucide-react';
+import { CalendarPlus, Eye, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Booking, HotelSummary } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -38,7 +38,6 @@ function formatDate(value?: string) {
 export function BookingsPage() {
   const { session } = useAuth();
   const { showToast } = useToast();
-  const canCreate = hasPermission(session?.perms, 'bookings', 'create');
   const canRead = hasPermission(session?.perms, 'bookings', 'read');
   const canUpdate = hasPermission(session?.perms, 'bookings', 'update');
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -105,18 +104,10 @@ export function BookingsPage() {
             <CardTitle>Bookings</CardTitle>
             <CardDescription>{totalElements} booking{totalElements === 1 ? '' : 's'} found.</CardDescription>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => void load()}>
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </Button>
-            <Button variant="gold" size="sm" disabled={!canCreate} onClick={() => undefined}>
-              <Link to="/bookings/new" className="inline-flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                New booking
-              </Link>
-            </Button>
-          </div>
+          <Button variant="outline" size="sm" onClick={() => void load()}>
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[220px_220px_1fr_auto]">

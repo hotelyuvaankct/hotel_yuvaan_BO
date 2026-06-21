@@ -4,7 +4,6 @@ import { AdminLayout } from '@/components/layout/admin-layout';
 import { DashboardPage } from '@/pages/dashboard';
 import { BookingsPage } from '@/pages/bookings';
 import { BookingFormPage } from '@/pages/booking-form';
-import { BookingWizardPage } from '@/pages/booking-wizard';
 import { BookingViewPage } from '@/pages/booking-view';
 import { RoomsPage } from '@/pages/rooms';
 import { RoomFormPage } from '@/pages/room-form';
@@ -39,8 +38,6 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: 'dashboard', element: <DashboardPage /> },
           { path: 'bookings', element: <BookingsPage /> },
-          { path: 'bookings/new', element: <BookingWizardPage /> },
-          { path: 'bookings/new/simple', element: <BookingFormPage /> },
           { path: 'bookings/:id', element: <BookingViewPage /> },
           { path: 'bookings/:id/edit', element: <BookingFormPage /> },
           { path: 'rooms', element: <RoomsPage /> },
