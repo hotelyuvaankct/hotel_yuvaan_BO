@@ -4,7 +4,6 @@ import { AdminLayout } from '@/components/layout/admin-layout';
 import { DashboardPage } from '@/pages/dashboard';
 import { BookingsPage } from '@/pages/bookings';
 import { BookingFormPage } from '@/pages/booking-form';
-import { BookingWizardPage } from '@/pages/booking-wizard';
 import { BookingViewPage } from '@/pages/booking-view';
 import { RoomsPage } from '@/pages/rooms';
 import { RoomFormPage } from '@/pages/room-form';
@@ -12,6 +11,8 @@ import { RoomViewPage } from '@/pages/room-view';
 import { RoomTypesPage } from '@/pages/room-types';
 import { RoomTypeFormPage } from '@/pages/room-type-form';
 import { RoomTypeViewPage } from '@/pages/room-type-view';
+import { GalleryPage } from '@/pages/gallery';
+import { GalleryFormPage } from '@/pages/gallery-form';
 import { UsersPage } from '@/pages/users';
 import { UserFormPage } from '@/pages/user-form';
 import { UserViewPage } from '@/pages/user-view';
@@ -22,7 +23,6 @@ import { ModulesPage } from '@/pages/modules';
 import { ModuleFormPage } from '@/pages/module-form';
 import { ReportsPage } from '@/pages/reports';
 import { SettingsPage } from '@/pages/settings';
-import { EmailTestPage } from '@/pages/email-test';
 import { LoginPage } from '@/pages/login';
 import { NotFoundPage } from '@/pages/not-found';
 
@@ -38,8 +38,6 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/dashboard" replace /> },
           { path: 'dashboard', element: <DashboardPage /> },
           { path: 'bookings', element: <BookingsPage /> },
-          { path: 'bookings/new', element: <BookingWizardPage /> },
-          { path: 'bookings/new/simple', element: <BookingFormPage /> },
           { path: 'bookings/:id', element: <BookingViewPage /> },
           { path: 'bookings/:id/edit', element: <BookingFormPage /> },
           { path: 'rooms', element: <RoomsPage /> },
@@ -50,6 +48,9 @@ export const router = createBrowserRouter([
           { path: 'room-types/new', element: <RoomTypeFormPage /> },
           { path: 'room-types/:id', element: <RoomTypeViewPage /> },
           { path: 'room-types/:id/edit', element: <RoomTypeFormPage /> },
+          { path: 'gallery', element: <GalleryPage /> },
+          { path: 'gallery/new', element: <GalleryFormPage /> },
+          { path: 'gallery/:id/edit', element: <GalleryFormPage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'users/new', element: <UserFormPage /> },
           { path: 'users/:id', element: <UserViewPage /> },
@@ -63,7 +64,6 @@ export const router = createBrowserRouter([
           { path: 'modules/:id/edit', element: <ModuleFormPage /> },
           { path: 'reports', element: <ReportsPage /> },
           { path: 'settings', element: <SettingsPage /> },
-          { path: 'email-test', element: <EmailTestPage /> },
         ],
       },
     ],

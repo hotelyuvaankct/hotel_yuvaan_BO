@@ -8,7 +8,7 @@ import {
   ShieldCheck,
   ChartColumnIncreasing,
   Settings,
-  Mail,
+  Images,
 } from 'lucide-react';
 
 export type NavigationItem = {
@@ -48,6 +48,13 @@ export const navigationItems: NavigationItem[] = [
     moduleSlug: 'room-types',
   },
   {
+    label: 'Gallery',
+    href: '/gallery',
+    description: 'Website gallery photos for the public site',
+    icon: Images,
+    moduleSlug: 'gallery',
+  },
+  {
     label: 'Users',
     href: '/users',
     description: 'Accounts, assigned roles, and permissions',
@@ -80,11 +87,5 @@ export const navigationItems: NavigationItem[] = [
     href: '/settings',
     description: 'Branding, users, and preferences',
     icon: Settings,
-  },
-  {
-    label: 'Email Test',
-    href: '/email-test',
-    description: 'Send test Brevo transactional emails',
-    icon: Mail,
   },
 ];

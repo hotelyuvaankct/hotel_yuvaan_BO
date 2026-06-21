@@ -17,45 +17,38 @@ import type {
   ApiResponse,
   AuthSession,
   AssignUserRolesPayload,
-  AvailableRoomType,
   Booking,
-  BookingQuote,
   BulkCreateRoomsPayload,
   CancelBookingPayload,
-  CheckoutBookingPayload,
-  CreateBookingPayload,
   CreateRolePayload,
   CreateUserPayload,
   DashboardStats,
-  ExtraService,
   HotelSummary,
   LoginPayload,
   Module,
   PageResponse,
   Permission,
   PermissionPayload,
-  RatePlan,
   Role,
   Room,
   RoomImage,
   RoomType,
-  RoomUpgrade,
-  SendTestEmailPayload,
-  EmailTestSendResult,
-  EmailTestTemplateSample,
+  GalleryImage,
   UpdateRolePayload,
   UpdateUserPayload,
   UpdateBookingPayload,
   UpsertModulePayload,
+  UpsertGalleryImagePayload,
+  UploadGalleryImagesPayload,
   UpsertRoomPayload,
   UpsertRoomTypePayload,
   UserAccess,
   User,
 } from '@/lib/api-types';
 
-import { API_BASE_URL as CONSTANT_API_BASE_URL } from '@/lib/constants';
+import { getApiBaseUrl } from '@/config/env';
 
-const API_BASE_URL = CONSTANT_API_BASE_URL.replace(/\/$/, '');
+const API_BASE_URL = getApiBaseUrl();
 
 export class ApiError extends Error {
   status: number;
@@ -188,9 +181,6 @@ export const api = {
   listUsers(page = 0, size = 20) {
     return apiRequest<PageResponse<User>>(`/users?page=${page}&size=${size}&sortBy=createdAt&sortDir=desc`);
   },
-  getUser(id: number) {
-    return apiRequest<User>(`/users/${id}`);
-  },
   createUser(payload: CreateUserPayload) {
     return apiRequest<User>('/users', { method: 'POST', body: JSON.stringify(payload) });
   },
@@ -243,9 +233,6 @@ export const api = {
     const method = existing ? 'PUT' : 'POST';
     const path = existing ? `/roles/${roleId}/permissions/${payload.moduleId}` : `/roles/${roleId}/permissions`;
     return apiRequest<Permission>(path, { method, body: JSON.stringify(payload) });
-  },
-  deletePermission(roleId: number, moduleId: number) {
-    return apiRequest<void>(`/roles/${roleId}/permissions/${moduleId}`, { method: 'DELETE' });
   },
   listRooms(filters: {
     page?: number;
@@ -334,78 +321,48 @@ export const api = {
   getBooking(id: number) {
     return apiRequest<Booking>(`/bookings/${id}`);
   },
-  createBooking(payload: CreateBookingPayload) {
-    return apiRequest<Booking>('/bookings', { method: 'POST', body: JSON.stringify(payload) });
-  },
   updateBooking(id: number, payload: UpdateBookingPayload) {
     return apiRequest<Booking>(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
   },
   cancelBooking(id: number, payload: CancelBookingPayload = {}) {
     return apiRequest<Booking>(`/bookings/${id}/cancel`, { method: 'POST', body: JSON.stringify(payload) });
   },
-  searchAvailability(params: {
-    hotelId: number;
-    checkIn: string;
-    checkOut: string;
-    adults?: number;
-    children?: number;
-    rooms?: number;
-  }) {
-    const query = new URLSearchParams({
-      hotelId: String(params.hotelId),
-      checkIn: params.checkIn,
-      checkOut: params.checkOut,
-      adults: String(params.adults ?? 2),
-      children: String(params.children ?? 0),
-      rooms: String(params.rooms ?? 1),
-    });
-    return apiRequest<AvailableRoomType[]>(`/bookings/availability?${query.toString()}`);
-  },
-  getRatePlans(roomTypeId: number, params: { checkIn: string; checkOut: string; rooms?: number }) {
-    const query = new URLSearchParams({
-      checkIn: params.checkIn,
-      checkOut: params.checkOut,
-      rooms: String(params.rooms ?? 1),
-    });
-    return apiRequest<RatePlan[]>(`/bookings/room-types/${roomTypeId}/rate-plans?${query.toString()}`);
-  },
-  getExtraServices(hotelId: number) {
-    return apiRequest<ExtraService[]>(`/bookings/extra-services?hotelId=${hotelId}`);
-  },
-  getRoomUpgrades(params: {
-    hotelId: number;
-    roomTypeId: number;
-    checkIn: string;
-    checkOut: string;
-    adults?: number;
-    children?: number;
-  }) {
-    const query = new URLSearchParams({
-      hotelId: String(params.hotelId),
-      roomTypeId: String(params.roomTypeId),
-      checkIn: params.checkIn,
-      checkOut: params.checkOut,
-      adults: String(params.adults ?? 2),
-      children: String(params.children ?? 0),
-    });
-    return apiRequest<RoomUpgrade[]>(`/bookings/room-upgrades?${query.toString()}`);
-  },
-  quoteBooking(payload: CheckoutBookingPayload) {
-    return apiRequest<BookingQuote>('/bookings/quote', { method: 'POST', body: JSON.stringify(payload) });
-  },
-  checkoutBooking(payload: CheckoutBookingPayload) {
-    return apiRequest<Booking>('/bookings/checkout', { method: 'POST', body: JSON.stringify(payload) });
-  },
   getDashboardStats() {
     return apiRequest<DashboardStats>('/dashboard/stats');
   },
-  getEmailTestSamples() {
-    return apiRequest<EmailTestTemplateSample[]>('/emails/test/samples');
+  listGalleryImages(filters: {
+    page?: number;
+    size?: number;
+    category?: string;
+    type?: string;
+  } = {}) {
+    const params = new URLSearchParams({
+      page: String(filters.page ?? 0),
+      size: String(filters.size ?? 12),
+    });
+    if (filters.category?.trim()) params.set('category', filters.category.trim());
+    else if (filters.type?.trim()) params.set('type', filters.type.trim());
+    return apiRequest<PageResponse<GalleryImage>>(`/gallery?${params.toString()}`);
   },
-  sendTestEmail(payload: SendTestEmailPayload) {
-    return apiRequest<EmailTestSendResult>('/emails/test/send', {
-      method: 'POST',
-      body: JSON.stringify(payload),
+  getGalleryImage(id: number) {
+    return apiRequest<GalleryImage>(`/gallery/${id}`);
+  },
+  uploadGalleryImages(payload: UploadGalleryImagesPayload, files: File[]) {
+    const body = new FormData();
+    body.append('request', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+    files.forEach((file) => body.append('files', file));
+    return apiRequest<GalleryImage[]>('/gallery', { method: 'POST', body });
+  },
+  updateGalleryImage(id: number, payload: UpsertGalleryImagePayload) {
+    return apiRequest<GalleryImage>(`/gallery/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deleteGalleryImage(id: number) {
+    return apiRequest<void>(`/gallery/${id}`, { method: 'DELETE' });
+  },
+  reorderGalleryImages(orderedIds: number[]) {
+    return apiRequest<GalleryImage[]>('/gallery/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ orderedIds }),
     });
   },
 };

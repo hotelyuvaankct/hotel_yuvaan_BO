@@ -415,32 +415,29 @@ export type CheckoutBookingPayload = {
   notes?: string;
 };
 
-export type EmailTestTemplateKey =
-  | 'BOOKING_CONFIRMATION'
-  | 'BOOKING_CANCELLATION'
-  | 'BOOKING_CHECK_IN_REMINDER'
-  | 'WELCOME_USER'
-  | 'PASSWORD_RESET';
-
-export type EmailTestTemplateSample = {
-  template: EmailTestTemplateKey;
-  label: string;
-  htmlFile: string;
-  brevoTemplateId: number;
-  senderEmail: string;
-  subject: string;
-  previewText: string;
-  sampleData: Record<string, string | number | boolean | null>;
+export type GalleryImage = {
+  id: number;
+  title: string;
+  category: string;
+  publicUrl: string;
+  displayOrder: number;
+  status?: number;
 };
 
-export type SendTestEmailPayload = {
-  template: EmailTestTemplateKey;
-  recipientEmail: string;
+export type UpsertGalleryImagePayload = {
+  title: string;
+  category: string;
+  displayOrder?: number;
+  status?: number;
 };
 
-export type EmailTestSendResult = {
-  template: EmailTestTemplateKey;
-  recipientEmail: string;
-  brevoTemplateId: number;
-  message: string;
+export type UploadGalleryImagesPayload = {
+  title?: string;
+  category: string;
+  displayOrder?: number;
+  status?: number;
+};
+
+export type ReorderGalleryImagesPayload = {
+  orderedIds: number[];
 };
