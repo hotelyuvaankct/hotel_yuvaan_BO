@@ -24,7 +24,6 @@ import { ModulesPage } from '@/pages/modules';
 import { ModuleFormPage } from '@/pages/module-form';
 import { ReportsPage } from '@/pages/reports';
 import { SettingsPage } from '@/pages/settings';
-import { EmailTestPage } from '@/pages/email-test';
 import { LoginPage } from '@/pages/login';
 import { NotFoundPage } from '@/pages/not-found';
 
@@ -68,7 +67,6 @@ export const router = createBrowserRouter([
           { path: 'modules/:id/edit', element: <ModuleFormPage /> },
           { path: 'reports', element: <ReportsPage /> },
           { path: 'settings', element: <SettingsPage /> },
-          { path: 'email-test', element: <EmailTestPage /> },
         ],
       },
     ],

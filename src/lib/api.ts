@@ -40,9 +40,6 @@ import type {
   RoomImage,
   RoomType,
   RoomUpgrade,
-  SendTestEmailPayload,
-  EmailTestSendResult,
-  EmailTestTemplateSample,
   GalleryImage,
   UpdateRolePayload,
   UpdateUserPayload,
@@ -191,9 +188,6 @@ export const api = {
   listUsers(page = 0, size = 20) {
     return apiRequest<PageResponse<User>>(`/users?page=${page}&size=${size}&sortBy=createdAt&sortDir=desc`);
   },
-  getUser(id: number) {
-    return apiRequest<User>(`/users/${id}`);
-  },
   createUser(payload: CreateUserPayload) {
     return apiRequest<User>('/users', { method: 'POST', body: JSON.stringify(payload) });
   },
@@ -246,9 +240,6 @@ export const api = {
     const method = existing ? 'PUT' : 'POST';
     const path = existing ? `/roles/${roleId}/permissions/${payload.moduleId}` : `/roles/${roleId}/permissions`;
     return apiRequest<Permission>(path, { method, body: JSON.stringify(payload) });
-  },
-  deletePermission(roleId: number, moduleId: number) {
-    return apiRequest<void>(`/roles/${roleId}/permissions/${moduleId}`, { method: 'DELETE' });
   },
   listRooms(filters: {
     page?: number;
@@ -401,15 +392,6 @@ export const api = {
   },
   getDashboardStats() {
     return apiRequest<DashboardStats>('/dashboard/stats');
-  },
-  getEmailTestSamples() {
-    return apiRequest<EmailTestTemplateSample[]>('/emails/test/samples');
-  },
-  sendTestEmail(payload: SendTestEmailPayload) {
-    return apiRequest<EmailTestSendResult>('/emails/test/send', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
   },
   listGalleryImages(filters: {
     page?: number;
