@@ -19,6 +19,41 @@ import { Status } from '@/lib/constants';
 
 const emptyFilters = { hotelId: '', roomNumber: '', roomTypeId: '', roomStatus: '' };
 
+type RoomSelection = {
+  selectAll: boolean;
+  ids: number[];
+};
+
+const emptySelection: RoomSelection = { selectAll: false, ids: [] };
+
+function isRoomSelected(roomId: number, selection: RoomSelection) {
+  return selection.selectAll ? !selection.ids.includes(roomId) : selection.ids.includes(roomId);
+}
+
+function selectedCount(totalElements: number, selection: RoomSelection) {
+  if (selection.selectAll) {
+    return Math.max(0, totalElements - selection.ids.length);
+  }
+  return selection.ids.length;
+}
+
+function buildDeletePayload(
+  selection: RoomSelection,
+  activeFilters: typeof emptyFilters,
+): Parameters<typeof api.deleteRooms>[0] {
+  if (selection.selectAll) {
+    return {
+      selectAll: true,
+      hotelId: activeFilters.hotelId ? Number(activeFilters.hotelId) : undefined,
+      roomNumber: activeFilters.roomNumber.trim() || undefined,
+      roomTypeId: activeFilters.roomTypeId ? Number(activeFilters.roomTypeId) : undefined,
+      roomStatus: activeFilters.roomStatus ? Number(activeFilters.roomStatus) : undefined,
+      excludeRoomIds: selection.ids.length > 0 ? selection.ids : undefined,
+    };
+  }
+  return { roomIds: selection.ids };
+}
+
 export function RoomsPage() {
   const { session } = useAuth();
   const { showToast } = useToast();
@@ -31,7 +66,7 @@ export function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [hotels, setHotels] = useState<HotelSummary[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selection, setSelection] = useState<RoomSelection>(emptySelection);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -50,7 +85,6 @@ export function RoomsPage() {
         roomStatus: activeFilters.roomStatus ? Number(activeFilters.roomStatus) : undefined,
       });
       setRooms(result.content ?? []);
-      setSelectedIds([]);
       setPage(result.number ?? targetPage);
       setTotalPages(result.totalPages ?? 0);
       setTotalElements(result.totalElements ?? 0);
@@ -78,20 +112,50 @@ export function RoomsPage() {
   }
 
   async function deleteSelectedRooms() {
-    if (selectedIds.length === 0) return;
+    const count = selectedCount(totalElements, selection);
+    if (count === 0) return;
+
     const confirmed = await confirm({
-      title: `Delete ${selectedIds.length} rooms?`,
-      description: 'All selected rooms will be removed from the active room listing.',
+      title: `Delete ${count} rooms?`,
+      description: selection.selectAll
+        ? 'All rooms matching the current filters will be removed, except any you unchecked.'
+        : 'All selected rooms will be removed from the active room listing.',
       confirmLabel: 'Delete rooms',
     });
     if (!confirmed) return;
+
     try {
-      await api.deleteRooms(selectedIds);
-      showToast(`${selectedIds.length} rooms deleted.`, 'success');
+      await api.deleteRooms(buildDeletePayload(selection, filters));
+      showToast(`${count} rooms deleted.`, 'success');
+      setSelection(emptySelection);
       await load(page);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to delete selected rooms.', 'error');
     }
+  }
+
+  function toggleSelectAll(checked: boolean) {
+    setSelection(checked ? { selectAll: true, ids: [] } : emptySelection);
+  }
+
+  function toggleRoomSelection(roomId: number, checked: boolean) {
+    setSelection((current) => {
+      if (current.selectAll) {
+        if (checked) {
+          return { selectAll: true, ids: current.ids.filter((id) => id !== roomId) };
+        }
+        return current.ids.includes(roomId)
+          ? current
+          : { selectAll: true, ids: [...current.ids, roomId] };
+      }
+
+      if (checked) {
+        return current.ids.includes(roomId)
+          ? current
+          : { selectAll: false, ids: [...current.ids, roomId] };
+      }
+      return { selectAll: false, ids: current.ids.filter((id) => id !== roomId) };
+    });
   }
 
   useEffect(() => {
@@ -119,6 +183,7 @@ export function RoomsPage() {
 
   useEffect(() => {
     if (!canRead) return;
+    setSelection(emptySelection);
     const timeout = window.setTimeout(() => {
       setPage(0);
       void load(0, filters);
@@ -137,7 +202,9 @@ export function RoomsPage() {
     );
   }
 
-  const allVisibleSelected = rooms.length > 0 && rooms.every((room) => selectedIds.includes(room.id));
+  const selectedRoomCount = selectedCount(totalElements, selection);
+  const allVisibleSelected = rooms.length > 0 && rooms.every((room) => isRoomSelected(room.id, selection));
+  const someVisibleSelected = rooms.some((room) => isRoomSelected(room.id, selection));
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -148,10 +215,10 @@ export function RoomsPage() {
             <CardDescription>{totalElements} room{totalElements === 1 ? '' : 's'} found. Filters update automatically.</CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            {selectedIds.length > 0 ? (
+            {selectedRoomCount > 0 ? (
               <Button variant="outline" size="sm" disabled={!canDelete} onClick={() => void deleteSelectedRooms()}>
                 <Trash2 className="h-4 w-4" />
-                Delete selected ({selectedIds.length})
+                Delete selected ({selectedRoomCount})
               </Button>
             ) : null}
             <Button variant="outline" size="sm" onClick={() => void load()}>
@@ -210,8 +277,13 @@ export function RoomsPage() {
                         type="checkbox"
                         className="h-4 w-4 accent-amber-500"
                         checked={allVisibleSelected}
-                        onChange={(event) => setSelectedIds(event.target.checked ? rooms.map((room) => room.id) : [])}
-                        aria-label="Select all visible rooms"
+                        ref={(element) => {
+                          if (element) {
+                            element.indeterminate = someVisibleSelected && !allVisibleSelected;
+                          }
+                        }}
+                        onChange={(event) => toggleSelectAll(event.target.checked)}
+                        aria-label="Select all rooms matching filters"
                       />
                     </th>
                     <th className="px-3 py-2 font-medium">Image</th>
@@ -236,10 +308,8 @@ export function RoomsPage() {
                         <input
                           type="checkbox"
                           className="h-4 w-4 accent-amber-500"
-                          checked={selectedIds.includes(room.id)}
-                          onChange={(event) => setSelectedIds((current) => event.target.checked
-                            ? [...current, room.id]
-                            : current.filter((id) => id !== room.id))}
+                          checked={isRoomSelected(room.id, selection)}
+                          onChange={(event) => toggleRoomSelection(room.id, event.target.checked)}
                           aria-label={`Select room ${room.roomNumber}`}
                         />
                       </td>
