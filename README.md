@@ -13,7 +13,7 @@ This repo is ready for Vercel deployment with [vercel.json](vercel.json). The ap
 | Environment | Env file     | Dev server         | Build               |
 |-------------|--------------|--------------------|---------------------|
 | Dev (remote)| `.env.dev`   | `pnpm dev`         | `pnpm build` (default) |
-| Local       | `.env.local` | `pnpm dev:local`   | `pnpm build:local`  |
+| Local       | `.env.localhost` | `pnpm dev:local`   | `pnpm build:local`  |
 | Production  | `.env.prod`  | `pnpm dev:prod`    | `pnpm build:prod`   |
 
 - `pnpm preview` / `pnpm preview:dev` / `pnpm preview:local` / `pnpm preview:prod`

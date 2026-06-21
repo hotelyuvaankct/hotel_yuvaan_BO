@@ -5,15 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode dev",
-    "dev:local": "vite --mode local",
+    "dev:local": "vite --mode localhost",
     "dev:prod": "vite --mode prod",
     "build": "vite build --mode dev",
     "build:dev": "vite build --mode dev",
-    "build:local": "vite build --mode local",
+    "build:local": "vite build --mode localhost",
     "build:prod": "vite build --mode prod",
     "preview": "vite preview --mode dev",
     "preview:dev": "vite preview --mode dev",
-    "preview:local": "vite preview --mode local",
+    "preview:local": "vite preview --mode localhost",
     "preview:prod": "vite preview --mode prod",
     "typecheck": "tsc -p tsconfig.app.json --noEmit"
   },

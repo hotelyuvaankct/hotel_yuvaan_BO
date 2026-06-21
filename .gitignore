@@ -10,7 +10,7 @@ coverage
 .env.*
 !.env.example
 !.env.dev
-!.env.local
+!.env.localhost
 !.env.prod
 
 # Logs
