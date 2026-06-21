@@ -19,6 +19,7 @@ import type {
   AssignUserRolesPayload,
   Booking,
   BulkCreateRoomsPayload,
+  BulkDeleteRoomsPayload,
   CancelBookingPayload,
   CreateRolePayload,
   CreateUserPayload,
@@ -267,8 +268,8 @@ export const api = {
   deleteRoom(id: number) {
     return apiRequest<void>(`/rooms/${id}`, { method: 'DELETE' });
   },
-  deleteRooms(roomIds: number[]) {
-    return apiRequest<void>('/rooms/bulk', { method: 'DELETE', body: JSON.stringify({ roomIds }) });
+  deleteRooms(payload: BulkDeleteRoomsPayload) {
+    return apiRequest<void>('/rooms/bulk', { method: 'DELETE', body: JSON.stringify(payload) });
   },
   listHotels() {
     return apiRequest<HotelSummary[]>('/rooms/hotels');

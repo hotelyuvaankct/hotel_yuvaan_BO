@@ -229,6 +229,16 @@ export type BulkCreateRoomsPayload = Omit<UpsertRoomPayload, 'roomNumber'> & {
   roomNumbers: string[];
 };
 
+export type BulkDeleteRoomsPayload = {
+  selectAll?: boolean;
+  hotelId?: number;
+  roomTypeId?: number;
+  roomNumber?: string;
+  roomStatus?: number;
+  excludeRoomIds?: number[];
+  roomIds?: number[];
+};
+
 export type UpsertRoomTypePayload = {
   hotelId: number;
   name: string;
