@@ -13,6 +13,9 @@ import { RoomTypeFormPage } from '@/pages/room-type-form';
 import { RoomTypeViewPage } from '@/pages/room-type-view';
 import { GalleryPage } from '@/pages/gallery';
 import { GalleryFormPage } from '@/pages/gallery-form';
+import { CouponsPage } from '@/pages/coupons';
+import { CouponFormPage } from '@/pages/coupon-form';
+import { CouponViewPage } from '@/pages/coupon-view';
 import { UsersPage } from '@/pages/users';
 import { UserFormPage } from '@/pages/user-form';
 import { UserViewPage } from '@/pages/user-view';
@@ -51,6 +54,10 @@ export const router = createBrowserRouter([
           { path: 'gallery', element: <GalleryPage /> },
           { path: 'gallery/new', element: <GalleryFormPage /> },
           { path: 'gallery/:id/edit', element: <GalleryFormPage /> },
+          { path: 'coupons', element: <CouponsPage /> },
+          { path: 'coupons/new', element: <CouponFormPage /> },
+          { path: 'coupons/:id', element: <CouponViewPage /> },
+          { path: 'coupons/:id/edit', element: <CouponFormPage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'users/new', element: <UserFormPage /> },
           { path: 'users/:id', element: <UserViewPage /> },

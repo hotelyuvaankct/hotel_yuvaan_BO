@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -14,10 +14,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { Pagination } from '@/components/common/pagination';
-import { SelectField, TextField } from '@/components/ui/form-fields';
+import { DateField, SelectField, TextField } from '@/components/ui/form-fields';
 import { Status } from '@/lib/constants';
+import { addDaysIso, getRoomDateFilterErrors, normalizeRoomDateFilters, todayIso } from '@/lib/form-validation';
 
-const emptyFilters = { hotelId: '', roomNumber: '', roomTypeId: '', roomStatus: '' };
+function createDefaultFilters() {
+  const checkIn = todayIso();
+  return {
+    hotelId: '',
+    roomNumber: '',
+    roomTypeId: '',
+    roomStatus: '',
+    checkIn,
+    checkOut: addDaysIso(checkIn, 1),
+  };
+}
+
+const emptyFilters = createDefaultFilters();
 
 type RoomSelection = {
   selectAll: boolean;
@@ -30,6 +43,15 @@ function isRoomSelected(roomId: number, selection: RoomSelection) {
   return selection.selectAll ? !selection.ids.includes(roomId) : selection.ids.includes(roomId);
 }
 
+function displayAvailabilityStatus(room: Room) {
+  return room.availabilityStatus ?? room.roomStatus;
+}
+
+function formatAvailabilityDate(value?: string) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(`${value}T00:00:00`));
+}
+
 function selectedCount(totalElements: number, selection: RoomSelection) {
   if (selection.selectAll) {
     return Math.max(0, totalElements - selection.ids.length);
@@ -39,7 +61,7 @@ function selectedCount(totalElements: number, selection: RoomSelection) {
 
 function buildDeletePayload(
   selection: RoomSelection,
-  activeFilters: typeof emptyFilters,
+  activeFilters: ReturnType<typeof createDefaultFilters>,
 ): Parameters<typeof api.deleteRooms>[0] {
   if (selection.selectAll) {
     return {
@@ -72,8 +94,17 @@ export function RoomsPage() {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
   const [filters, setFilters] = useState(emptyFilters);
+  const [filterErrors, setFilterErrors] = useState<Record<string, string>>({});
 
   async function load(targetPage = page, activeFilters = filters) {
+    const dateErrors = getRoomDateFilterErrors(activeFilters.checkIn, activeFilters.checkOut);
+    if (Object.keys(dateErrors).length > 0) {
+      setFilterErrors(dateErrors);
+      setLoading(false);
+      return;
+    }
+
+    setFilterErrors({});
     setLoading(true);
     try {
       const result = await api.listRooms({
@@ -83,6 +114,8 @@ export function RoomsPage() {
         roomNumber: activeFilters.roomNumber,
         roomTypeId: activeFilters.roomTypeId ? Number(activeFilters.roomTypeId) : undefined,
         roomStatus: activeFilters.roomStatus ? Number(activeFilters.roomStatus) : undefined,
+        checkIn: activeFilters.checkIn,
+        checkOut: activeFilters.checkOut,
       });
       setRooms(result.content ?? []);
       setPage(result.number ?? targetPage);
@@ -184,12 +217,21 @@ export function RoomsPage() {
   useEffect(() => {
     if (!canRead) return;
     setSelection(emptySelection);
+
+    const dateErrors = getRoomDateFilterErrors(filters.checkIn, filters.checkOut);
+    if (Object.keys(dateErrors).length > 0) {
+      setFilterErrors(dateErrors);
+      setLoading(false);
+      return;
+    }
+
+    setFilterErrors({});
     const timeout = window.setTimeout(() => {
       setPage(0);
       void load(0, filters);
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [canRead, filters.hotelId, filters.roomNumber, filters.roomTypeId, filters.roomStatus]);
+  }, [canRead, filters.hotelId, filters.roomNumber, filters.roomTypeId, filters.roomStatus, filters.checkIn, filters.checkOut]);
 
   if (!canRead) {
     return (
@@ -205,6 +247,8 @@ export function RoomsPage() {
   const selectedRoomCount = selectedCount(totalElements, selection);
   const allVisibleSelected = rooms.length > 0 && rooms.every((room) => isRoomSelected(room.id, selection));
   const someVisibleSelected = rooms.some((room) => isRoomSelected(room.id, selection));
+  const hasDateFilterErrors = Object.keys(filterErrors).length > 0;
+  const minCheckOut = filters.checkIn ? addDaysIso(filters.checkIn, 1) : undefined;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -212,7 +256,11 @@ export function RoomsPage() {
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
           <div>
             <CardTitle>Room listing</CardTitle>
-            <CardDescription>{totalElements} room{totalElements === 1 ? '' : 's'} found. Filters update automatically.</CardDescription>
+            <CardDescription>
+              {hasDateFilterErrors
+                ? 'Fix the availability dates below to load rooms.'
+                : `${totalElements} room${totalElements === 1 ? '' : 's'} found for ${formatAvailabilityDate(filters.checkIn)} to ${formatAvailabilityDate(filters.checkOut)}.`}
+            </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
             {selectedRoomCount > 0 ? (
@@ -234,7 +282,53 @@ export function RoomsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[220px_1fr_220px_220px_auto]">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_1fr_180px_180px_180px_auto]">
+            <DateField
+              variant="filter"
+              label="Check-in"
+              required
+              value={filters.checkIn}
+              error={filterErrors.checkIn}
+              onChange={(event) => {
+                const checkIn = event.target.value;
+                setFilters((current) => {
+                  const next = normalizeRoomDateFilters(checkIn, current.checkOut);
+                  return { ...current, ...next };
+                });
+                setFilterErrors((current) => {
+                  const next = { ...current };
+                  delete next.checkIn;
+                  delete next.checkOut;
+                  return next;
+                });
+              }}
+            />
+            <DateField
+              variant="filter"
+              label="Check-out"
+              required
+              value={filters.checkOut}
+              min={minCheckOut}
+              error={filterErrors.checkOut}
+              onChange={(event) => {
+                const checkOut = event.target.value;
+                setFilters((current) => {
+                  if (!current.checkIn || !checkOut) {
+                    return { ...current, checkOut };
+                  }
+                  if (checkOut <= current.checkIn) {
+                    return { ...current, checkOut: addDaysIso(current.checkIn, 1) };
+                  }
+                  return { ...current, checkOut };
+                });
+                setFilterErrors((current) => {
+                  if (!current.checkOut) return current;
+                  const next = { ...current };
+                  delete next.checkOut;
+                  return next;
+                });
+              }}
+            />
             <SelectField
               variant="filter"
               value={filters.hotelId}
@@ -259,11 +353,20 @@ export function RoomsPage() {
             <SelectField
               variant="filter"
               value={filters.roomStatus}
-              placeholder="All room statuses"
+              placeholder="All availability"
               options={roomStatusOptions.map((option) => ({ value: option.value, label: option.label }))}
               onChange={(event) => setFilters((current) => ({ ...current, roomStatus: event.target.value }))}
             />
-            <Button type="button" variant="outline" onClick={() => setFilters(emptyFilters)}>Clear</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setFilters(createDefaultFilters());
+                setFilterErrors({});
+              }}
+            >
+              Clear
+            </Button>
           </div>
 
           <div className="overflow-x-auto">
@@ -291,7 +394,7 @@ export function RoomsPage() {
                     <th className="px-3 py-2 font-medium">Hotel</th>
                     <th className="px-3 py-2 font-medium">Type</th>
                     <th className="px-3 py-2 font-medium">Floor</th>
-                    <th className="px-3 py-2 font-medium">Room status</th>
+                    <th className="px-3 py-2 font-medium">Availability</th>
                     <th className="px-3 py-2 font-medium">Record status</th>
                     <th className="px-3 py-2 text-right font-medium">Actions</th>
                   </tr>
@@ -327,9 +430,14 @@ export function RoomsPage() {
                       <td className="px-3 py-3 text-muted-foreground">{room.roomTypeName}</td>
                       <td className="px-3 py-3 text-muted-foreground">{room.floor ?? '-'}</td>
                       <td className="px-3 py-3">
-                        <Badge variant={room.roomStatus === 1 ? 'success' : room.roomStatus === 2 ? 'gold' : 'warning'}>
-                          {optionLabel(roomStatusOptions, room.roomStatus)}
-                        </Badge>
+                        {(() => {
+                          const status = displayAvailabilityStatus(room);
+                          return (
+                            <Badge variant={status === 1 ? 'success' : status === 2 ? 'gold' : 'warning'}>
+                              {optionLabel(roomStatusOptions, status)}
+                            </Badge>
+                          );
+                        })()}
                       </td>
                       <td className="px-3 py-3">
                         <Badge variant={room.status === Status.ACTIVE ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, room.status)}</Badge>

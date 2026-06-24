@@ -33,8 +33,35 @@ export function validateDateRange(checkIn: string, checkOut: string) {
   const end = parseIsoDate(checkOut);
   if (!start) return 'Check-in date is required.';
   if (!end) return 'Check-out date is required.';
-  if (end <= start) return 'Check-out must be after check-in.';
+  if (end <= start) return 'Check-out date must be after check-in date.';
   return '';
+}
+
+export function getRoomDateFilterErrors(checkIn: string, checkOut: string) {
+  const errors: Record<string, string> = {};
+  const rangeError = validateDateRange(checkIn, checkOut);
+  if (!rangeError) return errors;
+
+  if (!checkIn) {
+    errors.checkIn = 'Check-in date is required.';
+  } else if (!checkOut) {
+    errors.checkOut = 'Check-out date is required.';
+  } else {
+    errors.checkOut = rangeError;
+  }
+
+  return errors;
+}
+
+export function normalizeRoomDateFilters(checkIn: string, checkOut: string) {
+  if (!checkIn) {
+    return { checkIn, checkOut };
+  }
+
+  const nextCheckOut =
+    !checkOut || checkOut <= checkIn ? addDaysIso(checkIn, 1) : checkOut;
+
+  return { checkIn, checkOut: nextCheckOut };
 }
 
 export type BookingFormValues = {
