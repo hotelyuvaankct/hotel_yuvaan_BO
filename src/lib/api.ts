@@ -24,6 +24,8 @@ import type {
   CreateRolePayload,
   CreateUserPayload,
   DashboardStats,
+  DashboardStatsFilter,
+  DashboardCalendar,
   HotelSummary,
   LoginPayload,
   Module,
@@ -41,6 +43,11 @@ import type {
   UpsertModulePayload,
   UpsertGalleryImagePayload,
   UploadGalleryImagesPayload,
+  Coupon,
+  CouponUsage,
+  CouponValidation,
+  UpsertCouponPayload,
+  ValidateCouponPayload,
   UpsertRoomPayload,
   UpsertRoomTypePayload,
   UserAccess,
@@ -242,6 +249,8 @@ export const api = {
     roomTypeId?: number;
     roomNumber?: string;
     roomStatus?: number;
+    checkIn?: string;
+    checkOut?: string;
   } = {}) {
     const params = new URLSearchParams({
       page: String(filters.page ?? 0),
@@ -251,6 +260,8 @@ export const api = {
     if (filters.roomTypeId) params.set('roomTypeId', String(filters.roomTypeId));
     if (filters.roomNumber?.trim()) params.set('roomNumber', filters.roomNumber.trim());
     if (filters.roomStatus) params.set('roomStatus', String(filters.roomStatus));
+    if (filters.checkIn) params.set('checkIn', filters.checkIn);
+    if (filters.checkOut) params.set('checkOut', filters.checkOut);
     return apiRequest<PageResponse<Room>>(`/rooms?${params.toString()}`);
   },
   getRoom(id: number) {
@@ -328,8 +339,19 @@ export const api = {
   cancelBooking(id: number, payload: CancelBookingPayload = {}) {
     return apiRequest<Booking>(`/bookings/${id}/cancel`, { method: 'POST', body: JSON.stringify(payload) });
   },
-  getDashboardStats() {
-    return apiRequest<DashboardStats>('/dashboard/stats');
+  getDashboardStats(filter: DashboardStatsFilter = {}) {
+    const params = new URLSearchParams();
+    if (filter.from) params.set('from', filter.from);
+    if (filter.to) params.set('to', filter.to);
+    const query = params.toString();
+    return apiRequest<DashboardStats>(`/dashboard/stats${query ? `?${query}` : ''}`);
+  },
+  getDashboardCalendar(filter: { from?: string; to?: string } = {}) {
+    const params = new URLSearchParams();
+    if (filter.from) params.set('from', filter.from);
+    if (filter.to) params.set('to', filter.to);
+    const query = params.toString();
+    return apiRequest<DashboardCalendar>(`/dashboard/calendar${query ? `?${query}` : ''}`);
   },
   listGalleryImages(filters: {
     page?: number;
@@ -364,6 +386,45 @@ export const api = {
     return apiRequest<GalleryImage[]>('/gallery/reorder', {
       method: 'PUT',
       body: JSON.stringify({ orderedIds }),
+    });
+  },
+  listCoupons(filters: {
+    tab?: 'active' | 'deactivated';
+    search?: string;
+    page?: number;
+    size?: number;
+  } = {}) {
+    const params = new URLSearchParams({
+      tab: filters.tab ?? 'active',
+      page: String(filters.page ?? 0),
+      size: String(filters.size ?? 10),
+    });
+    if (filters.search?.trim()) params.set('search', filters.search.trim());
+    return apiRequest<PageResponse<Coupon>>(`/coupons?${params.toString()}`);
+  },
+  getCoupon(id: number) {
+    return apiRequest<Coupon>(`/coupons/${id}`);
+  },
+  listCouponUsages(id: number, page = 0, size = 10) {
+    const params = new URLSearchParams({
+      page: String(page),
+      size: String(size),
+    });
+    return apiRequest<PageResponse<CouponUsage>>(`/coupons/${id}/usages?${params.toString()}`);
+  },
+  createCoupon(payload: UpsertCouponPayload) {
+    return apiRequest<Coupon>('/coupons', { method: 'POST', body: JSON.stringify(payload) });
+  },
+  updateCoupon(id: number, payload: UpsertCouponPayload) {
+    return apiRequest<Coupon>(`/coupons/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+  },
+  deleteCoupon(id: number) {
+    return apiRequest<void>(`/coupons/${id}`, { method: 'DELETE' });
+  },
+  validateCoupon(payload: ValidateCouponPayload) {
+    return apiRequest<CouponValidation>('/coupons/validate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
 };

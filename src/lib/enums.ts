@@ -37,6 +37,16 @@ export const bookingSourceOptions = [
   { value: 6, label: 'Walk-in' },
 ];
 
+export const couponTypeOptions = [
+  { value: 1, label: 'Website' },
+  { value: 2, label: 'Backoffice only' },
+];
+
+export const discountTypeOptions = [
+  { value: 1, label: 'Percentage' },
+  { value: 2, label: 'Fixed amount' },
+];
+
 export function optionLabel(options: Array<{ value: number; label: string }>, value?: number) {
   return options.find((option) => option.value === value)?.label ?? '-';
 }

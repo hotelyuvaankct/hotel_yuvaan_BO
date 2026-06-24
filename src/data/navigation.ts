@@ -9,6 +9,7 @@ import {
   ChartColumnIncreasing,
   Settings,
   Images,
+  TicketPercent,
 } from 'lucide-react';
 
 export type NavigationItem = {
@@ -53,6 +54,13 @@ export const navigationItems: NavigationItem[] = [
     description: 'Website gallery photos for the public site',
     icon: Images,
     moduleSlug: 'gallery',
+  },
+  {
+    label: 'Coupons',
+    href: '/coupons',
+    description: 'Discount codes, usage limits, and redemption history',
+    icon: TicketPercent,
+    moduleSlug: 'coupons',
   },
   {
     label: 'Users',

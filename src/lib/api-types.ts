@@ -142,6 +142,9 @@ export type Room = {
   roomNumber: string;
   floor?: number;
   roomStatus?: number;
+  availabilityStatus?: number;
+  availabilityFrom?: string;
+  availabilityTo?: string;
   status?: number;
   notes?: string;
   images?: RoomImage[];
@@ -324,16 +327,53 @@ export type CancelBookingPayload = {
 };
 
 export type DashboardStats = {
+  rangeStart?: string;
+  rangeEnd?: string;
   totalBookings: number;
+  totalRooms: number;
+  totalRoomTypes: number;
+  totalBackofficeUsers: number;
+  todayCheckIns: number;
+  todayCheckOuts: number;
+  bookingsThisMonth: number;
+  totalRevenue: number;
+  rangeBookings: number;
   pendingBookings: number;
   confirmedBookings: number;
   checkedInBookings: number;
-  todayCheckIns: number;
-  todayCheckOuts: number;
-  totalRooms: number;
-  totalRoomTypes: number;
-  totalRevenue: number;
+  checkedOutBookings: number;
+  cancelledBookings: number;
+  completedBookings: number;
+  rangeRevenue: number;
+  completionRatio: number;
+  cancellationRatio: number;
   recentBookings: Booking[];
+};
+
+export type DashboardCalendarEvent = {
+  bookingId: number;
+  bookingCode: string;
+  guestName: string;
+  hotelName: string;
+  bookingStatus: number;
+  source: number;
+  checkIn: string;
+  checkOut: string;
+  totalRooms?: number;
+  totalGuests?: number;
+  totalAmount?: number;
+};
+
+export type DashboardCalendar = {
+  from: string;
+  to: string;
+  totalEvents: number;
+  events: DashboardCalendarEvent[];
+};
+
+export type DashboardStatsFilter = {
+  from?: string;
+  to?: string;
 };
 
 export type AvailableRoomType = {
@@ -450,4 +490,74 @@ export type UploadGalleryImagesPayload = {
 
 export type ReorderGalleryImagesPayload = {
   orderedIds: number[];
+};
+
+export type Coupon = {
+  id: number;
+  hotelId?: number;
+  hotelName?: string;
+  code: string;
+  title: string;
+  description?: string;
+  couponType: number;
+  discountType: number;
+  discountValue: number;
+  maxDiscountAmount?: number;
+  minBookingAmount?: number;
+  startDate: string;
+  expiryDate: string;
+  totalUsageLimit?: number;
+  perUserUsageLimit?: number;
+  isSystemOnly?: boolean;
+  status?: number;
+  usageCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CouponUsage = {
+  id: number;
+  couponId: number;
+  couponCode?: string;
+  bookingId?: number;
+  bookingCode?: string;
+  userId?: number;
+  userEmail?: string;
+  guestName?: string;
+  guestEmail?: string;
+  discountAmount?: number;
+  usedAt?: string;
+};
+
+export type UpsertCouponPayload = {
+  hotelId?: number;
+  code: string;
+  title: string;
+  description?: string;
+  couponType: number;
+  discountType: number;
+  discountValue: number;
+  maxDiscountAmount?: number;
+  minBookingAmount?: number;
+  startDate: string;
+  expiryDate: string;
+  totalUsageLimit?: number;
+  perUserUsageLimit?: number;
+  status?: number;
+};
+
+export type ValidateCouponPayload = {
+  code: string;
+  hotelId: number;
+  bookingAmount: number;
+  guestEmail?: string;
+};
+
+export type CouponValidation = {
+  valid: boolean;
+  message?: string;
+  couponId?: number;
+  code?: string;
+  title?: string;
+  discountAmount?: number;
 };
