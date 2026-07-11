@@ -118,6 +118,17 @@ export type HotelSummary = {
   status?: number;
 };
 
+export type RoomTypeRatePlan = {
+  id?: number;
+  code: string;
+  label: string;
+  description?: string;
+  features?: string[];
+  extraPrice?: number;
+  sortOrder?: number;
+  isDefault?: boolean;
+};
+
 export type RoomType = {
   id: number;
   hotelId: number;
@@ -131,6 +142,7 @@ export type RoomType = {
   amenities?: string;
   status?: number;
   images?: RoomImage[];
+  ratePlans?: RoomTypeRatePlan[];
 };
 
 export type Room = {
@@ -252,6 +264,7 @@ export type UpsertRoomTypePayload = {
   amenities?: string;
   status?: number;
   deletedImageIds?: number[];
+  ratePlans?: RoomTypeRatePlan[];
 };
 
 export type BookingRoomLine = {
@@ -406,15 +419,6 @@ export type RatePlan = {
   totalNights?: number;
 };
 
-export type ExtraService = {
-  id: number;
-  name: string;
-  description?: string;
-  price?: number;
-  free?: boolean;
-  forAllGuests?: boolean;
-};
-
 export type RoomUpgrade = {
   roomTypeId: number;
   name: string;
@@ -441,11 +445,9 @@ export type BookingQuote = {
   ratePlanCode?: string;
   ratePlanLabel?: string;
   roomSubtotal?: number;
-  extrasSubtotal?: number;
   subtotalAmount?: number;
   taxAmount?: number;
   totalAmount?: number;
-  selectedExtras?: ExtraService[];
 };
 
 export type CheckoutBookingPayload = {
@@ -457,7 +459,6 @@ export type CheckoutBookingPayload = {
   adults?: number;
   children?: number;
   rooms?: number;
-  extraServiceIds?: number[];
   upgradeRoomTypeId?: number;
   guestName: string;
   guestEmail?: string;

@@ -1,9 +1,9 @@
 import { createPortal } from 'react-dom';
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, X, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
-import type { HotelSummary, UpsertRoomTypePayload, RoomImage } from '@/lib/api-types';
+import type { HotelSummary, UpsertRoomTypePayload, RoomImage, RoomTypeRatePlan } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { Status } from '@/lib/constants';
 import { hasPermission } from '@/lib/permissions';
@@ -12,6 +12,45 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageLoader } from '@/components/common/loading-state';
 import { SelectField, TextField, inputClass } from '@/components/ui/form-fields';
+import { AMENITY_GROUPS, normalizeAmenity, parseAmenities } from '@/lib/amenities';
+import { RATE_PLAN_OPTIONS } from '@/lib/rate-plans';
+
+type VariantDraft = {
+  id?: number;
+  code: string;
+  label: string;
+  description: string;
+  featuresText: string;
+  extraPrice: string;
+  isDefault: boolean;
+};
+
+const DEFAULT_VARIANTS: VariantDraft[] = [
+  {
+    code: 'ROOM_ONLY',
+    label: 'Room Only',
+    description: 'Just the room, no meals included.',
+    featuresText: 'Cancellation policy, Payment: bank card, Hot Water Swimming Pool',
+    extraPrice: '0',
+    isDefault: true,
+  },
+  {
+    code: 'WITH_BREAKFAST',
+    label: 'Room With Complimentary Breakfast',
+    description: 'Includes breakfast for the room occupants.',
+    featuresText: 'Breakfast, Cancellation policy, Payment: bank card, Hot Water Swimming Pool',
+    extraPrice: '',
+    isDefault: false,
+  },
+  {
+    code: 'WITH_BREAKFAST_DINNER',
+    label: 'Room With Breakfast And Dinner',
+    description: 'Includes breakfast and dinner for the room occupants.',
+    featuresText: 'Breakfast & dinner, Cancellation policy, Payment: bank card, Hot Water Swimming Pool',
+    extraPrice: '',
+    isDefault: false,
+  },
+];
 
 export function RoomTypeFormPage() {
   const { id } = useParams();
@@ -31,6 +70,9 @@ export function RoomTypeFormPage() {
   const [existingImages, setExistingImages] = useState<RoomImage[]>([]);
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [variants, setVariants] = useState<VariantDraft[]>(DEFAULT_VARIANTS);
+  const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
+  const [customAmenities, setCustomAmenities] = useState('');
   const [form, setForm] = useState({
     hotelId: '',
     name: '',
@@ -38,7 +80,6 @@ export function RoomTypeFormPage() {
     maxAdults: '2',
     maxChildren: '0',
     basePrice: '',
-    amenities: '',
   });
 
   useEffect(() => {
@@ -59,10 +100,35 @@ export function RoomTypeFormPage() {
             maxAdults: String(roomType.maxAdults ?? 2),
             maxChildren: String(roomType.maxChildren ?? 0),
             basePrice: String(roomType.basePrice ?? ''),
-            amenities: parseAmenities(roomType.amenities).join(', '),
           });
+          const savedAmenities = parseAmenities(roomType.amenities);
+          const knownCodes: string[] = [];
+          const customValues: string[] = [];
+          for (const value of savedAmenities) {
+            const code = normalizeAmenity(value);
+            if (code) {
+              if (!knownCodes.includes(code)) knownCodes.push(code);
+            } else {
+              customValues.push(value);
+            }
+          }
+          setSelectedAmenities(knownCodes);
+          setCustomAmenities(customValues.join(', '));
           if (roomType.images) {
             setExistingImages(roomType.images);
+          }
+          if (roomType.ratePlans && roomType.ratePlans.length > 0) {
+            setVariants(
+              roomType.ratePlans.map((plan) => ({
+                id: plan.id,
+                code: plan.code,
+                label: plan.label,
+                description: plan.description ?? '',
+                featuresText: (plan.features ?? []).join(', '),
+                extraPrice: plan.extraPrice != null ? String(plan.extraPrice) : '',
+                isDefault: Boolean(plan.isDefault),
+              }))
+            );
           }
         } else {
           setForm((current) => ({ ...current, hotelId: String(hotelList[0]?.id ?? '') }));
@@ -75,6 +141,27 @@ export function RoomTypeFormPage() {
     }
     void load();
   }, [canRead, roomTypeId, showToast]);
+
+  function toggleAmenity(value: string) {
+    setSelectedAmenities((prev) =>
+      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+    );
+  }
+
+  function updateVariant(index: number, patch: Partial<VariantDraft>) {
+    setVariants((prev) => prev.map((variant, i) => (i === index ? { ...variant, ...patch } : variant)));
+  }
+
+  function addVariant() {
+    setVariants((prev) => [
+      ...prev,
+      { code: '', label: '', description: '', featuresText: '', extraPrice: '', isDefault: false },
+    ]);
+  }
+
+  function removeVariant(index: number) {
+    setVariants((prev) => prev.filter((_, i) => i !== index));
+  }
 
   function handleRemoveFile(index: number) {
     if (existingImages.length + files.length <= 1) {
@@ -100,8 +187,24 @@ export function RoomTypeFormPage() {
       showToast('At least one image is required.', 'error');
       return;
     }
+    const cleanedVariants = variants.filter((variant) => variant.code.trim() && variant.label.trim());
+    if (cleanedVariants.length === 0) {
+      showToast('Add at least one room variant.', 'error');
+      return;
+    }
     setSaving(true);
-    const amenities = form.amenities.split(',').map((value) => value.trim()).filter(Boolean);
+    const customList = customAmenities.split(',').map((value) => value.trim()).filter(Boolean);
+    const amenities = Array.from(new Set([...selectedAmenities, ...customList]));
+    const ratePlans: RoomTypeRatePlan[] = cleanedVariants.map((variant, index) => ({
+      id: variant.id,
+      code: variant.code.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_'),
+      label: variant.label.trim(),
+      description: variant.description.trim() || undefined,
+      features: variant.featuresText.split(',').map((value) => value.trim()).filter(Boolean),
+      extraPrice: variant.extraPrice === '' ? 0 : Number(variant.extraPrice),
+      sortOrder: index,
+      isDefault: variant.isDefault,
+    }));
     const payload: UpsertRoomTypePayload = {
       hotelId: Number(form.hotelId),
       name: form.name.trim(),
@@ -112,6 +215,7 @@ export function RoomTypeFormPage() {
       amenities: JSON.stringify(amenities),
       ...(isEdit ? {} : { status: Status.ACTIVE }),
       deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
+      ratePlans,
     };
     try {
       if (isEdit && roomTypeId) {
@@ -199,14 +303,151 @@ export function RoomTypeFormPage() {
               value={form.description}
               onChange={(event) => setForm((value) => ({ ...value, description: event.target.value }))}
             />
-            <TextField
-              label="Amenities"
-              wrapperClassName="md:col-span-2"
-              placeholder="Wi-Fi, Air conditioning, Television"
-              hint="Separate amenities with commas."
-              value={form.amenities}
-              onChange={(event) => setForm((value) => ({ ...value, amenities: event.target.value }))}
-            />
+            <div className="space-y-3 md:col-span-2">
+              <div>
+                <span className="text-sm font-medium">Amenities</span>
+                <p className="text-xs text-muted-foreground">
+                  Tick the facilities available in this room. Selected amenities are shown to guests on the website.
+                </p>
+              </div>
+              <div className="space-y-4">
+                {AMENITY_GROUPS.map((group) => (
+                  <div key={group.category} className="space-y-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      {group.category}
+                    </span>
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {group.items.map((item) => {
+                        const Icon = item.icon;
+                        const checked = selectedAmenities.includes(item.code);
+                        return (
+                          <label
+                            key={item.code}
+                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
+                              checked
+                                ? 'border-primary bg-primary/10 text-foreground'
+                                : 'border-border hover:border-ring/40 hover:bg-muted/50'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 shrink-0 accent-primary"
+                              checked={checked}
+                              onChange={() => toggleAmenity(item.code)}
+                            />
+                            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <span className="truncate">{item.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <TextField
+                label="Other amenities"
+                placeholder="e.g. Sea view, Jacuzzi"
+                hint="Add any extra amenities not listed above, separated by commas."
+                value={customAmenities}
+                onChange={(event) => setCustomAmenities(event.target.value)}
+              />
+            </div>
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Room variants</span>
+                  <p className="text-xs text-muted-foreground">
+                    Different meal / rate options for this room. The final nightly price shown to guests is the room's
+                    base price plus the variant's extra price.
+                  </p>
+                </div>
+                <Button type="button" variant="outline" onClick={addVariant}>
+                  <Plus className="h-4 w-4" />
+                  Add variant
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {variants.map((variant, index) => (
+                  <div key={index} className="rounded-xl border border-border p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">Variant {index + 1}</span>
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs text-destructive hover:underline disabled:opacity-40"
+                        onClick={() => removeVariant(index)}
+                        disabled={variants.length <= 1}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="space-y-1">
+                        <span className="text-xs font-medium">Variant</span>
+                        <select
+                          className={inputClass}
+                          value={variant.code}
+                          onChange={(event) => {
+                            const code = event.target.value;
+                            const preset = RATE_PLAN_OPTIONS.find((option) => option.code === code);
+                            updateVariant(index, { code, label: preset ? preset.label : code });
+                          }}
+                        >
+                          <option value="">Select variant</option>
+                          {RATE_PLAN_OPTIONS.map((option) => (
+                            <option key={option.code} value={option.code}>
+                              {option.label}
+                            </option>
+                          ))}
+                          {variant.code && !RATE_PLAN_OPTIONS.some((option) => option.code === variant.code) ? (
+                            <option value={variant.code}>{variant.label || variant.code}</option>
+                          ) : null}
+                        </select>
+                      </label>
+                      <label className="space-y-1">
+                        <span className="text-xs font-medium">Extra price (per night, over base)</span>
+                        <input
+                          className={inputClass}
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          placeholder="0"
+                          value={variant.extraPrice}
+                          onChange={(event) => updateVariant(index, { extraPrice: event.target.value })}
+                        />
+                      </label>
+                      <label className="flex items-center gap-2 pt-6">
+                        <input
+                          type="checkbox"
+                          checked={variant.isDefault}
+                          onChange={(event) => updateVariant(index, { isDefault: event.target.checked })}
+                        />
+                        <span className="text-xs font-medium">Default variant</span>
+                      </label>
+                      <label className="space-y-1 md:col-span-2">
+                        <span className="text-xs font-medium">Short description</span>
+                        <input
+                          className={inputClass}
+                          placeholder="Includes breakfast for the room occupants."
+                          value={variant.description}
+                          onChange={(event) => updateVariant(index, { description: event.target.value })}
+                        />
+                      </label>
+                      <label className="space-y-1 md:col-span-2">
+                        <span className="text-xs font-medium">Features / services</span>
+                        <input
+                          className={inputClass}
+                          placeholder="Breakfast, Cancellation policy, Payment: bank card"
+                          value={variant.featuresText}
+                          onChange={(event) => updateVariant(index, { featuresText: event.target.value })}
+                        />
+                        <span className="text-[11px] text-muted-foreground">Separate each feature with a comma.</span>
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium">Images</span>
               <label className="flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 py-6 transition-colors hover:bg-muted">
@@ -310,14 +551,4 @@ export function RoomTypeFormPage() {
       )}
     </div>
   );
-}
-
-function parseAmenities(value?: string) {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
 }

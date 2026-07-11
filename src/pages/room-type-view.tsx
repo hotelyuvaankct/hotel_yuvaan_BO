@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Edit } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { RoomType } from '@/lib/api-types';
+import { getAmenityIcon, getAmenityLabel, parseAmenities } from '@/lib/amenities';
 import { useAuth } from '@/lib/auth';
 import { optionLabel, recordStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
@@ -82,7 +83,27 @@ export function RoomTypeViewPage() {
                 <DetailRow label="Total rooms" value={roomType.totalRooms != null ? String(roomType.totalRooms) : '-'} />
                 <DetailRow label="Record status" value={optionLabel(recordStatusOptions, roomType.status)} />
                 <DetailRow label="Description" value={roomType.description || '-'} />
-                <DetailRow label="Amenities" value={parseAmenities(roomType.amenities).join(', ') || '-'} />
+                <div className="space-y-2 pt-1">
+                  <span className="text-muted-foreground">Amenities</span>
+                  {parseAmenities(roomType.amenities).length === 0 ? (
+                    <p className="font-medium">-</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {parseAmenities(roomType.amenities).map((amenity) => {
+                        const Icon = getAmenityIcon(amenity);
+                        return (
+                          <span
+                            key={amenity}
+                            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 text-xs font-medium"
+                          >
+                            <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                            {getAmenityLabel(amenity)}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -118,14 +139,4 @@ function DetailRow({ label, value }: { label: string; value: string }) {
       <span className="text-right font-medium">{value}</span>
     </div>
   );
-}
-
-function parseAmenities(value?: string) {
-  if (!value) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.map(String) : [];
-  } catch {
-    return [];
-  }
 }
