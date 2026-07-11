@@ -34,7 +34,6 @@ import type {
   PermissionPayload,
   Role,
   Room,
-  RoomImage,
   RoomType,
   GalleryImage,
   UpdateRolePayload,
