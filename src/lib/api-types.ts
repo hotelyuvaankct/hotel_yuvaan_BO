@@ -562,3 +562,19 @@ export type CouponValidation = {
   title?: string;
   discountAmount?: number;
 };
+
+export type PricingConfig = {
+  roomTaxPercent: number;
+  processingFeePercent: number;
+  processingFeeGstPercent: number;
+  hotelGstin?: string;
+  invoiceHsnSac?: string;
+};
+
+export type UpdatePricingConfigPayload = {
+  roomTaxPercent: number;
+  processingFeePercent: number;
+  processingFeeGstPercent: number;
+  hotelGstin?: string;
+  invoiceHsnSac?: string;
+};
