@@ -47,6 +47,8 @@ import type {
   CouponValidation,
   UpsertCouponPayload,
   ValidateCouponPayload,
+  PricingConfig,
+  UpdatePricingConfigPayload,
   UpsertRoomPayload,
   UpsertRoomTypePayload,
   UserAccess,
@@ -423,6 +425,15 @@ export const api = {
   validateCoupon(payload: ValidateCouponPayload) {
     return apiRequest<CouponValidation>('/coupons/validate', {
       method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getPricingConfig() {
+    return apiRequest<PricingConfig>('/config/pricing');
+  },
+  updatePricingConfig(payload: UpdatePricingConfigPayload) {
+    return apiRequest<PricingConfig>('/config/pricing', {
+      method: 'PUT',
       body: JSON.stringify(payload),
     });
   },
