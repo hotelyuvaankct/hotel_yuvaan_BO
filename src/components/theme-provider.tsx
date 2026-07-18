@@ -29,7 +29,7 @@ function applyTheme(theme: Theme) {
 
 export function ThemeProvider({
   children,
-  defaultTheme = 'system',
+  defaultTheme = 'light',
   storageKey = 'theme',
 }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(() => {
@@ -37,16 +37,16 @@ export function ThemeProvider({
       return defaultTheme;
     }
 
-    const storedTheme = window.localStorage.getItem(storageKey) as Theme | null;
-    return storedTheme ?? defaultTheme;
+    // Light-only for now: ignore previous dark/system preference while UI toggle is disabled.
+    window.localStorage.setItem(storageKey, 'light');
+    return 'light';
   });
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window === 'undefined') {
       return defaultTheme === 'system' ? 'light' : defaultTheme;
     }
 
-    const storedTheme = window.localStorage.getItem(storageKey) as Theme | null;
-    return applyTheme(storedTheme ?? defaultTheme);
+    return applyTheme('light');
   });
 
   useEffect(() => {

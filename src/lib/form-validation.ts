@@ -17,15 +17,22 @@ export function parseIsoDate(value: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function toLocalIsoDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return toLocalIsoDate(new Date());
 }
 
 export function addDaysIso(value: string, days: number) {
   const date = parseIsoDate(value);
   if (!date) return '';
   date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  return toLocalIsoDate(date);
 }
 
 export function validateDateRange(checkIn: string, checkOut: string) {

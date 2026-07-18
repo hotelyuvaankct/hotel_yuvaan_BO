@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { useAuth } from '@/lib/auth';
+import { getFirstAccessiblePath } from '@/lib/navigation-access';
 import { DashboardPage } from '@/pages/dashboard';
 import { BookingsPage } from '@/pages/bookings';
 import { BookingFormPage } from '@/pages/booking-form';
@@ -26,6 +28,11 @@ import { SettingsPage } from '@/pages/settings';
 import { LoginPage } from '@/pages/login';
 import { NotFoundPage } from '@/pages/not-found';
 
+function DefaultRoute() {
+  const { session } = useAuth();
+  return <Navigate to={getFirstAccessiblePath(session?.perms)} replace />;
+}
+
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
   {
@@ -35,7 +42,7 @@ export const router = createBrowserRouter([
       {
         element: <AdminLayout />,
         children: [
-          { index: true, element: <Navigate to="/dashboard" replace /> },
+          { index: true, element: <DefaultRoute /> },
           { path: 'dashboard', element: <DashboardPage /> },
           { path: 'bookings', element: <BookingsPage /> },
           { path: 'bookings/:id', element: <BookingViewPage /> },

@@ -5,7 +5,6 @@ import { ApiError, api } from '@/lib/api';
 import type { PricingConfig } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { SYSTEM_ROLE_NAMES } from '@/lib/constants';
-import { useTheme } from '@/components/theme-provider';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,6 @@ const emptyPricing: PricingConfig = {
 };
 
 export function SettingsPage() {
-  const { theme, setTheme } = useTheme();
   const { session, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -119,24 +117,32 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className={`grid gap-6 ${isSuperAdmin ? 'xl:grid-cols-2' : 'max-w-2xl'}`}>
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
             <CardDescription>Authenticated user and permissions loaded from the profile API.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-xl border border-border bg-muted/40 p-4">
-              <p className="font-semibold">{session?.user?.fullName || 'Backoffice user'}</p>
-              <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 p-4">
+              <div className="min-w-0 space-y-1">
+                <p className="truncate font-semibold">{session?.user?.fullName || 'Backoffice user'}</p>
+                <p className="truncate text-sm text-muted-foreground">{session?.user?.email}</p>
+                {(session?.roles?.length ?? 0) > 0 ? (
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {session?.roles?.join(' · ')}
+                  </p>
+                ) : null}
+              </div>
+              <Button variant="outline" onClick={() => void refreshProfile()}>
+                <RefreshCw className="h-4 w-4" />
+                Refresh profile
+              </Button>
             </div>
-            <Button variant="outline" onClick={() => void refreshProfile()}>
-              <RefreshCw className="h-4 w-4" />
-              Refresh profile
-            </Button>
           </CardContent>
         </Card>
 
+        {/* Appearance — light theme only
         <Card>
           <CardHeader>
             <CardTitle>Appearance</CardTitle>
@@ -150,24 +156,25 @@ export function SettingsPage() {
             ))}
           </CardContent>
         </Card>
-      </section>
+        */}
 
-      {isSuperAdmin ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Tax & payment fees</CardTitle>
-            <CardDescription>
-              Configure room GST, Razorpay processing fee, and GST on that fee. Changes apply to new checkouts.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button type="button" onClick={() => setConfigOpen(true)}>
-              <Settings2 className="h-4 w-4" />
-              Config
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+        {isSuperAdmin ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Tax & payment fees</CardTitle>
+              <CardDescription>
+                Configure room GST, Razorpay processing fee, and GST on that fee. Changes apply to new checkouts.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button type="button" onClick={() => setConfigOpen(true)}>
+                <Settings2 className="h-4 w-4" />
+                Config
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+      </section>
 
       {configOpen
         ? createPortal(

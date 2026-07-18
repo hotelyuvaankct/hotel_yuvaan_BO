@@ -1,7 +1,6 @@
-import { Menu, MoonStar, SunMedium, LogOut } from 'lucide-react';
+import { Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { useTheme } from '@/components/theme-provider';
 import { useAuth } from '@/lib/auth';
 import faviconSrc from '@/assests/Images/favicon.ico';
 
@@ -10,7 +9,6 @@ export type HeaderProps = {
 };
 
 export function Header({ onMenuClick }: HeaderProps) {
-  const { resolvedTheme, toggleTheme } = useTheme();
   const { logout, session } = useAuth();
   const { confirm } = useConfirm();
 
@@ -55,13 +53,12 @@ export function Header({ onMenuClick }: HeaderProps) {
 
       {/* Right-side actions */}
       <div className="flex items-center gap-1.5">
-        {/* Theme toggle */}
+        {/* Theme toggle — light theme only
         <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme" className="rounded-lg">
           {resolvedTheme === 'dark' ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
         </Button>
-
-        {/* Divider */}
         <div className="mx-1 h-5 w-px bg-border" />
+        */}
 
         {/* User chip */}
         <div className="flex items-center gap-2 rounded-lg px-2 py-1">

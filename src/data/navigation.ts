@@ -16,6 +16,8 @@ export type NavigationItem = {
   description: string;
   icon: typeof LayoutDashboard;
   moduleSlug?: string;
+  /** Extra module slugs that also unlock this nav item (any one read permission is enough). */
+  alternateModuleSlugs?: string[];
 };
 
 export const navigationItems: NavigationItem[] = [
@@ -24,6 +26,8 @@ export const navigationItems: NavigationItem[] = [
     href: '/dashboard',
     description: 'Performance snapshot and quick actions',
     icon: LayoutDashboard,
+    moduleSlug: 'dashboard',
+    alternateModuleSlugs: ['bookings'],
   },
   {
     label: 'Bookings',

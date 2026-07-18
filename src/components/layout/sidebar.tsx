@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { navigationItems } from '@/data/navigation';
 import { useAuth } from '@/lib/auth';
-import { hasPermission } from '@/lib/permissions';
+import { canAccessNavigationItem } from '@/lib/navigation-access';
 import { cn } from '@/lib/utils';
 import faviconSrc from '@/assests/Images/favicon.ico';
 
@@ -15,10 +15,9 @@ export type SidebarProps = {
 
 export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onMobileClose }: SidebarProps) {
   const { session } = useAuth();
-  const visibleNavigationItems = navigationItems.filter((item) => {
-    if (!item.moduleSlug) return true;
-    return hasPermission(session?.perms, item.moduleSlug, 'read');
-  });
+  const visibleNavigationItems = navigationItems.filter((item) =>
+    canAccessNavigationItem(item, session?.perms),
+  );
 
   return (
     <>

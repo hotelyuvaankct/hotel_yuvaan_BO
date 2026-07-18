@@ -2,7 +2,10 @@ import { FormEvent, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
 import { ApiError } from '@/lib/api';
+import type { PermissionSet } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
+import { getStoredSession } from '@/lib/auth-storage';
+import { canAccessPath, getFirstAccessiblePath } from '@/lib/navigation-access';
 import { Button } from '@/components/ui/button';
 
 type LocationState = {
@@ -12,11 +15,21 @@ type LocationState = {
 const inputShellClass =
   'flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 backdrop-blur-md transition-colors focus-within:border-gold-400/50 focus-within:ring-2 focus-within:ring-gold-400/25';
 
+function resolveLandingPath(
+  requestedPath: string | undefined,
+  perms: Record<string, PermissionSet> | undefined,
+) {
+  if (requestedPath && canAccessPath(requestedPath, perms)) {
+    return requestedPath;
+  }
+  return getFirstAccessiblePath(perms);
+}
+
 export function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard';
+  const requestedPath = (location.state as LocationState | null)?.from?.pathname;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,7 +37,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={resolveLandingPath(requestedPath, session?.perms)} replace />;
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -34,7 +47,8 @@ export function LoginPage() {
 
     try {
       await login({ email, password });
-      navigate(from, { replace: true });
+      const nextSession = getStoredSession();
+      navigate(resolveLandingPath(requestedPath, nextSession?.perms), { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to authenticate right now.');
     } finally {
