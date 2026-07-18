@@ -105,13 +105,12 @@ export function RoleViewPage() {
                     <th className="px-3 py-2 font-medium">Create</th>
                     <th className="px-3 py-2 font-medium">Update</th>
                     <th className="px-3 py-2 font-medium">Delete</th>
-                    <th className="px-3 py-2 font-medium">App</th>
                   </tr>
                 </thead>
                 <tbody>
                   {permissions.length === 0 ? (
                     <tr>
-                      <td className="px-3 py-6" colSpan={6}><EmptyState /></td>
+                      <td className="px-3 py-6" colSpan={5}><EmptyState /></td>
                     </tr>
                   ) : null}
                   {permissions.map((permission) => (
@@ -124,7 +123,6 @@ export function RoleViewPage() {
                       <PermissionCell allowed={permission.isAddAccess} />
                       <PermissionCell allowed={permission.isUpdateAccess} />
                       <PermissionCell allowed={permission.isDeleteAccess} />
-                      <PermissionCell allowed={permission.isOnApp} />
                     </tr>
                   ))}
                 </tbody>

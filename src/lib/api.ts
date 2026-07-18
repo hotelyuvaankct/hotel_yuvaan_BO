@@ -16,7 +16,6 @@ export const globalLoaderState = {
 import type {
   ApiResponse,
   AuthSession,
-  AssignUserRolesPayload,
   Booking,
   BulkCreateRoomsPayload,
   BulkDeleteRoomsPayload,
@@ -201,9 +200,6 @@ export const api = {
   },
   getUserAccess(id: number) {
     return apiRequest<UserAccess>(`/users/${id}/access`);
-  },
-  assignUserRoles(id: number, payload: AssignUserRolesPayload) {
-    return apiRequest<UserAccess>(`/users/${id}/roles`, { method: 'PUT', body: JSON.stringify(payload) });
   },
   listRoles() {
     return apiRequest<Role[]>('/roles');

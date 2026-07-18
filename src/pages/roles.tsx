@@ -41,7 +41,7 @@ export function RolesPage() {
   async function deleteRole(role: Role) {
     const confirmed = await confirm({
       title: 'Delete role?',
-      description: `This will remove the ${role.displayName} role and its module permissions.`,
+      description: `This will delete the ${role.displayName} role and every user assigned to it, including users with other roles.`,
       confirmLabel: 'Delete role',
     });
     if (!confirmed) return;
@@ -93,7 +93,7 @@ export function RolesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Role listing</CardTitle>
-          <CardDescription>System roles like SUPER_ADMIN and ADMIN cannot be deleted.</CardDescription>
+          <CardDescription>Only the ADMIN role is protected. Deleting another role also deletes all users assigned to it.</CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {loading ? <LoadingState /> : null}
@@ -134,7 +134,7 @@ export function RolesPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => void deleteRole(role)}
-                          disabled={!canDelete || role.isSystemRole}
+                          disabled={!canDelete || role.name.toUpperCase() === 'ADMIN'}
                           aria-label="Delete role"
                         >
                           <Trash2 className="h-4 w-4" />

@@ -181,6 +181,8 @@ export type LoginPayload = {
 
 export type CreateUserPayload = LoginPayload & {
   fullName: string;
+  roleId: number;
+  hotelId?: number;
   phone?: string;
   avatarUrl?: string;
   dateOfBirth?: string;
@@ -189,16 +191,13 @@ export type CreateUserPayload = LoginPayload & {
 
 export type UpdateUserPayload = {
   fullName?: string;
+  roleId?: number;
+  hotelId?: number;
   phone?: string;
   avatarUrl?: string;
   dateOfBirth?: string;
   gender?: number;
   status?: number;
-};
-
-export type AssignUserRolesPayload = {
-  roleIds: number[];
-  hotelId?: number;
 };
 
 export type CreateRolePayload = {

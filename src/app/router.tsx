@@ -22,9 +22,6 @@ import { UserViewPage } from '@/pages/user-view';
 import { RolesPage } from '@/pages/roles';
 import { RoleFormPage } from '@/pages/role-form';
 import { RoleViewPage } from '@/pages/role-view';
-import { ModulesPage } from '@/pages/modules';
-import { ModuleFormPage } from '@/pages/module-form';
-import { ReportsPage } from '@/pages/reports';
 import { SettingsPage } from '@/pages/settings';
 import { LoginPage } from '@/pages/login';
 import { NotFoundPage } from '@/pages/not-found';
@@ -66,10 +63,6 @@ export const router = createBrowserRouter([
           { path: 'roles/new', element: <RoleFormPage /> },
           { path: 'roles/:id', element: <RoleViewPage /> },
           { path: 'roles/:id/edit', element: <RoleFormPage /> },
-          { path: 'modules', element: <ModulesPage /> },
-          { path: 'modules/new', element: <ModuleFormPage /> },
-          { path: 'modules/:id/edit', element: <ModuleFormPage /> },
-          { path: 'reports', element: <ReportsPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       },

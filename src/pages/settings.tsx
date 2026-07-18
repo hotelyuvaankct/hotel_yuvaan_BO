@@ -8,7 +8,6 @@ import { SYSTEM_ROLE_NAMES } from '@/lib/constants';
 import { useTheme } from '@/components/theme-provider';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TextField } from '@/components/ui/form-fields';
@@ -290,30 +289,6 @@ export function SettingsPage() {
             document.body,
           )
         : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Current permissions</CardTitle>
-          <CardDescription>These module permissions decide whether CRUD controls are enabled.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {Object.entries(session?.perms ?? {}).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No data available.</p>
-          ) : null}
-          {Object.entries(session?.perms ?? {}).map(([module, perms]) => (
-            <div key={module} className="rounded-xl border border-border bg-muted/40 p-4">
-              <p className="font-semibold">{module}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(perms).map(([action, allowed]) => (
-                  <Badge key={action} variant={allowed ? 'success' : 'secondary'}>
-                    {action}: {allowed ? 'yes' : 'no'}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { Role } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { SYSTEM_ROLE_NAMES, Status } from '@/lib/constants';
+import { Status } from '@/lib/constants';
 import { genderOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
@@ -26,7 +26,6 @@ export function UserFormPage() {
   const canSave = isEdit ? canUpdate : canCreate;
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState('');
-  const [isSuperAdminUser, setIsSuperAdminUser] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -48,10 +47,6 @@ export function UserFormPage() {
         setRoles(roleList ?? []);
         if (userId) {
           const access = await api.getUserAccess(userId);
-          const superAdmin = access.roles.some(
-            (role) => role.roleName.toUpperCase() === SYSTEM_ROLE_NAMES.SUPER_ADMIN,
-          );
-          setIsSuperAdminUser(superAdmin);
           setSelectedRoleId(access.roles[0] ? String(access.roles[0].roleId) : '');
           setForm({
             fullName: access.user.fullName ?? '',
@@ -81,7 +76,7 @@ export function UserFormPage() {
     if (!isEdit && form.email.trim() && !isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
     if (!isEdit && form.password.length < 6) nextErrors.password = 'Password must be at least 6 characters.';
     if (form.phone.trim() && !isValidPhone(form.phone)) nextErrors.phone = 'Enter a valid phone number.';
-    if (!isEdit && !selectedRoleId) nextErrors.role = 'Select a role for the user.';
+    if (!selectedRoleId) nextErrors.role = 'Select one role for the user.';
 
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) {
@@ -97,21 +92,17 @@ export function UserFormPage() {
         gender: form.gender ? Number(form.gender) : undefined,
       };
 
-      let savedUserId = userId;
       if (isEdit && userId) {
-        await api.updateUser(userId, payload);
+        await api.updateUser(userId, {
+          ...payload,
+          roleId: Number(selectedRoleId),
+        });
       } else {
-        const user = await api.createUser({
+        await api.createUser({
           ...payload,
           email: form.email,
           password: form.password,
-        });
-        savedUserId = user.id;
-      }
-
-      if (savedUserId && !isSuperAdminUser) {
-        await api.assignUserRoles(savedUserId, {
-          roleIds: selectedRoleId ? [Number(selectedRoleId)] : [],
+          roleId: Number(selectedRoleId),
         });
       }
       showToast(isEdit ? 'User updated.' : 'User created.', 'success');
@@ -137,7 +128,7 @@ export function UserFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update user' : 'Add user'}</CardTitle>
-          <CardDescription>Each user is assigned exactly one role. Super admin roles cannot be changed.</CardDescription>
+          <CardDescription>Each user is assigned exactly one role.</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit} noValidate>
@@ -184,12 +175,10 @@ export function UserFormPage() {
               />
               <SelectField
                 label="Role"
-                required={!isEdit}
-                disabled={isSuperAdminUser}
+                required
                 wrapperClassName="md:col-span-2"
                 value={selectedRoleId}
                 error={errors.role}
-                hint={isSuperAdminUser ? 'Super admin role is locked and cannot be changed.' : undefined}
                 placeholder="Select role"
                 options={activeRoles.map((role) => ({ value: role.id, label: role.displayName }))}
                 onChange={(event) => setSelectedRoleId(event.target.value)}
