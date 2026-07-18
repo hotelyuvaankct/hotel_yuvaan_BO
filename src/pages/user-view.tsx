@@ -4,7 +4,7 @@ import { ArrowLeft, Edit } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { UserAccess } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { optionLabel, recordStatusOptions } from '@/lib/enums';
+import { genderOptions, optionLabel, userStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Badge } from '@/components/ui/badge';
@@ -14,13 +14,6 @@ import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
 import { PageToolbar } from '@/components/common/page-toolbar';
 
-const genderOptions = [
-  { value: 1, label: 'Male' },
-  { value: 2, label: 'Female' },
-  { value: 3, label: 'Other' },
-  { value: 4, label: 'Prefer not to say' },
-];
-
 export function UserViewPage() {
   const { id } = useParams();
   const userId = Number(id);
@@ -29,6 +22,7 @@ export function UserViewPage() {
   const { showToast } = useToast();
   const canRead = hasPermission(session?.perms, 'users', 'read');
   const canUpdate = hasPermission(session?.perms, 'users', 'update');
+  const canReadRoles = hasPermission(session?.perms, 'roles', 'read');
   const [access, setAccess] = useState<UserAccess | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -65,7 +59,11 @@ export function UserViewPage() {
 
       <PageToolbar
         title="User details"
-        description="Profile, assigned roles, and effective module permissions from the API."
+        description={
+          canReadRoles
+            ? 'Profile, assigned roles, and effective module permissions from the API.'
+            : 'Profile and assigned role.'
+        }
         actions={
           access && canUpdate ? (
             <Button variant="gold" size="sm" onClick={() => undefined}>
@@ -80,7 +78,7 @@ export function UserViewPage() {
 
       {!access ? <EmptyState label="No user details found." /> : null}
       {access ? (
-        <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+        <div className={canReadRoles ? 'grid gap-6 xl:grid-cols-[0.8fr_1.2fr]' : 'grid gap-6'}>
           <Card>
             <CardHeader>
               <CardTitle>{access.user.fullName || 'Unnamed user'}</CardTitle>
@@ -90,57 +88,72 @@ export function UserViewPage() {
               <DetailRow label="Phone" value={access.user.phone || '-'} />
               <DetailRow label="Gender" value={optionLabel(genderOptions, access.user.gender)} />
               <DetailRow label="Date of birth" value={access.user.dateOfBirth || '-'} />
-              <DetailRow label="Status" value={optionLabel(recordStatusOptions, access.user.status)} />
+              <DetailRow label="Status" value={optionLabel(userStatusOptions, access.user.status)} />
+              <DetailRow label="Password set" value={access.user.passwordSet ? 'Yes' : 'No'} />
+              {!canReadRoles ? (
+                <DetailRow
+                  label="Role"
+                  value={
+                    access.roles.length > 0
+                      ? access.roles.map((role) => role.roleDisplayName).join(', ')
+                      : 'No role assigned'
+                  }
+                />
+              ) : null}
               <DetailRow label="Created" value={formatDate(access.user.createdAt)} />
               <DetailRow label="Updated" value={formatDate(access.user.updatedAt)} />
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Roles and permissions</CardTitle>
-              <CardDescription>Effective access after merging all assigned roles.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Assigned roles</p>
-                <div className="flex flex-wrap gap-2">
-                  {access.roles.length === 0 ? <EmptyState label="No roles assigned." /> : null}
-                  {access.roles.map((role) => <Badge key={role.id} variant="gold">{role.roleDisplayName}</Badge>)}
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[620px] text-sm">
-                  <thead className="text-left text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Module</th>
-                      <th className="px-3 py-2 font-medium">Read</th>
-                      <th className="px-3 py-2 font-medium">Create</th>
-                      <th className="px-3 py-2 font-medium">Update</th>
-                      <th className="px-3 py-2 font-medium">Delete</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(access.perms).length === 0 ? (
-                      <tr>
-                        <td className="px-3 py-6" colSpan={5}><EmptyState /></td>
-                      </tr>
-                    ) : null}
-                    {Object.entries(access.perms).map(([module, perms]) => (
-                      <tr key={module} className="border-t border-border">
-                        <td className="px-3 py-3 font-medium">{module}</td>
-                        <PermissionCell allowed={perms.read} />
-                        <PermissionCell allowed={perms.create} />
-                        <PermissionCell allowed={perms.update} />
-                        <PermissionCell allowed={perms.delete} />
-                      </tr>
+          {canReadRoles ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Roles and permissions</CardTitle>
+                <CardDescription>Effective access after merging all assigned roles.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Assigned roles</p>
+                  <div className="flex flex-wrap gap-2">
+                    {access.roles.length === 0 ? <EmptyState label="No roles assigned." /> : null}
+                    {access.roles.map((role) => (
+                      <Badge key={role.id} variant="gold">{role.roleDisplayName}</Badge>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[620px] text-sm">
+                    <thead className="text-left text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2 font-medium">Module</th>
+                        <th className="px-3 py-2 font-medium">Read</th>
+                        <th className="px-3 py-2 font-medium">Create</th>
+                        <th className="px-3 py-2 font-medium">Update</th>
+                        <th className="px-3 py-2 font-medium">Delete</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {Object.entries(access.perms).length === 0 ? (
+                        <tr>
+                          <td className="px-3 py-6" colSpan={5}><EmptyState /></td>
+                        </tr>
+                      ) : null}
+                      {Object.entries(access.perms).map(([module, perms]) => (
+                        <tr key={module} className="border-t border-border">
+                          <td className="px-3 py-3 font-medium">{module}</td>
+                          <PermissionCell allowed={perms.read} />
+                          <PermissionCell allowed={perms.create} />
+                          <PermissionCell allowed={perms.update} />
+                          <PermissionCell allowed={perms.delete} />
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       ) : null}
     </div>

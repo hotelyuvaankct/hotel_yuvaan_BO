@@ -3,10 +3,8 @@ import {
   CalendarRange,
   BedDouble,
   Tags,
-  Blocks,
   Users,
   ShieldCheck,
-  ChartColumnIncreasing,
   Settings,
   Images,
   TicketPercent,
@@ -18,6 +16,8 @@ export type NavigationItem = {
   description: string;
   icon: typeof LayoutDashboard;
   moduleSlug?: string;
+  /** Extra module slugs that also unlock this nav item (any one read permission is enough). */
+  alternateModuleSlugs?: string[];
 };
 
 export const navigationItems: NavigationItem[] = [
@@ -26,6 +26,8 @@ export const navigationItems: NavigationItem[] = [
     href: '/dashboard',
     description: 'Performance snapshot and quick actions',
     icon: LayoutDashboard,
+    moduleSlug: 'dashboard',
+    alternateModuleSlugs: ['bookings'],
   },
   {
     label: 'Bookings',
@@ -75,20 +77,6 @@ export const navigationItems: NavigationItem[] = [
     description: 'Module CRUD permission matrix',
     icon: ShieldCheck,
     moduleSlug: 'roles',
-  },
-  {
-    label: 'Modules',
-    href: '/modules',
-    description: 'Create modules for the role permission matrix',
-    icon: Blocks,
-    moduleSlug: 'modules',
-  },
-  {
-    label: 'Reports',
-    href: '/reports',
-    description: 'Booking and revenue reports',
-    icon: ChartColumnIncreasing,
-    moduleSlug: 'reports',
   },
   {
     label: 'Settings',

@@ -14,7 +14,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { Pagination } from '@/components/common/pagination';
-import { DateField, SelectField, TextField } from '@/components/ui/form-fields';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import { SelectField, TextField } from '@/components/ui/form-fields';
 import { Status } from '@/lib/constants';
 import { addDaysIso, getRoomDateFilterErrors, normalizeRoomDateFilters, todayIso } from '@/lib/form-validation';
 
@@ -29,8 +30,6 @@ function createDefaultFilters() {
     checkOut: addDaysIso(checkIn, 1),
   };
 }
-
-const emptyFilters = createDefaultFilters();
 
 type RoomSelection = {
   selectAll: boolean;
@@ -93,7 +92,7 @@ export function RoomsPage() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
-  const [filters, setFilters] = useState(emptyFilters);
+  const [filters, setFilters] = useState(createDefaultFilters);
   const [filterErrors, setFilterErrors] = useState<Record<string, string>>({});
 
   async function load(targetPage = page, activeFilters = filters) {
@@ -248,7 +247,6 @@ export function RoomsPage() {
   const allVisibleSelected = rooms.length > 0 && rooms.every((room) => isRoomSelected(room.id, selection));
   const someVisibleSelected = rooms.some((room) => isRoomSelected(room.id, selection));
   const hasDateFilterErrors = Object.keys(filterErrors).length > 0;
-  const minCheckOut = filters.checkIn ? addDaysIso(filters.checkIn, 1) : undefined;
 
   return (
     <div className="space-y-6 animate-fade-in-up">
@@ -282,59 +280,24 @@ export function RoomsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[180px_180px_1fr_180px_180px_180px_auto]">
-            <DateField
+          <div className="grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,340px)_minmax(160px,1fr)_minmax(160px,1fr)_minmax(160px,180px)_minmax(160px,180px)_auto]">
+            <DateRangePicker
               variant="filter"
-              label="Check-in"
+              label="Stay dates"
               required
-              value={filters.checkIn}
-              error={filterErrors.checkIn}
-              onChange={(event) => {
-                const checkIn = event.target.value;
-                setFilters((current) => {
-                  const next = normalizeRoomDateFilters(checkIn, current.checkOut);
-                  return { ...current, ...next };
-                });
+              startValue={filters.checkIn}
+              endValue={filters.checkOut}
+              error={filterErrors.checkIn || filterErrors.checkOut}
+              onChange={(checkIn, checkOut) => {
+                const next = normalizeRoomDateFilters(checkIn, checkOut);
+                setFilters((current) => ({ ...current, ...next }));
                 setFilterErrors((current) => {
-                  const next = { ...current };
-                  delete next.checkIn;
-                  delete next.checkOut;
-                  return next;
+                  const cleared = { ...current };
+                  delete cleared.checkIn;
+                  delete cleared.checkOut;
+                  return cleared;
                 });
               }}
-            />
-            <DateField
-              variant="filter"
-              label="Check-out"
-              required
-              value={filters.checkOut}
-              min={minCheckOut}
-              error={filterErrors.checkOut}
-              onChange={(event) => {
-                const checkOut = event.target.value;
-                setFilters((current) => {
-                  if (!current.checkIn || !checkOut) {
-                    return { ...current, checkOut };
-                  }
-                  if (checkOut <= current.checkIn) {
-                    return { ...current, checkOut: addDaysIso(current.checkIn, 1) };
-                  }
-                  return { ...current, checkOut };
-                });
-                setFilterErrors((current) => {
-                  if (!current.checkOut) return current;
-                  const next = { ...current };
-                  delete next.checkOut;
-                  return next;
-                });
-              }}
-            />
-            <SelectField
-              variant="filter"
-              value={filters.hotelId}
-              placeholder="All hotels"
-              options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
-              onChange={(event) => setFilters((current) => ({ ...current, hotelId: event.target.value }))}
             />
             <TextField
               placeholder="Search room number"
@@ -349,7 +312,9 @@ export function RoomsPage() {
                 options={roomTypes.map((roomType) => ({ value: roomType.id, label: roomType.name }))}
                 onChange={(event) => setFilters((current) => ({ ...current, roomTypeId: event.target.value }))}
               />
-            ) : <div className="hidden xl:block" />}
+            ) : (
+              <div className="hidden xl:block" aria-hidden />
+            )}
             <SelectField
               variant="filter"
               value={filters.roomStatus}
@@ -360,6 +325,7 @@ export function RoomsPage() {
             <Button
               type="button"
               variant="outline"
+              className="h-10 shrink-0"
               onClick={() => {
                 setFilters(createDefaultFilters());
                 setFilterErrors({});

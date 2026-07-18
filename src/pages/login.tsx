@@ -1,8 +1,11 @@
 import { FormEvent, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
-import { ApiError } from '@/lib/api';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, LockKeyhole, Mail, RefreshCw } from 'lucide-react';
+import { ApiError, api } from '@/lib/api';
+import type { PermissionSet } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
+import { getStoredSession } from '@/lib/auth-storage';
+import { canAccessPath, getFirstAccessiblePath } from '@/lib/navigation-access';
 import { Button } from '@/components/ui/button';
 
 type LocationState = {
@@ -12,33 +15,78 @@ type LocationState = {
 const inputShellClass =
   'flex h-11 items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 backdrop-blur-md transition-colors focus-within:border-gold-400/50 focus-within:ring-2 focus-within:ring-gold-400/25';
 
+function resolveLandingPath(
+  requestedPath: string | undefined,
+  perms: Record<string, PermissionSet> | undefined,
+) {
+  if (requestedPath && canAccessPath(requestedPath, perms)) {
+    return requestedPath;
+  }
+  return getFirstAccessiblePath(perms);
+}
+
 export function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, session } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as LocationState | null)?.from?.pathname ?? '/dashboard';
+  const requestedPath = (location.state as LocationState | null)?.from?.pathname;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [pendingActivation, setPendingActivation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   if (isAuthenticated) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={resolveLandingPath(requestedPath, session?.perms)} replace />;
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+    setInfo('');
+    setPendingActivation(false);
     setLoading(true);
 
     try {
       await login({ email, password });
-      navigate(from, { replace: true });
+      const nextSession = getStoredSession();
+      navigate(resolveLandingPath(requestedPath, nextSession?.perms), { replace: true });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to authenticate right now.');
+      if (err instanceof ApiError && err.status === 403 && err.hasCode('ERR_105')) {
+        setPendingActivation(true);
+        setError('');
+        setInfo(
+          'This account is waiting for activation. Open the set-password link from your email, or resend the setup email below.',
+        );
+      } else {
+        setError(err instanceof ApiError ? err.message : 'Unable to authenticate right now.');
+      }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onResendSetupEmail() {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Enter your email address to resend the activation email.');
+      return;
+    }
+
+    setResending(true);
+    setError('');
+    try {
+      await api.resendSetupEmail({ email: trimmedEmail });
+      setInfo(
+        'If this email is eligible for activation, a new setup message has been sent. Check your inbox and spam folder.',
+      );
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Unable to resend the activation email right now.');
+    } finally {
+      setResending(false);
     }
   }
 
@@ -108,10 +156,32 @@ export function LoginPage() {
               </label>
             </div>
 
+            {info ? (
+              <div
+                className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-50 backdrop-blur-sm"
+                role="status"
+              >
+                {info}
+              </div>
+            ) : null}
+
             {error ? (
-              <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 backdrop-blur-sm">
+              <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 backdrop-blur-sm" role="alert">
                 {error}
               </div>
+            ) : null}
+
+            {pendingActivation ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-white/25 bg-white/5 text-white hover:bg-white/10"
+                disabled={resending || !email.trim()}
+                onClick={() => void onResendSetupEmail()}
+              >
+                <RefreshCw className={`h-4 w-4 ${resending ? 'animate-spin' : ''}`} />
+                {resending ? 'Sending…' : 'Resend activation email'}
+              </Button>
             ) : null}
 
             <Button type="submit" variant="gold" className="mt-2 w-full shadow-lg shadow-amber-900/30" disabled={loading}>
@@ -119,6 +189,13 @@ export function LoginPage() {
               {loading ? 'Please wait' : 'Sign in'}
             </Button>
           </form>
+
+          <p className="mt-5 text-center text-xs text-white/55">
+            Have an activation link?{' '}
+            <Link to="/set-password" className="font-semibold text-gold-300 underline-offset-4 hover:underline">
+              Set your password
+            </Link>
+          </p>
         </div>
       </div>
     </main>

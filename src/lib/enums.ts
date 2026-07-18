@@ -8,6 +8,14 @@ export const genderOptions = [
 export const recordStatusOptions = [
   { value: 1, label: 'Active' },
   { value: 2, label: 'Inactive' },
+  { value: 3, label: 'Deleted' },
+  { value: 4, label: 'Pending' },
+];
+
+export const userStatusOptions = [
+  { value: 1, label: 'Active' },
+  { value: 2, label: 'Inactive' },
+  { value: 4, label: 'Pending' },
 ];
 
 export const roomStatusOptions = [
@@ -26,6 +34,13 @@ export const bookingStatusOptions = [
   { value: 6, label: 'Cancelled' },
   { value: 7, label: 'Failed' },
   { value: 8, label: 'Expired' },
+];
+
+/** Primary list filters: Booked / Completed / Cancelled */
+export const bookingListStatusFilters = [
+  { value: 3, label: 'Booked' },
+  { value: 5, label: 'Completed' },
+  { value: 6, label: 'Cancelled' },
 ];
 
 export const bookingSourceOptions = [

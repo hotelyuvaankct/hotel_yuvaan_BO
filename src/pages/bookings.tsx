@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarPlus, Eye, RefreshCw } from 'lucide-react';
+import { Building2, CalendarDays, CalendarPlus, Eye, RefreshCw, UserRound } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Booking, HotelSummary } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { bookingStatusOptions, optionLabel } from '@/lib/enums';
+import { bookingListStatusFilters, bookingStatusOptions, optionLabel } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +15,25 @@ import { LoadingState } from '@/components/common/loading-state';
 import { Pagination } from '@/components/common/pagination';
 import { SelectField, TextField } from '@/components/ui/form-fields';
 
-const emptyFilters = { hotelId: '', bookingStatus: '', guestName: '' };
+const emptyFilters = { hotelId: '', bookingStatus: '', search: '' };
 
-function statusVariant(status?: number) {
-  if (status === 3) return 'success';
-  if (status === 4) return 'gold';
-  if (status === 6) return 'secondary';
+function statusVariant(status?: number): 'gold' | 'success' | 'danger' | 'warning' | 'secondary' {
+  // Booked / active stay
+  if (status === 3 || status === 4) return 'gold';
+  // Completed
+  if (status === 5) return 'success';
+  // Cancelled
+  if (status === 6) return 'danger';
+  // Pending / hold
   if (status === 1 || status === 2) return 'warning';
   return 'secondary';
+}
+
+function statusLabel(status?: number) {
+  if (status === 3 || status === 4) return 'Booked';
+  if (status === 5) return 'Completed';
+  if (status === 6) return 'Cancelled';
+  return optionLabel(bookingStatusOptions, status);
 }
 
 function formatCurrency(value?: number) {
@@ -32,7 +43,80 @@ function formatCurrency(value?: number) {
 
 function formatDate(value?: string) {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date(value));
+  const date = new Date(value.includes('T') ? value : `${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+}
+
+function BookingCard({
+  booking,
+  canUpdate,
+}: {
+  booking: Booking;
+  canUpdate: boolean;
+}) {
+  const showUpdate = canUpdate && booking.bookingStatus !== 6 && booking.bookingStatus !== 5;
+
+  return (
+    <article className="flex h-full flex-col rounded-2xl border border-border/70 bg-background p-4 shadow-[0_4px_16px_rgb(0,0,0,0.03)] transition-colors hover:border-primary/30">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-semibold tracking-tight">{booking.bookingCode}</p>
+          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Building2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{booking.hotelName || '-'}</span>
+          </p>
+        </div>
+        <Badge variant={statusVariant(booking.bookingStatus)} className="shrink-0">
+          {statusLabel(booking.bookingStatus)}
+        </Badge>
+      </div>
+
+      <div className="mt-4 space-y-3 text-sm">
+        <div className="flex items-start gap-2">
+          <UserRound className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="font-medium">{booking.guestName}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {booking.guestPhone || booking.guestEmail || '-'}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2 text-muted-foreground">
+          <CalendarDays className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p>
+              <span className="text-foreground">{formatDate(booking.checkIn)}</span>
+              <span className="mx-1.5">→</span>
+              <span className="text-foreground">{formatDate(booking.checkOut)}</span>
+            </p>
+            <p className="text-xs">Check-in to check-out</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/70 pt-4">
+        <p className="text-base font-semibold">{formatCurrency(booking.totalAmount)}</p>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => undefined}>
+            <Link to={`/bookings/${booking.id}`} className="inline-flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              View
+            </Link>
+          </Button>
+          {showUpdate ? (
+            <Button variant="outline" size="sm" onClick={() => undefined}>
+              <Link to={`/bookings/${booking.id}/edit`} className="inline-flex items-center gap-2">
+                <CalendarPlus className="h-4 w-4" />
+                Update
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export function BookingsPage() {
@@ -56,7 +140,7 @@ export function BookingsPage() {
         size: 10,
         hotelId: activeFilters.hotelId ? Number(activeFilters.hotelId) : undefined,
         bookingStatus: activeFilters.bookingStatus ? Number(activeFilters.bookingStatus) : undefined,
-        guestName: activeFilters.guestName,
+        guestName: activeFilters.search,
       });
       setBookings(result.content ?? []);
       setPage(result.number ?? targetPage);
@@ -83,7 +167,7 @@ export function BookingsPage() {
       void load(0, filters);
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [canRead, filters.hotelId, filters.bookingStatus, filters.guestName]);
+  }, [canRead, filters.hotelId, filters.bookingStatus, filters.search]);
 
   if (!canRead) {
     return (
@@ -110,7 +194,7 @@ export function BookingsPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[220px_220px_1fr_auto]">
+          <div className="grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[220px_220px_1fr_auto]">
             <SelectField
               variant="filter"
               value={filters.hotelId}
@@ -122,79 +206,35 @@ export function BookingsPage() {
               variant="filter"
               value={filters.bookingStatus}
               placeholder="All statuses"
-              options={bookingStatusOptions.map((option) => ({ value: option.value, label: option.label }))}
+              options={bookingListStatusFilters.map((option) => ({ value: option.value, label: option.label }))}
               onChange={(event) => setFilters((current) => ({ ...current, bookingStatus: event.target.value }))}
             />
             <TextField
-              placeholder="Search guest name"
-              value={filters.guestName}
-              onChange={(event) => setFilters((current) => ({ ...current, guestName: event.target.value }))}
+              placeholder="Search guest or booking ID"
+              value={filters.search}
+              onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
             />
-            <Button type="button" variant="outline" onClick={() => setFilters(emptyFilters)}>Clear</Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 shrink-0"
+              onClick={() => setFilters(emptyFilters)}
+            >
+              Clear
+            </Button>
           </div>
 
-          <div className="overflow-x-auto">
-            {loading ? <LoadingState /> : null}
-            {!loading ? (
-              <table className="w-full min-w-[980px] text-sm">
-                <thead className="text-left text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Code</th>
-                    <th className="px-3 py-2 font-medium">Guest</th>
-                    <th className="px-3 py-2 font-medium">Hotel</th>
-                    <th className="px-3 py-2 font-medium">Check-in</th>
-                    <th className="px-3 py-2 font-medium">Check-out</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 font-medium">Amount</th>
-                    <th className="px-3 py-2 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.length === 0 ? (
-                    <tr>
-                      <td className="px-3 py-6" colSpan={8}><EmptyState /></td>
-                    </tr>
-                  ) : null}
-                  {bookings.map((booking) => (
-                    <tr key={booking.id} className="border-t border-border">
-                      <td className="px-3 py-3 font-medium">{booking.bookingCode}</td>
-                      <td className="px-3 py-3">
-                        <p className="font-medium">{booking.guestName}</p>
-                        <p className="text-xs text-muted-foreground">{booking.guestPhone || booking.guestEmail || '-'}</p>
-                      </td>
-                      <td className="px-3 py-3 text-muted-foreground">{booking.hotelName}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{formatDate(booking.checkIn)}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{formatDate(booking.checkOut)}</td>
-                      <td className="px-3 py-3">
-                        <Badge variant={statusVariant(booking.bookingStatus)}>
-                          {optionLabel(bookingStatusOptions, booking.bookingStatus)}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-3 font-medium">{formatCurrency(booking.totalAmount)}</td>
-                      <td className="px-3 py-3">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" onClick={() => undefined}>
-                            <Link to={`/bookings/${booking.id}`} className="inline-flex items-center gap-2">
-                              <Eye className="h-4 w-4" />
-                              View
-                            </Link>
-                          </Button>
-                          {canUpdate && booking.bookingStatus !== 6 && booking.bookingStatus !== 5 ? (
-                            <Button variant="outline" size="sm" onClick={() => undefined}>
-                              <Link to={`/bookings/${booking.id}/edit`} className="inline-flex items-center gap-2">
-                                <CalendarPlus className="h-4 w-4" />
-                                Update
-                              </Link>
-                            </Button>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : null}
-          </div>
+          {loading ? <LoadingState /> : null}
+
+          {!loading && bookings.length === 0 ? <EmptyState /> : null}
+
+          {!loading && bookings.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {bookings.map((booking) => (
+                <BookingCard key={booking.id} booking={booking} canUpdate={canUpdate} />
+              ))}
+            </div>
+          ) : null}
 
           <Pagination
             page={page}

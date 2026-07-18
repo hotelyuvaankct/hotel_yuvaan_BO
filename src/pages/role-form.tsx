@@ -17,7 +17,6 @@ type PermissionDraft = {
   isAddAccess: boolean;
   isUpdateAccess: boolean;
   isDeleteAccess: boolean;
-  isOnApp: boolean;
 };
 
 const emptyPermission: PermissionDraft = {
@@ -25,7 +24,6 @@ const emptyPermission: PermissionDraft = {
   isAddAccess: false,
   isUpdateAccess: false,
   isDeleteAccess: false,
-  isOnApp: false,
 };
 
 export function RoleFormPage() {
@@ -74,7 +72,6 @@ export function RoleFormPage() {
                   isAddAccess: permission.isAddAccess,
                   isUpdateAccess: permission.isUpdateAccess,
                   isDeleteAccess: permission.isDeleteAccess,
-                  isOnApp: permission.isOnApp,
                 },
               ]),
             ),
@@ -118,6 +115,7 @@ export function RoleFormPage() {
               {
                 moduleId: module.id,
                 ...(permissions[module.id] ?? emptyPermission),
+                isOnApp: false,
               },
               existingPermissions.get(module.id),
             ),
@@ -201,13 +199,12 @@ export function RoleFormPage() {
                       <th className="px-3 py-2 font-medium">Create</th>
                       <th className="px-3 py-2 font-medium">Update</th>
                       <th className="px-3 py-2 font-medium">Delete</th>
-                      <th className="px-3 py-2 font-medium">App</th>
                     </tr>
                   </thead>
                   <tbody>
                     {modules.length === 0 ? (
                       <tr>
-                        <td className="px-3 py-6 text-sm text-muted-foreground" colSpan={6}>No data available.</td>
+                        <td className="px-3 py-6 text-sm text-muted-foreground" colSpan={5}>No data available.</td>
                       </tr>
                     ) : null}
                     {modules.map((module) => {
@@ -215,7 +212,7 @@ export function RoleFormPage() {
                       return (
                         <tr key={module.id} className="border-t border-border">
                           <td className="px-3 py-3"><p className="font-medium">{module.moduleName}</p><p className="text-xs text-muted-foreground">{module.slug}</p></td>
-                          {(['isListAccess', 'isAddAccess', 'isUpdateAccess', 'isDeleteAccess', 'isOnApp'] as const).map((key) => (
+                          {(['isListAccess', 'isAddAccess', 'isUpdateAccess', 'isDeleteAccess'] as const).map((key) => (
                             <td key={key} className="px-3 py-3">
                               <input
                                 type="checkbox"

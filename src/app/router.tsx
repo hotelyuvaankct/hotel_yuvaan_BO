@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { useAuth } from '@/lib/auth';
+import { getFirstAccessiblePath } from '@/lib/navigation-access';
 import { DashboardPage } from '@/pages/dashboard';
 import { BookingsPage } from '@/pages/bookings';
 import { BookingFormPage } from '@/pages/booking-form';
@@ -22,15 +24,19 @@ import { UserViewPage } from '@/pages/user-view';
 import { RolesPage } from '@/pages/roles';
 import { RoleFormPage } from '@/pages/role-form';
 import { RoleViewPage } from '@/pages/role-view';
-import { ModulesPage } from '@/pages/modules';
-import { ModuleFormPage } from '@/pages/module-form';
-import { ReportsPage } from '@/pages/reports';
 import { SettingsPage } from '@/pages/settings';
 import { LoginPage } from '@/pages/login';
+import { SetPasswordPage } from '@/pages/set-password';
 import { NotFoundPage } from '@/pages/not-found';
+
+function DefaultRoute() {
+  const { session } = useAuth();
+  return <Navigate to={getFirstAccessiblePath(session?.perms)} replace />;
+}
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/set-password', element: <SetPasswordPage /> },
   {
     path: '/',
     element: <ProtectedRoute />,
@@ -38,7 +44,7 @@ export const router = createBrowserRouter([
       {
         element: <AdminLayout />,
         children: [
-          { index: true, element: <Navigate to="/dashboard" replace /> },
+          { index: true, element: <DefaultRoute /> },
           { path: 'dashboard', element: <DashboardPage /> },
           { path: 'bookings', element: <BookingsPage /> },
           { path: 'bookings/:id', element: <BookingViewPage /> },
@@ -66,10 +72,6 @@ export const router = createBrowserRouter([
           { path: 'roles/new', element: <RoleFormPage /> },
           { path: 'roles/:id', element: <RoleViewPage /> },
           { path: 'roles/:id/edit', element: <RoleFormPage /> },
-          { path: 'modules', element: <ModulesPage /> },
-          { path: 'modules/new', element: <ModuleFormPage /> },
-          { path: 'modules/:id/edit', element: <ModuleFormPage /> },
-          { path: 'reports', element: <ReportsPage /> },
           { path: 'settings', element: <SettingsPage /> },
         ],
       },

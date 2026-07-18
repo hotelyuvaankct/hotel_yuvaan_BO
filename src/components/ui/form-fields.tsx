@@ -1,5 +1,6 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
-import { CalendarDays, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { CalendarDays, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const fieldControlClass =
@@ -145,6 +146,46 @@ export function TextField({ label, error, hint, required, wrapperClassName, clas
         required={required}
         className={controlClass(error, className)}
       />
+    </FieldShell>
+  );
+}
+
+type PasswordFieldProps = Omit<TextFieldProps, 'type'> & {
+  revealLabel?: string;
+  hideLabel?: string;
+};
+
+export function PasswordField({
+  label,
+  error,
+  hint,
+  required,
+  wrapperClassName,
+  className,
+  revealLabel = 'Show password',
+  hideLabel = 'Hide password',
+  ...props
+}: PasswordFieldProps) {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <FieldShell label={label} error={error} hint={hint} required={required} className={wrapperClassName}>
+      <div className="relative">
+        <input
+          {...props}
+          type={visible ? 'text' : 'password'}
+          required={required}
+          className={controlClass(error, cn('pr-10', className))}
+        />
+        <button
+          type="button"
+          onClick={() => setVisible((current) => !current)}
+          className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label={visible ? hideLabel : revealLabel}
+        >
+          {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
     </FieldShell>
   );
 }

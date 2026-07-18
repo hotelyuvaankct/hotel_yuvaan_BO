@@ -5,10 +5,9 @@ import { ApiError, api } from '@/lib/api';
 import type { PricingConfig } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { SYSTEM_ROLE_NAMES } from '@/lib/constants';
-import { useTheme } from '@/components/theme-provider';
+import { ChangePasswordFlow } from '@/components/auth/change-password-flow';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { TextField } from '@/components/ui/form-fields';
@@ -22,7 +21,6 @@ const emptyPricing: PricingConfig = {
 };
 
 export function SettingsPage() {
-  const { theme, setTheme } = useTheme();
   const { session, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -127,48 +125,53 @@ export function SettingsPage() {
             <CardDescription>Authenticated user and permissions loaded from the profile API.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-xl border border-border bg-muted/40 p-4">
-              <p className="font-semibold">{session?.user?.fullName || 'Backoffice user'}</p>
-              <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
-            </div>
-            <Button variant="outline" onClick={() => void refreshProfile()}>
-              <RefreshCw className="h-4 w-4" />
-              Refresh profile
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>Theme preference stays local to this browser.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3">
-            {(['light', 'dark', 'system'] as const).map((option) => (
-              <Button key={option} variant={theme === option ? 'gold' : 'outline'} onClick={() => setTheme(option)}>
-                {option[0].toUpperCase() + option.slice(1)}
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 p-4">
+              <div className="min-w-0 space-y-1">
+                <p className="truncate font-semibold">{session?.user?.fullName || 'Backoffice user'}</p>
+                <p className="truncate text-sm text-muted-foreground">{session?.user?.email}</p>
+                {(session?.roles?.length ?? 0) > 0 ? (
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {session?.roles?.join(' · ')}
+                  </p>
+                ) : null}
+              </div>
+              <Button variant="outline" onClick={() => void refreshProfile()}>
+                <RefreshCw className="h-4 w-4" />
+                Refresh profile
               </Button>
-            ))}
+            </div>
           </CardContent>
         </Card>
-      </section>
 
-      {isSuperAdmin ? (
         <Card>
           <CardHeader>
-            <CardTitle>Tax & payment fees</CardTitle>
+            <CardTitle>Security</CardTitle>
             <CardDescription>
-              Configure room GST, Razorpay processing fee, and GST on that fee. Changes apply to new checkouts.
+              Change your password with a one-time email code. All sessions end after a successful change.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button type="button" onClick={() => setConfigOpen(true)}>
-              <Settings2 className="h-4 w-4" />
-              Config
-            </Button>
+            <ChangePasswordFlow />
           </CardContent>
         </Card>
-      ) : null}
+
+        {isSuperAdmin ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Tax & payment fees</CardTitle>
+              <CardDescription>
+                Configure room GST, Razorpay processing fee, and GST on that fee. Changes apply to new checkouts.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button type="button" onClick={() => setConfigOpen(true)}>
+                <Settings2 className="h-4 w-4" />
+                Config
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+      </section>
 
       {configOpen
         ? createPortal(
@@ -290,30 +293,6 @@ export function SettingsPage() {
             document.body,
           )
         : null}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Current permissions</CardTitle>
-          <CardDescription>These module permissions decide whether CRUD controls are enabled.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {Object.entries(session?.perms ?? {}).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No data available.</p>
-          ) : null}
-          {Object.entries(session?.perms ?? {}).map(([module, perms]) => (
-            <div key={module} className="rounded-xl border border-border bg-muted/40 p-4">
-              <p className="font-semibold">{module}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {Object.entries(perms).map(([action, allowed]) => (
-                  <Badge key={action} variant={allowed ? 'success' : 'secondary'}>
-                    {action}: {allowed ? 'yes' : 'no'}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
     </div>
   );
 }
