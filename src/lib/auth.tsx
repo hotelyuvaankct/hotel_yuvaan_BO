@@ -1,13 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { clearStoredSession, getStoredSession, storeSession } from '@/lib/auth-storage';
-import type { AuthSession, CreateUserPayload, LoginPayload } from '@/lib/api-types';
+import type { AuthSession, LoginPayload } from '@/lib/api-types';
 
 type AuthContextValue = {
   session: AuthSession | null;
   isAuthenticated: boolean;
   login: (payload: LoginPayload) => Promise<void>;
-  register: (payload: CreateUserPayload) => Promise<void>;
   refreshProfile: () => Promise<void>;
   logout: () => void;
 };
@@ -43,10 +42,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: Boolean(session?.token),
       async login(payload) {
         const nextSession = await api.login(payload);
-        setSession(storeSession(nextSession));
-      },
-      async register(payload) {
-        const nextSession = await api.register(payload);
         setSession(storeSession(nextSession));
       },
       refreshProfile,

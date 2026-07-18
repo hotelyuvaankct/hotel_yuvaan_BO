@@ -32,7 +32,6 @@ export function UserFormPage() {
   const [form, setForm] = useState({
     fullName: '',
     email: '',
-    password: '',
     phone: '',
     gender: '',
   });
@@ -51,7 +50,6 @@ export function UserFormPage() {
           setForm({
             fullName: access.user.fullName ?? '',
             email: access.user.email ?? '',
-            password: '',
             phone: access.user.phone ?? '',
             gender: access.user.gender ? String(access.user.gender) : '',
           });
@@ -74,7 +72,6 @@ export function UserFormPage() {
     if (!form.fullName.trim()) nextErrors.fullName = 'Full name is required.';
     if (!isEdit && !form.email.trim()) nextErrors.email = 'Email is required.';
     if (!isEdit && form.email.trim() && !isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
-    if (!isEdit && form.password.length < 6) nextErrors.password = 'Password must be at least 6 characters.';
     if (form.phone.trim() && !isValidPhone(form.phone)) nextErrors.phone = 'Enter a valid phone number.';
     if (!selectedRoleId) nextErrors.role = 'Select one role for the user.';
 
@@ -97,15 +94,15 @@ export function UserFormPage() {
           ...payload,
           roleId: Number(selectedRoleId),
         });
+        showToast('User updated.', 'success');
       } else {
         await api.createUser({
           ...payload,
           email: form.email,
-          password: form.password,
           roleId: Number(selectedRoleId),
         });
+        showToast('User created. An activation email will be sent.', 'success');
       }
-      showToast(isEdit ? 'User updated.' : 'User created.', 'success');
       navigate('/users');
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : 'Unable to save user.', 'error');
@@ -128,7 +125,11 @@ export function UserFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update user' : 'Add user'}</CardTitle>
-          <CardDescription>Each user is assigned exactly one role.</CardDescription>
+          <CardDescription>
+            {isEdit
+              ? 'Each user is assigned exactly one role.'
+              : 'Each user is assigned exactly one role. They will receive an email to set their password.'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit} noValidate>
@@ -148,17 +149,6 @@ export function UserFormPage() {
                 error={errors.email}
                 onChange={(event) => setForm((value) => ({ ...value, email: event.target.value }))}
               />
-              {!isEdit ? (
-                <TextField
-                  label="Password"
-                  type="password"
-                  minLength={6}
-                  required
-                  value={form.password}
-                  error={errors.password}
-                  onChange={(event) => setForm((value) => ({ ...value, password: event.target.value }))}
-                />
-              ) : null}
               <TextField
                 label="Phone"
                 type="tel"

@@ -5,6 +5,7 @@ import { ApiError, api } from '@/lib/api';
 import type { PricingConfig } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { SYSTEM_ROLE_NAMES } from '@/lib/constants';
+import { ChangePasswordFlow } from '@/components/auth/change-password-flow';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
@@ -117,7 +118,7 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <section className={`grid gap-6 ${isSuperAdmin ? 'xl:grid-cols-2' : 'max-w-2xl'}`}>
+      <section className="grid gap-6 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
@@ -142,21 +143,17 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Appearance — light theme only
         <Card>
           <CardHeader>
-            <CardTitle>Appearance</CardTitle>
-            <CardDescription>Theme preference stays local to this browser.</CardDescription>
+            <CardTitle>Security</CardTitle>
+            <CardDescription>
+              Change your password with a one-time email code. All sessions end after a successful change.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3">
-            {(['light', 'dark', 'system'] as const).map((option) => (
-              <Button key={option} variant={theme === option ? 'gold' : 'outline'} onClick={() => setTheme(option)}>
-                {option[0].toUpperCase() + option.slice(1)}
-              </Button>
-            ))}
+          <CardContent>
+            <ChangePasswordFlow />
           </CardContent>
         </Card>
-        */}
 
         {isSuperAdmin ? (
           <Card>

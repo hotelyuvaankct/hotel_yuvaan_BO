@@ -4,7 +4,7 @@ import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { User } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { optionLabel, recordStatusOptions } from '@/lib/enums';
+import { genderOptions, optionLabel, userStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -144,6 +144,12 @@ export function UsersPage() {
   );
 }
 
+function userStatusVariant(status?: number) {
+  if (status === Status.ACTIVE) return 'success' as const;
+  if (status === Status.PENDING) return 'warning' as const;
+  return 'secondary' as const;
+}
+
 function UserRow({
   user,
   canUpdate,
@@ -159,9 +165,11 @@ function UserRow({
     <tr className="border-t border-border">
       <td className="px-3 py-3 font-medium">{user.fullName || 'Unnamed user'}</td>
       <td className="px-3 py-3 text-muted-foreground">{user.email}</td>
-      <td className="px-3 py-3 text-muted-foreground">{optionLabel([{ value: 1, label: 'Male' }, { value: 2, label: 'Female' }, { value: 3, label: 'Other' }, { value: 4, label: 'Prefer not to say' }], user.gender)}</td>
+      <td className="px-3 py-3 text-muted-foreground">{optionLabel(genderOptions, user.gender)}</td>
       <td className="px-3 py-3">
-        <Badge variant={user.status === Status.ACTIVE ? 'success' : 'secondary'}>{optionLabel(recordStatusOptions, user.status)}</Badge>
+        <Badge variant={userStatusVariant(user.status)}>
+          {optionLabel(userStatusOptions, user.status)}
+        </Badge>
       </td>
       <td className="px-3 py-3">
         <div className="flex justify-end gap-2">

@@ -39,6 +39,8 @@ export type User = {
   dateOfBirth?: string;
   gender?: number;
   status?: number;
+  passwordSet?: boolean;
+  passwordUpdatedAt?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -179,7 +181,8 @@ export type LoginPayload = {
   password: string;
 };
 
-export type CreateUserPayload = LoginPayload & {
+export type CreateUserPayload = {
+  email: string;
   fullName: string;
   roleId: number;
   hotelId?: number;
@@ -188,6 +191,57 @@ export type CreateUserPayload = LoginPayload & {
   dateOfBirth?: string;
   gender?: number;
 };
+
+export type SetupTokenValidation = {
+  valid: boolean;
+  maskedEmail?: string;
+  reason?: string;
+};
+
+export type SetPasswordPayload = {
+  token: string;
+  newPassword: string;
+};
+
+export type ResendSetupEmailPayload = {
+  email: string;
+};
+
+export type ResendSetupEmailResponse = {
+  message?: string;
+};
+
+export type RequestPasswordOtpResponse = {
+  maskedEmail?: string;
+  message?: string;
+};
+
+export type VerifyPasswordOtpPayload = {
+  otp: string;
+};
+
+export type VerifyPasswordOtpResponse = {
+  resetToken: string;
+};
+
+export type ResetPasswordPayload = {
+  resetToken: string;
+  newPassword: string;
+};
+
+export type PasswordLifecycleErrorCode =
+  | 'ERR_105'
+  | 'ERR_106'
+  | 'ERR_107'
+  | 'ERR_108'
+  | 'ERR_109'
+  | 'ERR_110'
+  | 'ERR_111'
+  | 'ERR_112'
+  | 'ERR_113'
+  | 'ERR_114'
+  | 'ERR_115'
+  | 'ERR_116';
 
 export type UpdateUserPayload = {
   fullName?: string;

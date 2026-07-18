@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Building2, Edit, Eye, IndianRupee, Plus, RefreshCw, Trash2, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { HotelSummary, RoomType } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -15,6 +15,102 @@ import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { SelectField } from '@/components/ui/form-fields';
 import { Status } from '@/lib/constants';
+
+function formatCurrency(value?: number) {
+  if (value == null) return '-';
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
+}
+
+function RoomTypeCard({
+  roomType,
+  canUpdate,
+  canDelete,
+  onDelete,
+}: {
+  roomType: RoomType;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onDelete: (roomType: RoomType) => void;
+}) {
+  const roomCount = roomType.totalRooms ?? 0;
+
+  return (
+    <article className="flex h-full flex-col rounded-2xl border border-border/70 bg-background p-4 shadow-[0_4px_16px_rgb(0,0,0,0.03)] transition-colors hover:border-primary/30">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-semibold tracking-tight">{roomType.name}</p>
+          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+            {roomType.description || 'No description'}
+          </p>
+        </div>
+        <Badge
+          variant={roomType.status === Status.ACTIVE ? 'success' : 'secondary'}
+          className="shrink-0"
+        >
+          {optionLabel(recordStatusOptions, roomType.status)}
+        </Badge>
+      </div>
+
+      <div className="mt-4 space-y-3 text-sm">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Building2 className="h-4 w-4 shrink-0" />
+          <span className="truncate">{roomType.hotelName || '-'}</span>
+        </div>
+
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Users className="h-4 w-4 shrink-0" />
+          <span>
+            {roomType.maxAdults ?? 2} adults, {roomType.maxChildren ?? 0} children
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <IndianRupee className="h-4 w-4 shrink-0" />
+          <span>
+            <span className="font-medium text-foreground">{formatCurrency(roomType.basePrice)}</span>
+            <span className="text-xs"> / night</span>
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/70 pt-4">
+        <p className="text-sm text-muted-foreground">
+          <span className="font-semibold text-foreground">{roomCount}</span>
+          {' '}room{roomCount === 1 ? '' : 's'}
+        </p>
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button variant="outline" size="sm" onClick={() => undefined}>
+            <Link to={`/room-types/${roomType.id}`} className="inline-flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              View
+            </Link>
+          </Button>
+          <Button variant="outline" size="sm" disabled={!canUpdate} onClick={() => undefined}>
+            <Link
+              to={canUpdate ? `/room-types/${roomType.id}/edit` : '#'}
+              className="inline-flex items-center gap-2"
+              onClick={(event) => {
+                if (!canUpdate) event.preventDefault();
+              }}
+            >
+              <Edit className="h-4 w-4" />
+              Edit
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={!canDelete || roomCount > 0}
+            onClick={() => onDelete(roomType)}
+            aria-label="Delete room type"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export function RoomTypesPage() {
   const { session } = useAuth();
@@ -86,7 +182,9 @@ export function RoomTypesPage() {
         <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
           <div>
             <CardTitle>Room types</CardTitle>
-            <CardDescription>Manage hotel-specific room categories, occupancy, amenities, and base pricing.</CardDescription>
+            <CardDescription>
+              Manage hotel-specific room categories, occupancy, amenities, and base pricing.
+            </CardDescription>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => void load()}>
@@ -111,78 +209,23 @@ export function RoomTypesPage() {
             onChange={(event) => setHotelId(event.target.value)}
           />
 
-          <div className="overflow-x-auto">
-            {loading ? <LoadingState /> : null}
-            {!loading ? (
-              <table className="w-full min-w-[900px] text-sm">
-                <thead className="text-left text-muted-foreground">
-                  <tr>
-                    <th className="px-3 py-2 font-medium">Name</th>
-                    <th className="px-3 py-2 font-medium">Hotel</th>
-                    <th className="px-3 py-2 font-medium">Occupancy</th>
-                    <th className="px-3 py-2 font-medium">Base price</th>
-                    <th className="px-3 py-2 font-medium">Rooms</th>
-                    <th className="px-3 py-2 font-medium">Status</th>
-                    <th className="px-3 py-2 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roomTypes.length === 0 ? (
-                    <tr><td className="px-3 py-6" colSpan={7}><EmptyState /></td></tr>
-                  ) : null}
-                  {roomTypes.map((roomType) => (
-                    <tr key={roomType.id} className="border-t border-border">
-                      <td className="px-3 py-3">
-                        <p className="font-medium">{roomType.name}</p>
-                        <p className="text-xs text-muted-foreground">{roomType.description || '-'}</p>
-                      </td>
-                      <td className="px-3 py-3 text-muted-foreground">{roomType.hotelName || '-'}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{roomType.maxAdults ?? 2} adults, {roomType.maxChildren ?? 0} children</td>
-                      <td className="px-3 py-3 text-muted-foreground">{formatCurrency(roomType.basePrice)}</td>
-                      <td className="px-3 py-3 text-muted-foreground">{roomType.totalRooms ?? 0}</td>
-                      <td className="px-3 py-3">
-                        <Badge variant={roomType.status === Status.ACTIVE ? 'success' : 'secondary'}>
-                          {optionLabel(recordStatusOptions, roomType.status)}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link to={`/room-types/${roomType.id}`} className="inline-flex items-center gap-2">
-                              <Eye className="h-4 w-4" />
-                              View
-                            </Link>
-                          </Button>
-                          <Button variant="outline" size="sm" disabled={!canUpdate} asChild>
-                            <Link to={canUpdate ? `/room-types/${roomType.id}/edit` : '#'} className="inline-flex items-center gap-2">
-                              <Edit className="h-4 w-4" />
-                              Edit
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={!canDelete || Boolean(roomType.totalRooms)}
-                            onClick={() => void deleteRoomType(roomType)}
-                            aria-label="Delete room type"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : null}
-          </div>
+          {loading ? <LoadingState /> : null}
+          {!loading && roomTypes.length === 0 ? <EmptyState /> : null}
+          {!loading && roomTypes.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {roomTypes.map((roomType) => (
+                <RoomTypeCard
+                  key={roomType.id}
+                  roomType={roomType}
+                  canUpdate={canUpdate}
+                  canDelete={canDelete}
+                  onDelete={(item) => void deleteRoomType(item)}
+                />
+              ))}
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </div>
   );
-}
-
-function formatCurrency(value?: number) {
-  if (value == null) return '-';
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
 }

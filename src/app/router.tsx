@@ -26,6 +26,7 @@ import { RoleFormPage } from '@/pages/role-form';
 import { RoleViewPage } from '@/pages/role-view';
 import { SettingsPage } from '@/pages/settings';
 import { LoginPage } from '@/pages/login';
+import { SetPasswordPage } from '@/pages/set-password';
 import { NotFoundPage } from '@/pages/not-found';
 
 function DefaultRoute() {
@@ -35,6 +36,7 @@ function DefaultRoute() {
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/set-password', element: <SetPasswordPage /> },
   {
     path: '/',
     element: <ProtectedRoute />,

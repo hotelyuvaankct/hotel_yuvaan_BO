@@ -31,10 +31,16 @@ import type {
   PageResponse,
   Permission,
   PermissionPayload,
+  RequestPasswordOtpResponse,
+  ResendSetupEmailPayload,
+  ResendSetupEmailResponse,
+  ResetPasswordPayload,
   Role,
   Room,
   RoomType,
   GalleryImage,
+  SetPasswordPayload,
+  SetupTokenValidation,
   UpdateRolePayload,
   UpdateUserPayload,
   UpdateBookingPayload,
@@ -52,6 +58,8 @@ import type {
   UpsertRoomTypePayload,
   UserAccess,
   User,
+  VerifyPasswordOtpPayload,
+  VerifyPasswordOtpResponse,
 } from '@/lib/api-types';
 
 import { getApiBaseUrl } from '@/config/env';
@@ -67,6 +75,17 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
     this.errors = errors;
+  }
+
+  /** First stable machine code from `errors.errorCode`, if present. */
+  get code(): string | undefined {
+    const codes = this.errors?.errorCode;
+    if (!codes?.length) return undefined;
+    return codes.find(Boolean);
+  }
+
+  hasCode(code: string): boolean {
+    return (this.errors?.errorCode ?? []).includes(code);
   }
 }
 
@@ -176,11 +195,42 @@ export const api = {
       skipAuth: true,
     });
   },
-  register(payload: CreateUserPayload) {
-    return apiRequest<AuthSession>('/auth/register', {
+  validateSetupToken(token: string) {
+    const params = new URLSearchParams({ token });
+    return apiRequest<SetupTokenValidation>(`/auth/setup-token/validate?${params.toString()}`, {
+      skipAuth: true,
+    });
+  },
+  setPassword(payload: SetPasswordPayload) {
+    return apiRequest<void>('/auth/set-password', {
       method: 'POST',
       body: JSON.stringify(payload),
       skipAuth: true,
+    });
+  },
+  resendSetupEmail(payload: ResendSetupEmailPayload) {
+    return apiRequest<ResendSetupEmailResponse>('/auth/resend-setup-email', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
+    });
+  },
+  requestPasswordOtp() {
+    return apiRequest<RequestPasswordOtpResponse>('/profile/password/request-otp', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  },
+  verifyPasswordOtp(payload: VerifyPasswordOtpPayload) {
+    return apiRequest<VerifyPasswordOtpResponse>('/profile/password/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  resetPassword(payload: ResetPasswordPayload) {
+    return apiRequest<void>('/profile/password/reset', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
   profile() {
