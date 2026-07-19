@@ -4,7 +4,6 @@ import { api, ApiError } from '@/lib/api';
 import type {
   HotelSummary,
   InventoryBlockConflict,
-  InventoryBlockedRange,
   InventoryGrid,
 } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -12,21 +11,12 @@ import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/common/empty-state';
-import { LoadingState } from '@/components/common/loading-state';
 import { SelectField } from '@/components/ui/form-fields';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { addDaysIso, todayIso } from '@/lib/form-validation';
 import { mergeInventoryGrids } from '@/lib/inventory-grid';
 import { InventoryCalendarGrid } from '@/components/inventory/inventory-calendar-grid';
 import { InventoryBlockDialog } from '@/components/inventory/inventory-block-dialog';
-import { cn } from '@/lib/utils';
-
-type InventoryTab = 'grid' | 'blocked';
-
-const tabLabels: Record<InventoryTab, string> = {
-  grid: 'Daily grid',
-  blocked: 'Blocked ranges',
-};
 
 const INITIAL_DAYS = 30;
 const PAGE_DAYS = 10;
@@ -44,14 +34,12 @@ export function InventoryPage() {
   const [rangeEnd, setRangeEnd] = useState(() => addDaysIso(todayIso(), INITIAL_DAYS - 1));
   const [roomFilter, setRoomFilter] = useState('all');
   const [grid, setGrid] = useState<InventoryGrid | null>(null);
-  const [blocked, setBlocked] = useState<InventoryBlockedRange[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<number, boolean>>({});
   const [blockOpen, setBlockOpen] = useState(false);
   const [blockMode, setBlockMode] = useState<'block' | 'unblock'>('block');
   const [conflicts, setConflicts] = useState<InventoryBlockConflict[]>([]);
-  const [tab, setTab] = useState<InventoryTab>('grid');
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
 
@@ -65,16 +53,12 @@ export function InventoryPage() {
       if (!canRead || !activeHotelId) return;
       setLoading(true);
       try {
-        const [nextGrid, blockedResponse] = await Promise.all([
-          api.getInventoryGrid(Number(activeHotelId), start, end),
-          api.getBlockedInventory(Number(activeHotelId), start, end),
-        ]);
+        const nextGrid = await api.getInventoryGrid(Number(activeHotelId), start, end);
         setFromDate(start);
         setToDate(end);
         setRangeStart(start);
         setRangeEnd(end);
         setGrid(nextGrid);
-        setBlocked(blockedResponse.ranges ?? []);
         setConflicts([]);
       } catch (error) {
         showToast(error instanceof Error ? error.message : 'Failed to load inventory', 'error');
@@ -112,12 +96,8 @@ export function InventoryPage() {
     const candidateTo = addDaysIso(toDate, PAGE_DAYS);
     const nextTo = candidateTo < inventoryToDate ? candidateTo : inventoryToDate;
     try {
-      const [chunk, blockedChunk] = await Promise.all([
-        api.getInventoryGrid(Number(hotelId), nextFrom, nextTo),
-        api.getBlockedInventory(Number(hotelId), fromDate, nextTo),
-      ]);
+      const chunk = await api.getInventoryGrid(Number(hotelId), nextFrom, nextTo);
       setGrid((current) => mergeInventoryGrids(current, chunk));
-      setBlocked(blockedChunk.ranges ?? []);
       setToDate(nextTo);
       setRangeEnd(nextTo);
     } catch (error) {
@@ -126,7 +106,7 @@ export function InventoryPage() {
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [canLoadMore, canRead, fromDate, grid?.inventoryToDate, hotelId, showToast, toDate]);
+  }, [canLoadMore, canRead, grid?.inventoryToDate, hotelId, showToast, toDate]);
 
   useEffect(() => {
     if (!canRead) return;
@@ -258,7 +238,7 @@ export function InventoryPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-10 min-w-[112px] border-slate-200"
+              className="h-10 min-w-[112px] border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-800"
               onClick={() => {
                 setBlockMode('block');
                 setConflicts([]);
@@ -271,7 +251,7 @@ export function InventoryPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-10 min-w-[112px] border-slate-200"
+              className="h-10 min-w-[112px] border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 hover:text-emerald-800"
               onClick={() => {
                 setBlockMode('unblock');
                 setConflicts([]);
@@ -326,115 +306,59 @@ export function InventoryPage() {
             })) ?? []),
           ]}
         />
-        <div className="inline-flex rounded-xl border border-slate-200 bg-slate-50 p-1">
-          {(Object.keys(tabLabels) as InventoryTab[]).map((value) => (
-            <button
-              key={value}
-              type="button"
-              className={cn(
-                'rounded-lg px-3.5 py-1.5 text-sm font-medium transition-colors',
-                tab === value
-                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200/80'
-                  : 'text-slate-500 hover:text-slate-800',
-              )}
-              onClick={() => setTab(value)}
-            >
-              {tabLabels[value]}
-              {value === 'blocked' && blocked.length > 0 ? (
-                <span className="ml-1.5 text-xs text-slate-400">({blocked.length})</span>
-              ) : null}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col">
-        {tab === 'grid' ? (
-          loading ? (
-            <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-white px-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-50">
-                <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm font-medium text-sky-950">Loading inventory</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Fetching room rates and availability…</p>
-              </div>
+        {loading ? (
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-white px-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-50">
+              <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
             </div>
-          ) : !grid || grid.roomTypes.length === 0 ? (
-            <div className="p-6">
-              <EmptyState label="No room types yet. Create room types first, then configure inventory dates here." />
+            <div className="text-center">
+              <p className="text-sm font-medium text-sky-950">Loading inventory</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">Fetching room rates and availability…</p>
             </div>
-          ) : (
-            <div className="relative flex min-h-0 flex-1 flex-col">
-              <div
-                ref={scrollRef}
-                className="min-h-0 flex-1 overflow-auto bg-white"
-                onScroll={handleGridScroll}
-              >
-                <InventoryCalendarGrid
-                  roomTypes={visibleRoomTypes}
-                  dates={dates}
-                  canUpdate={canUpdate}
-                  collapsed={collapsed}
-                  onToggleCollapse={(roomTypeId) =>
-                    setCollapsed((prev) => ({ ...prev, [roomTypeId]: !prev[roomTypeId] }))
-                  }
-                  onSaveAvailability={saveAvailability}
-                  onSaveRate={saveRate}
-                />
-              </div>
-              {loadingMore ? (
-                <div
-                  className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-36 items-center justify-end pr-4 sm:w-44"
-                  aria-live="polite"
-                  aria-busy="true"
-                  aria-label="Loading more dates"
-                >
-                  <div
-                    aria-hidden
-                    className="absolute inset-0 bg-gradient-to-l from-white via-white/70 to-transparent"
-                  />
-                  <div className="relative flex items-center gap-2 rounded-full border border-sky-200 bg-white/95 px-3 py-1.5 text-xs font-medium text-sky-900 shadow-md shadow-sky-900/5 backdrop-blur-sm">
-                    <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-sky-600" />
-                    <span>Loading dates</span>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          )
+          </div>
+        ) : !grid || grid.roomTypes.length === 0 ? (
+          <div className="p-6">
+            <EmptyState label="No room types yet. Create room types first, then configure inventory dates here." />
+          </div>
         ) : (
-          <div className="min-h-0 flex-1 overflow-auto px-4 py-5 sm:px-6">
-            <p className="mb-4 text-sm text-slate-500">
-              Consecutive stop-sell windows in the loaded date range.
-            </p>
-            {loading ? (
-              <LoadingState label="Loading blocked ranges…" />
-            ) : blocked.length === 0 ? (
-              <EmptyState label="No blocked dates in this range." />
-            ) : (
-              <ul className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
-                {blocked.map((range) => (
-                  <li
-                    key={`${range.roomTypeId}-${range.ratePlanCode ?? 'rt'}-${range.fromDate}-${range.toDate}`}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
-                  >
-                    <span className="font-semibold text-slate-900">{range.roomTypeName}</span>
-                    {range.ratePlanLabel || range.ratePlanCode ? (
-                      <span className="text-slate-500">
-                        {' '}
-                        · {range.ratePlanLabel ?? range.ratePlanCode}
-                      </span>
-                    ) : (
-                      <span className="text-slate-500"> · Room type</span>
-                    )}
-                    <div className="mt-1 text-slate-600">
-                      {range.fromDate} → {range.toDate}
-                      {range.reason ? ` · ${range.reason}` : ''}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <div
+              ref={scrollRef}
+              className="min-h-0 flex-1 overflow-auto bg-white"
+              onScroll={handleGridScroll}
+            >
+              <InventoryCalendarGrid
+                roomTypes={visibleRoomTypes}
+                dates={dates}
+                canUpdate={canUpdate}
+                collapsed={collapsed}
+                onToggleCollapse={(roomTypeId) =>
+                  setCollapsed((prev) => ({ ...prev, [roomTypeId]: !prev[roomTypeId] }))
+                }
+                onSaveAvailability={saveAvailability}
+                onSaveRate={saveRate}
+              />
+            </div>
+            {loadingMore ? (
+              <div
+                className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-36 items-center justify-end pr-4 sm:w-44"
+                aria-live="polite"
+                aria-busy="true"
+                aria-label="Loading more dates"
+              >
+                <div
+                  aria-hidden
+                  className="absolute inset-0 bg-gradient-to-l from-white via-white/70 to-transparent"
+                />
+                <div className="relative flex items-center gap-2 rounded-full border border-sky-200 bg-white/95 px-3 py-1.5 text-xs font-medium text-sky-900 shadow-md shadow-sky-900/5 backdrop-blur-sm">
+                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-sky-600" />
+                  <span>Loading dates</span>
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </div>
