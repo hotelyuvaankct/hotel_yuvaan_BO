@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Ban, Edit } from 'lucide-react';
+import { ArrowLeft, Ban, Edit, LogOut } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Booking } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -8,7 +8,6 @@ import { bookingSourceOptions, bookingStatusOptions, optionLabel } from '@/lib/e
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
@@ -37,6 +36,7 @@ export function BookingViewPage() {
   const canDelete = hasPermission(session?.perms, 'bookings', 'delete');
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkingOut, setCheckingOut] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -71,6 +71,27 @@ export function BookingViewPage() {
     }
   }
 
+  async function checkOutBooking() {
+    if (!booking) return;
+    const confirmed = await confirm({
+      title: 'Check out guest?',
+      description: `This will complete booking ${booking.bookingCode} and release its assigned rooms.`,
+      confirmLabel: 'Check out',
+    });
+    if (!confirmed) return;
+
+    setCheckingOut(true);
+    try {
+      const updated = await api.updateBooking(booking.id, { bookingStatus: 5 });
+      setBooking(updated);
+      showToast('Guest checked out and rooms released.', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to check out this booking.', 'error');
+    } finally {
+      setCheckingOut(false);
+    }
+  }
+
   if (!canRead) {
     return (
       <Card>
@@ -99,6 +120,17 @@ export function BookingViewPage() {
         actions={
           booking ? (
             <div className="flex flex-wrap gap-2">
+              {canUpdate && booking.bookingStatus === 4 ? (
+                <Button
+                  variant="gold"
+                  size="sm"
+                  disabled={checkingOut}
+                  onClick={() => void checkOutBooking()}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {checkingOut ? 'Checking out...' : 'Check out'}
+                </Button>
+              ) : null}
               {canUpdate && booking.bookingStatus !== 6 && booking.bookingStatus !== 5 ? (
                 <Button variant="gold" size="sm" onClick={() => undefined}>
                   <Link to={`/bookings/${booking.id}/edit`} className="inline-flex items-center gap-2">
