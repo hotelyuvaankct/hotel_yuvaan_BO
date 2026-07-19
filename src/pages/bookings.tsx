@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, CalendarDays, CalendarPlus, Eye, RefreshCw, UserRound } from 'lucide-react';
+import { Building2, CalendarDays, CalendarPlus, Eye, RefreshCw, UserRound, X } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { Booking, HotelSummary } from '@/lib/api-types';
+import type { Booking } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { bookingListStatusFilters, bookingStatusOptions, optionLabel } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
@@ -15,7 +15,7 @@ import { LoadingState } from '@/components/common/loading-state';
 import { Pagination } from '@/components/common/pagination';
 import { SelectField, TextField } from '@/components/ui/form-fields';
 
-const emptyFilters = { hotelId: '', bookingStatus: '', search: '' };
+const emptyFilters = { bookingStatus: '', search: '' };
 
 function statusVariant(status?: number): 'gold' | 'success' | 'danger' | 'warning' | 'secondary' {
   // Booked / active stay
@@ -125,7 +125,6 @@ export function BookingsPage() {
   const canRead = hasPermission(session?.perms, 'bookings', 'read');
   const canUpdate = hasPermission(session?.perms, 'bookings', 'update');
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [hotels, setHotels] = useState<HotelSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -138,7 +137,6 @@ export function BookingsPage() {
       const result = await api.listBookings({
         page: targetPage,
         size: 10,
-        hotelId: activeFilters.hotelId ? Number(activeFilters.hotelId) : undefined,
         bookingStatus: activeFilters.bookingStatus ? Number(activeFilters.bookingStatus) : undefined,
         guestName: activeFilters.search,
       });
@@ -155,19 +153,12 @@ export function BookingsPage() {
 
   useEffect(() => {
     if (!canRead) return;
-    void api.listHotels()
-      .then((hotelList) => setHotels(hotelList ?? []))
-      .catch(() => undefined);
-  }, [canRead]);
-
-  useEffect(() => {
-    if (!canRead) return;
     const timeout = window.setTimeout(() => {
       setPage(0);
       void load(0, filters);
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [canRead, filters.hotelId, filters.bookingStatus, filters.search]);
+  }, [canRead, filters.bookingStatus, filters.search]);
 
   if (!canRead) {
     return (
@@ -194,16 +185,10 @@ export function BookingsPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid items-end gap-3 md:grid-cols-2 xl:grid-cols-[220px_220px_1fr_auto]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <SelectField
               variant="filter"
-              value={filters.hotelId}
-              placeholder="All hotels"
-              options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
-              onChange={(event) => setFilters((current) => ({ ...current, hotelId: event.target.value }))}
-            />
-            <SelectField
-              variant="filter"
+              wrapperClassName="w-full sm:w-[200px]"
               value={filters.bookingStatus}
               placeholder="All statuses"
               options={bookingListStatusFilters.map((option) => ({ value: option.value, label: option.label }))}
@@ -217,10 +202,12 @@ export function BookingsPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-10 shrink-0"
+              size="icon"
+              className="h-10 w-10 shrink-0"
               onClick={() => setFilters(emptyFilters)}
+              aria-label="Clear filters"
             >
-              Clear
+              <X className="h-4 w-4" />
             </Button>
           </div>
 

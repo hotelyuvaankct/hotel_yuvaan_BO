@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { Edit, Eye, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { HotelSummary, Room, RoomType } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -325,13 +325,15 @@ export function RoomsPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-10 shrink-0"
+              size="icon"
+              className="h-10 w-10 shrink-0"
               onClick={() => {
                 setFilters(createDefaultFilters());
                 setFilterErrors({});
               }}
+              aria-label="Clear filters"
             >
-              Clear
+              <X className="h-4 w-4" />
             </Button>
           </div>
 

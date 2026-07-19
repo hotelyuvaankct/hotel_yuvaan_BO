@@ -120,15 +120,20 @@ export type HotelSummary = {
   status?: number;
 };
 
+export type OccupancyPrice = {
+  guestCount: number;
+  price: number;
+};
+
 export type RoomTypeRatePlan = {
   id?: number;
   code: string;
   label: string;
   description?: string;
   features?: string[];
-  extraPrice?: number;
   sortOrder?: number;
   isDefault?: boolean;
+  occupancyPrices?: OccupancyPrice[];
 };
 
 export type RoomType = {
@@ -630,4 +635,126 @@ export type UpdatePricingConfigPayload = {
   processingFeeGstPercent: number;
   hotelGstin?: string;
   invoiceHsnSac?: string;
+};
+
+export type InventoryRatePlanMeta = {
+  ratePlanId: number;
+  code: string;
+  label: string;
+  guestCounts?: number[];
+};
+
+export type InventoryOccupancyDayCell = {
+  guestCount: number;
+  absolutePrice?: number | null;
+  effectivePrice?: number | null;
+  hasOverride?: boolean;
+};
+
+export type InventoryRatePlanDayCell = {
+  ratePlanCode: string;
+  absolutePrice?: number | null;
+  effectivePrice?: number | null;
+  isStopSell?: boolean;
+  stopSellReason?: string | null;
+  hasOverride?: boolean;
+  occupancyPrices?: InventoryOccupancyDayCell[];
+};
+
+export type InventoryDayCell = {
+  date: string;
+  configured: boolean;
+  totalInventory?: number;
+  ownWebsiteBooked?: number;
+  netBooked?: number;
+  remaining?: number;
+  price?: number;
+  isStopSell?: boolean;
+  stopSellReason?: string | null;
+  exceedsPhysical?: boolean;
+  ratePlans?: InventoryRatePlanDayCell[];
+};
+
+export type InventoryRoomTypeRow = {
+  roomTypeId: number;
+  roomTypeName: string;
+  physicalRoomCount?: number;
+  maxGuests?: number;
+  inventoryExceedsPhysical?: boolean;
+  ratePlans?: InventoryRatePlanMeta[];
+  days: InventoryDayCell[];
+};
+
+export type InventoryGrid = {
+  hotelId: number;
+  fromDate: string;
+  toDate: string;
+  inventoryFromDate?: string | null;
+  inventoryToDate?: string | null;
+  roomTypes: InventoryRoomTypeRow[];
+};
+
+export type InventoryDayUpsert = {
+  roomTypeId: number;
+  date: string;
+  totalInventory: number;
+  price?: number;
+  isStopSell?: boolean;
+  stopSellReason?: string;
+};
+
+export type RatePlanDayUpsert = {
+  roomTypeId: number;
+  ratePlanCode: string;
+  date: string;
+  guestCount?: number;
+  price?: number | null;
+  isStopSell?: boolean;
+  stopSellReason?: string;
+};
+
+export type BulkInventoryPayload = {
+  roomTypeId: number;
+  fromDate: string;
+  toDate: string;
+  daysOfWeek?: number[];
+  totalInventory?: number;
+  price?: number;
+  isStopSell?: boolean;
+  stopSellReason?: string;
+  ratePlanCode?: string;
+  guestCount?: number;
+  ratePlanPrice?: number;
+  ratePlanStopSell?: boolean;
+  ratePlanStopSellReason?: string;
+};
+
+export type InventoryBlockPayload = {
+  hotelId: number;
+  fromDate: string;
+  toDate: string;
+  reason?: string;
+};
+
+export type InventoryBlockConflict = {
+  bookingId: number;
+  bookingCode: string;
+  checkIn: string;
+  checkOut: string;
+  ratePlanCode?: string;
+  guestName?: string;
+};
+
+export type InventoryBlockedRange = {
+  roomTypeId: number;
+  roomTypeName: string;
+  ratePlanCode?: string;
+  ratePlanLabel?: string;
+  fromDate: string;
+  toDate: string;
+  reason?: string;
+};
+
+export type InventoryBlockedRanges = {
+  ranges: InventoryBlockedRange[];
 };

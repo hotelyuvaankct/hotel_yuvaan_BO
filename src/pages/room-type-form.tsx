@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, X, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, X, Image as ImageIcon } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { HotelSummary, UpsertRoomTypePayload, RoomImage, RoomTypeRatePlan } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -21,36 +21,38 @@ type VariantDraft = {
   label: string;
   description: string;
   featuresText: string;
-  extraPrice: string;
   isDefault: boolean;
+  occupancyPrices: Record<number, string>;
 };
 
-const DEFAULT_VARIANTS: VariantDraft[] = [
-  {
-    code: 'ROOM_ONLY',
-    label: 'Room Only',
-    description: 'Just the room, no meals included.',
-    featuresText: 'Cancellation policy, Payment: bank card, Hot Water Swimming Pool',
-    extraPrice: '0',
-    isDefault: true,
-  },
-  {
-    code: 'WITH_BREAKFAST',
-    label: 'Room With Complimentary Breakfast',
-    description: 'Includes breakfast for the room occupants.',
-    featuresText: 'Breakfast, Cancellation policy, Payment: bank card, Hot Water Swimming Pool',
-    extraPrice: '',
-    isDefault: false,
-  },
-  {
-    code: 'WITH_BREAKFAST_DINNER',
-    label: 'Room With Breakfast And Dinner',
-    description: 'Includes breakfast and dinner for the room occupants.',
-    featuresText: 'Breakfast & dinner, Cancellation policy, Payment: bank card, Hot Water Swimming Pool',
-    extraPrice: '',
-    isDefault: false,
-  },
-];
+function buildDefaultVariants(capacity: number, basePrice = ''): VariantDraft[] {
+  return RATE_PLAN_OPTIONS.map((option, index) => {
+    const occupancyPrices: Record<number, string> = {};
+    for (let guest = 1; guest <= capacity; guest += 1) {
+      occupancyPrices[guest] = index === 0 ? basePrice : '';
+    }
+    return {
+      code: option.code,
+      label: option.label,
+      description: option.description,
+      featuresText: option.features.join(', '),
+      isDefault: index === 0,
+      occupancyPrices,
+    };
+  });
+}
+
+function resizeOccupancyPrices(
+  current: Record<number, string> | undefined,
+  capacity: number,
+  fallback = '',
+): Record<number, string> {
+  const next: Record<number, string> = {};
+  for (let guest = 1; guest <= capacity; guest += 1) {
+    next[guest] = current?.[guest] ?? fallback;
+  }
+  return next;
+}
 
 export function RoomTypeFormPage() {
   const { id } = useParams();
@@ -70,7 +72,7 @@ export function RoomTypeFormPage() {
   const [existingImages, setExistingImages] = useState<RoomImage[]>([]);
   const [deletedImageIds, setDeletedImageIds] = useState<number[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const [variants, setVariants] = useState<VariantDraft[]>(DEFAULT_VARIANTS);
+  const [variants, setVariants] = useState<VariantDraft[]>(() => buildDefaultVariants(2));
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenities, setCustomAmenities] = useState('');
   const [form, setForm] = useState({
@@ -81,6 +83,22 @@ export function RoomTypeFormPage() {
     maxChildren: '0',
     basePrice: '',
   });
+
+  const capacity = useMemo(() => {
+    const adults = Number(form.maxAdults);
+    const children = Number(form.maxChildren);
+    const total = (Number.isFinite(adults) ? adults : 0) + (Number.isFinite(children) ? children : 0);
+    return Math.max(total, 1);
+  }, [form.maxAdults, form.maxChildren]);
+
+  useEffect(() => {
+    setVariants((prev) =>
+      prev.map((variant) => ({
+        ...variant,
+        occupancyPrices: resizeOccupancyPrices(variant.occupancyPrices, capacity),
+      })),
+    );
+  }, [capacity]);
 
   useEffect(() => {
     if (!canRead) {
@@ -93,6 +111,10 @@ export function RoomTypeFormPage() {
         setHotels(hotelList ?? []);
         if (roomTypeId) {
           const roomType = await api.getRoomType(roomTypeId);
+          const nextCapacity = Math.max(
+            (roomType.maxAdults ?? 2) + (roomType.maxChildren ?? 0),
+            1,
+          );
           setForm({
             hotelId: String(roomType.hotelId),
             name: roomType.name,
@@ -117,21 +139,32 @@ export function RoomTypeFormPage() {
           if (roomType.images) {
             setExistingImages(roomType.images);
           }
-          if (roomType.ratePlans && roomType.ratePlans.length > 0) {
-            setVariants(
-              roomType.ratePlans.map((plan) => ({
-                id: plan.id,
-                code: plan.code,
-                label: plan.label,
-                description: plan.description ?? '',
-                featuresText: (plan.features ?? []).join(', '),
-                extraPrice: plan.extraPrice != null ? String(plan.extraPrice) : '',
-                isDefault: Boolean(plan.isDefault),
-              }))
-            );
-          }
+          const byCode = new Map((roomType.ratePlans ?? []).map((plan) => [plan.code, plan]));
+          setVariants(
+            RATE_PLAN_OPTIONS.map((option, index) => {
+              const plan = byCode.get(option.code);
+              const occupancyPrices: Record<number, string> = {};
+              for (let guest = 1; guest <= nextCapacity; guest += 1) {
+                const saved = plan?.occupancyPrices?.find((item) => item.guestCount === guest);
+                occupancyPrices[guest] =
+                  saved?.price != null
+                    ? String(saved.price)
+                    : '';
+              }
+              return {
+                id: plan?.id,
+                code: option.code,
+                label: option.label,
+                description: option.description,
+                featuresText: option.features.join(', '),
+                isDefault: plan?.isDefault ?? index === 0,
+                occupancyPrices,
+              };
+            }),
+          );
         } else {
           setForm((current) => ({ ...current, hotelId: String(hotelList[0]?.id ?? '') }));
+          setVariants(buildDefaultVariants(2));
         }
       } catch (err) {
         showToast(err instanceof Error ? err.message : 'Unable to load room type form.', 'error');
@@ -152,15 +185,17 @@ export function RoomTypeFormPage() {
     setVariants((prev) => prev.map((variant, i) => (i === index ? { ...variant, ...patch } : variant)));
   }
 
-  function addVariant() {
-    setVariants((prev) => [
-      ...prev,
-      { code: '', label: '', description: '', featuresText: '', extraPrice: '', isDefault: false },
-    ]);
-  }
-
-  function removeVariant(index: number) {
-    setVariants((prev) => prev.filter((_, i) => i !== index));
+  function updateOccupancyPrice(index: number, guestCount: number, value: string) {
+    setVariants((prev) =>
+      prev.map((variant, i) =>
+        i === index
+          ? {
+              ...variant,
+              occupancyPrices: { ...variant.occupancyPrices, [guestCount]: value },
+            }
+          : variant,
+      ),
+    );
   }
 
   function handleRemoveFile(index: number) {
@@ -187,23 +222,33 @@ export function RoomTypeFormPage() {
       showToast('At least one image is required.', 'error');
       return;
     }
-    const cleanedVariants = variants.filter((variant) => variant.code.trim() && variant.label.trim());
-    if (cleanedVariants.length === 0) {
-      showToast('Add at least one room variant.', 'error');
-      return;
+    for (const variant of variants) {
+      for (let guest = 1; guest <= capacity; guest += 1) {
+        const raw = variant.occupancyPrices[guest];
+        if (raw == null || raw.trim() === '' || Number.isNaN(Number(raw)) || Number(raw) < 0) {
+          showToast(`Enter a valid price for ${variant.label} · ${guest} guest${guest === 1 ? '' : 's'}.`, 'error');
+          return;
+        }
+      }
     }
     setSaving(true);
     const customList = customAmenities.split(',').map((value) => value.trim()).filter(Boolean);
     const amenities = Array.from(new Set([...selectedAmenities, ...customList]));
-    const ratePlans: RoomTypeRatePlan[] = cleanedVariants.map((variant, index) => ({
+    const ratePlans: RoomTypeRatePlan[] = variants.map((variant, index) => ({
       id: variant.id,
-      code: variant.code.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_'),
+      code: variant.code,
       label: variant.label.trim(),
       description: variant.description.trim() || undefined,
       features: variant.featuresText.split(',').map((value) => value.trim()).filter(Boolean),
-      extraPrice: variant.extraPrice === '' ? 0 : Number(variant.extraPrice),
       sortOrder: index,
       isDefault: variant.isDefault,
+      occupancyPrices: Array.from({ length: capacity }, (_, offset) => {
+        const guestCount = offset + 1;
+        return {
+          guestCount,
+          price: Number(variant.occupancyPrices[guestCount]),
+        };
+      }),
     }));
     const payload: UpsertRoomTypePayload = {
       hotelId: Number(form.hotelId),
@@ -353,82 +398,43 @@ export function RoomTypeFormPage() {
               />
             </div>
             <div className="space-y-3 md:col-span-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium">Room variants</span>
-                  <p className="text-xs text-muted-foreground">
-                    Different meal / rate options for this room. The final nightly price shown to guests is the room's
-                    base price plus the variant's extra price.
-                  </p>
-                </div>
-                <Button type="button" variant="outline" onClick={addVariant}>
-                  <Plus className="h-4 w-4" />
-                  Add variant
-                </Button>
+              <div>
+                <span className="text-sm font-medium">Room variants</span>
+                <p className="text-xs text-muted-foreground">
+                  Fixed meal options for this room. Set an absolute nightly price for each guest count up to room
+                  capacity ({capacity}).
+                </p>
               </div>
               <div className="space-y-4">
                 {variants.map((variant, index) => (
-                  <div key={index} className="rounded-xl border border-border p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Variant {index + 1}</span>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 text-xs text-destructive hover:underline disabled:opacity-40"
-                        onClick={() => removeVariant(index)}
-                        disabled={variants.length <= 1}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Remove
-                      </button>
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <label className="space-y-1">
-                        <span className="text-xs font-medium">Variant</span>
-                        <select
-                          className={inputClass}
-                          value={variant.code}
-                          onChange={(event) => {
-                            const code = event.target.value;
-                            const preset = RATE_PLAN_OPTIONS.find((option) => option.code === code);
-                            updateVariant(index, { code, label: preset ? preset.label : code });
-                          }}
-                        >
-                          <option value="">Select variant</option>
-                          {RATE_PLAN_OPTIONS.map((option) => (
-                            <option key={option.code} value={option.code}>
-                              {option.label}
-                            </option>
-                          ))}
-                          {variant.code && !RATE_PLAN_OPTIONS.some((option) => option.code === variant.code) ? (
-                            <option value={variant.code}>{variant.label || variant.code}</option>
-                          ) : null}
-                        </select>
-                      </label>
-                      <label className="space-y-1">
-                        <span className="text-xs font-medium">Extra price (per night, over base)</span>
-                        <input
-                          className={inputClass}
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          placeholder="0"
-                          value={variant.extraPrice}
-                          onChange={(event) => updateVariant(index, { extraPrice: event.target.value })}
-                        />
-                      </label>
-                      <label className="flex items-center gap-2 pt-6">
+                  <div key={variant.code} className="space-y-3 rounded-xl border border-border p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold">{variant.label}</p>
+                        <p className="text-xs text-muted-foreground">{variant.code}</p>
+                      </div>
+                      <label className="inline-flex items-center gap-2 text-xs font-medium">
                         <input
                           type="checkbox"
                           checked={variant.isDefault}
-                          onChange={(event) => updateVariant(index, { isDefault: event.target.checked })}
+                          onChange={(event) => {
+                            const checked = event.target.checked;
+                            setVariants((prev) =>
+                              prev.map((item, i) => ({
+                                ...item,
+                                isDefault: i === index ? checked : checked ? false : item.isDefault,
+                              })),
+                            );
+                          }}
                         />
-                        <span className="text-xs font-medium">Default variant</span>
+                        Default variant
                       </label>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
                       <label className="space-y-1 md:col-span-2">
                         <span className="text-xs font-medium">Short description</span>
                         <input
                           className={inputClass}
-                          placeholder="Includes breakfast for the room occupants."
                           value={variant.description}
                           onChange={(event) => updateVariant(index, { description: event.target.value })}
                         />
@@ -437,12 +443,30 @@ export function RoomTypeFormPage() {
                         <span className="text-xs font-medium">Features / services</span>
                         <input
                           className={inputClass}
-                          placeholder="Breakfast, Cancellation policy, Payment: bank card"
                           value={variant.featuresText}
                           onChange={(event) => updateVariant(index, { featuresText: event.target.value })}
                         />
-                        <span className="text-[11px] text-muted-foreground">Separate each feature with a comma.</span>
                       </label>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {Array.from({ length: capacity }, (_, offset) => {
+                        const guestCount = offset + 1;
+                        return (
+                          <label key={`${variant.code}-${guestCount}`} className="space-y-1">
+                            <span className="text-xs font-medium">
+                              {guestCount} guest{guestCount === 1 ? '' : 's'} price
+                            </span>
+                            <input
+                              className={inputClass}
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              value={variant.occupancyPrices[guestCount] ?? ''}
+                              onChange={(event) => updateOccupancyPrice(index, guestCount, event.target.value)}
+                            />
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}

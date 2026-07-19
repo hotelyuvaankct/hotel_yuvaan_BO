@@ -8,6 +8,7 @@ import {
   Settings,
   Images,
   TicketPercent,
+  CalendarClock,
 } from 'lucide-react';
 
 export type NavigationItem = {
@@ -49,6 +50,13 @@ export const navigationItems: NavigationItem[] = [
     description: 'Room categories, occupancy, and pricing',
     icon: Tags,
     moduleSlug: 'room-types',
+  },
+  {
+    label: 'Inventory',
+    href: '/inventory',
+    description: 'Daily availability, pricing, and date blocks',
+    icon: CalendarClock,
+    moduleSlug: 'inventory',
   },
   {
     label: 'Gallery',
