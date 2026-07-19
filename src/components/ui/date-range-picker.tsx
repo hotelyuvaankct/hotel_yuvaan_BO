@@ -29,7 +29,7 @@ function monthLabel(date: Date) {
 }
 
 function formatRangeLabel(start: string, end: string) {
-  if (!start || !end) return 'Select dates';
+  if (!start && !end) return 'Select dates';
   const formatter = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'short',
@@ -37,8 +37,11 @@ function formatRangeLabel(start: string, end: string) {
   });
   const startDate = parseIsoDate(start);
   const endDate = parseIsoDate(end);
-  if (!startDate || !endDate) return 'Select dates';
-  return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+  if (startDate && endDate) {
+    return `${formatter.format(startDate)} - ${formatter.format(endDate)}`;
+  }
+  if (startDate) return `${formatter.format(startDate)} - …`;
+  return 'Select dates';
 }
 
 function daysBetween(start: string, end: string) {
@@ -85,9 +88,11 @@ type DateRangePickerProps = {
   required?: boolean;
   wrapperClassName?: string;
   variant?: 'field' | 'filter';
+  align?: 'start' | 'end';
   startValue: string;
   endValue: string;
   minDate?: string;
+  maxDate?: string;
   maxDays?: number;
   onChange: (start: string, end: string) => void;
 };
@@ -99,9 +104,11 @@ export function DateRangePicker({
   required,
   wrapperClassName,
   variant = 'field',
+  align = 'start',
   startValue,
   endValue,
   minDate,
+  maxDate,
   maxDays = DEFAULT_MAX_DAYS,
   onChange,
 }: DateRangePickerProps) {
@@ -115,9 +122,18 @@ export function DateRangePicker({
   const [viewMonth, setViewMonth] = useState(() => startOfMonth(startValue || todayIso()));
 
   const base = variant === 'filter' ? filterControlClass : fieldControlClass;
-  const display = formatRangeLabel(startValue, endValue);
-  const previewEnd = pickingEnd && draftStart && hoverDate && hoverDate > draftStart ? hoverDate : draftEnd;
-  const canApply = Boolean(draftStart && draftEnd && draftEnd > draftStart);
+  const rangeEnd =
+    pickingEnd && draftStart && hoverDate && hoverDate > draftStart ? hoverDate : draftEnd;
+  const display = open
+    ? formatRangeLabel(draftStart, rangeEnd)
+    : formatRangeLabel(startValue, endValue);
+  const canApply = Boolean(
+    draftStart &&
+      draftEnd &&
+      draftEnd > draftStart &&
+      (!minDate || draftStart >= minDate) &&
+      (!maxDate || draftEnd <= maxDate),
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -151,17 +167,20 @@ export function DateRangePicker({
 
   function selectDay(iso: string) {
     if (minDate && iso < minDate) return;
+    if (maxDate && iso > maxDate) return;
 
     if (!pickingEnd || !draftStart) {
       setDraftStart(iso);
       setDraftEnd('');
       setPickingEnd(true);
+      setHoverDate(null);
       return;
     }
 
     if (iso === draftStart) {
       setDraftEnd(addDaysIso(iso, 1));
       setPickingEnd(false);
+      setHoverDate(null);
       return;
     }
 
@@ -169,6 +188,7 @@ export function DateRangePicker({
       setDraftStart(iso);
       setDraftEnd('');
       setPickingEnd(true);
+      setHoverDate(null);
       return;
     }
 
@@ -176,6 +196,7 @@ export function DateRangePicker({
 
     setDraftEnd(iso);
     setPickingEnd(false);
+    setHoverDate(null);
   }
 
   function apply() {
@@ -208,7 +229,7 @@ export function DateRangePicker({
             open && 'border-primary ring-2 ring-ring/60',
           )}
         >
-          <span className={cn('truncate', !startValue || !endValue ? 'text-muted-foreground' : '')}>
+          <span className={cn('truncate', !(open ? draftStart : startValue) ? 'text-muted-foreground' : '')}>
             {display}
           </span>
           <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -219,37 +240,41 @@ export function DateRangePicker({
             id={panelId}
             role="dialog"
             aria-label="Select stay dates"
-            className="absolute left-0 top-[calc(100%+8px)] z-50 w-[min(100vw-2rem,640px)] rounded-2xl border border-border bg-background p-4 shadow-xl"
+            className={cn(
+              'absolute top-[calc(100%+8px)] z-50 w-[min(100vw-1.5rem,560px)] rounded-2xl border border-border bg-background p-3 shadow-xl sm:p-4',
+              align === 'end' ? 'right-0' : 'left-0',
+            )}
           >
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-2 flex items-center justify-between gap-2">
               <button
                 type="button"
                 aria-label="Previous month"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary hover:bg-primary/10"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary hover:bg-primary/10"
                 onClick={() => setViewMonth((current) => addMonths(current, -1))}
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2">
-                <p className="text-center text-sm font-semibold">{monthLabel(leftMonth)}</p>
-                <p className="hidden text-center text-sm font-semibold sm:block">{monthLabel(rightMonth)}</p>
+              <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+                <p className="truncate text-center text-sm font-semibold">{monthLabel(leftMonth)}</p>
+                <p className="hidden truncate text-center text-sm font-semibold sm:block">{monthLabel(rightMonth)}</p>
               </div>
               <button
                 type="button"
                 aria-label="Next month"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary hover:bg-primary/10"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-primary hover:bg-primary/10"
                 onClick={() => setViewMonth((current) => addMonths(current, 1))}
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               <MonthGrid
                 monthStart={leftMonth}
                 draftStart={draftStart}
-                draftEnd={previewEnd}
+                draftEnd={rangeEnd}
                 minDate={minDate}
+                maxDate={maxDate}
                 maxDays={maxDays}
                 onSelect={selectDay}
                 onHover={setHoverDate}
@@ -258,24 +283,25 @@ export function DateRangePicker({
                 className="hidden sm:block"
                 monthStart={rightMonth}
                 draftStart={draftStart}
-                draftEnd={previewEnd}
+                draftEnd={rangeEnd}
                 minDate={minDate}
+                maxDate={maxDate}
                 maxDays={maxDays}
                 onSelect={selectDay}
                 onHover={setHoverDate}
               />
             </div>
 
-            <div className="mt-4 flex items-start gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-normal text-foreground">
+            <div className="mt-3 flex items-start gap-2 rounded-xl bg-primary/10 px-3 py-2 text-xs font-normal text-foreground">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <span>You may select one continuous period of up to {maxDays} days.</span>
             </div>
 
-            <div className="mt-4 flex justify-end gap-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>
+            <div className="mt-3 flex justify-end gap-2">
+              <Button type="button" variant="outline" size="sm" className="h-9 min-w-[88px]" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="button" variant="gold" size="sm" disabled={!canApply} onClick={apply}>
+              <Button type="button" variant="gold" size="sm" className="h-9 min-w-[88px]" disabled={!canApply} onClick={apply}>
                 Apply
               </Button>
             </div>
@@ -294,6 +320,7 @@ type MonthGridProps = {
   draftStart: string;
   draftEnd: string;
   minDate?: string;
+  maxDate?: string;
   maxDays: number;
   className?: string;
   onSelect: (iso: string) => void;
@@ -305,38 +332,41 @@ function MonthGrid({
   draftStart,
   draftEnd,
   minDate,
+  maxDate,
   maxDays,
   className,
   onSelect,
   onHover,
 }: MonthGridProps) {
   const cells = buildMonthCells(monthStart);
+  const hasRange = Boolean(draftStart && draftEnd && draftEnd > draftStart);
 
   return (
     <div className={className}>
-      <div className="mb-1 grid grid-cols-7 gap-y-1 text-center text-[11px] font-medium text-muted-foreground">
+      <div className="mb-1 grid grid-cols-7 text-center text-[11px] font-medium text-muted-foreground">
         {WEEKDAYS.map((day) => (
-          <span key={day}>{day}</span>
+          <span key={day} className="py-1">
+            {day}
+          </span>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-y-1">
+      <div className="grid grid-cols-7">
         {cells.map((cell, index) => {
           if (!cell) {
             return <span key={`empty-${index}`} className="h-9" />;
           }
 
           const isStart = cell.iso === draftStart;
-          const isEnd = cell.iso === draftEnd;
-          const inRange =
-            Boolean(draftStart && draftEnd) &&
-            cell.iso > draftStart &&
-            cell.iso < draftEnd;
+          const isEnd = hasRange && cell.iso === draftEnd;
+          const inRange = hasRange && cell.iso > draftStart && cell.iso < draftEnd;
+          const inSelection = isStart || isEnd || inRange;
           const beforeMin = Boolean(minDate && cell.iso < minDate);
+          const afterMax = Boolean(maxDate && cell.iso > maxDate);
           const beyondMax =
             Boolean(draftStart && !draftEnd) &&
             cell.iso > draftStart &&
             daysBetween(draftStart, cell.iso) > maxDays;
-          const disabled = beforeMin || beyondMax;
+          const disabled = beforeMin || afterMax || beyondMax;
 
           return (
             <button
@@ -347,18 +377,32 @@ function MonthGrid({
               onMouseLeave={() => onHover(null)}
               onClick={() => onSelect(cell.iso)}
               className={cn(
-                'relative h-9 text-sm transition-colors',
+                'relative flex h-9 items-center justify-center text-sm transition-colors',
                 disabled && 'cursor-not-allowed text-muted-foreground/40',
-                !disabled && !isStart && !isEnd && !inRange && 'hover:bg-muted',
-                inRange && 'bg-primary/15 text-foreground',
-                (isStart || isEnd) && 'bg-primary font-semibold text-primary-foreground',
-                isStart && draftEnd && 'rounded-l-md',
-                isEnd && draftStart && 'rounded-r-md',
-                isStart && !draftEnd && 'rounded-md',
-                isEnd && !isStart && 'rounded-md',
               )}
             >
-              {cell.day}
+              {hasRange && inSelection ? (
+                <span
+                  aria-hidden
+                  className={cn(
+                    'absolute inset-y-1 bg-primary/15',
+                    inRange && 'inset-x-0',
+                    isStart && !isEnd && 'left-1/2 right-0',
+                    isEnd && !isStart && 'left-0 right-1/2',
+                    isStart && isEnd && 'hidden',
+                  )}
+                />
+              ) : null}
+              <span
+                className={cn(
+                  'relative z-[1] flex h-8 w-8 items-center justify-center rounded-full',
+                  !disabled && !isStart && !isEnd && !inRange && 'hover:bg-muted',
+                  (isStart || isEnd) && 'bg-primary font-semibold text-primary-foreground',
+                  inRange && 'text-foreground',
+                )}
+              >
+                {cell.day}
+              </span>
             </button>
           );
         })}

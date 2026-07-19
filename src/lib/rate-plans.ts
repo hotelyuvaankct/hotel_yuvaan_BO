@@ -7,19 +7,37 @@
 export type RatePlanOption = {
   code: string;
   label: string;
+  description: string;
+  features: string[];
 };
 
 export const RATE_PLAN_OPTIONS: RatePlanOption[] = [
-  { code: 'ROOM_ONLY', label: 'Room Only' },
-  { code: 'WITH_BREAKFAST', label: 'Room With Complimentary Breakfast' },
-  { code: 'WITH_BREAKFAST_DINNER', label: 'Room With Breakfast And Dinner' },
-  { code: 'WITH_HALF_BOARD', label: 'Room With Half Board' },
-  { code: 'WITH_FULL_BOARD', label: 'Room With Full Board' },
-  { code: 'ALL_INCLUSIVE', label: 'All Inclusive' },
+  {
+    code: 'ROOM_ONLY',
+    label: 'Room Only',
+    description: 'Just the room, no meals included.',
+    features: ['Cancellation policy', 'Payment: bank card', 'Hot Water Swimming Pool'],
+  },
+  {
+    code: 'WITH_BREAKFAST',
+    label: 'Room With Complimentary Breakfast',
+    description: 'Includes breakfast for the room occupants.',
+    features: ['Breakfast', 'Cancellation policy', 'Payment: bank card', 'Hot Water Swimming Pool'],
+  },
+  {
+    code: 'WITH_BREAKFAST_DINNER',
+    label: 'Room With Breakfast and Lunch or Dinner',
+    description: 'Includes breakfast and either lunch or dinner for the room occupants.',
+    features: ['Breakfast and lunch or dinner', 'Cancellation policy', 'Payment: bank card', 'Hot Water Swimming Pool'],
+  },
 ];
 
 const RATE_PLAN_BY_CODE = new Map(RATE_PLAN_OPTIONS.map((option) => [option.code, option]));
 
 export function getRatePlanLabel(code: string): string | undefined {
   return RATE_PLAN_BY_CODE.get(code)?.label;
+}
+
+export function getRatePlanOption(code: string): RatePlanOption | undefined {
+  return RATE_PLAN_BY_CODE.get(code);
 }

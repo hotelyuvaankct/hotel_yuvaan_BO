@@ -60,6 +60,12 @@ import type {
   User,
   VerifyPasswordOtpPayload,
   VerifyPasswordOtpResponse,
+  InventoryGrid,
+  InventoryDayUpsert,
+  RatePlanDayUpsert,
+  BulkInventoryPayload,
+  InventoryBlockPayload,
+  InventoryBlockedRanges,
 } from '@/lib/api-types';
 
 import { getApiBaseUrl } from '@/config/env';
@@ -69,12 +75,14 @@ const API_BASE_URL = getApiBaseUrl();
 export class ApiError extends Error {
   status: number;
   errors?: Record<string, string[]>;
+  data?: unknown;
 
-  constructor(message: string, status: number, errors?: Record<string, string[]>) {
+  constructor(message: string, status: number, errors?: Record<string, string[]>, data?: unknown) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.errors = errors;
+    this.data = data;
   }
 
   /** First stable machine code from `errors.errorCode`, if present. */
@@ -91,6 +99,8 @@ export class ApiError extends Error {
 
 type RequestOptions = RequestInit & {
   skipAuth?: boolean;
+  /** When true, do not toggle the full-screen global loader (caller shows its own busy state). */
+  skipGlobalLoader?: boolean;
   retry?: boolean;
 };
 
@@ -111,7 +121,7 @@ async function parseResponse<T>(response: Response): Promise<ApiResponse<T>> {
           : response.status >= 500
             ? 'The server could not complete the request. Please try again.'
             : 'The request could not be completed. Please check the entered values.';
-    throw new ApiError(payload?.message || validationMessage || fallbackMessage, response.status, payload?.errors);
+    throw new ApiError(payload?.message || validationMessage || fallbackMessage, response.status, payload?.errors, payload?.data);
   }
   return payload ?? { success: true, code: response.status, message: response.statusText };
 }
@@ -166,16 +176,18 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   }
 
   const isMutation = options.method === 'POST' || options.method === 'PUT' || options.method === 'DELETE';
-  if (isMutation) globalLoaderState.show();
+  const showLoader = isMutation && !options.skipGlobalLoader;
+  if (showLoader) globalLoaderState.show();
 
   try {
-    const response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+    const { skipAuth: _skipAuth, skipGlobalLoader: _skipLoader, retry: _retry, ...fetchOptions } = options;
+    const response = await fetch(`${API_BASE_URL}${path}`, { ...fetchOptions, headers });
 
     if (response.status === 401 && !options.skipAuth && options.retry !== false) {
       const token = await refreshAccessToken();
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
-        const retryResponse = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
+        const retryResponse = await fetch(`${API_BASE_URL}${path}`, { ...fetchOptions, headers });
         return (await parseResponse<T>(retryResponse)).data as T;
       }
       clearStoredSession();
@@ -183,7 +195,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 
     return (await parseResponse<T>(response)).data as T;
   } finally {
-    if (isMutation) globalLoaderState.hide();
+    if (showLoader) globalLoaderState.hide();
   }
 }
 
@@ -482,5 +494,52 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
+  },
+  getInventoryGrid(hotelId: number, from: string, to: string) {
+    const params = new URLSearchParams({
+      hotelId: String(hotelId),
+      from,
+      to,
+    });
+    return apiRequest<InventoryGrid>(`/inventory?${params.toString()}`);
+  },
+  upsertInventory(items: InventoryDayUpsert[]) {
+    return apiRequest<InventoryGrid>('/inventory', {
+      method: 'PUT',
+      body: JSON.stringify({ items }),
+    });
+  },
+  upsertRatePlanInventory(items: RatePlanDayUpsert[]) {
+    return apiRequest<InventoryGrid>('/inventory/rate-plan-price', {
+      method: 'PUT',
+      body: JSON.stringify({ items }),
+    });
+  },
+  bulkUpdateInventory(payload: BulkInventoryPayload) {
+    return apiRequest<InventoryGrid>('/inventory/bulk', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipGlobalLoader: true,
+    });
+  },
+  blockInventory(payload: InventoryBlockPayload) {
+    return apiRequest<void>('/inventory/block', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  unblockInventory(payload: InventoryBlockPayload) {
+    return apiRequest<void>('/inventory/unblock', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  getBlockedInventory(hotelId: number, from: string, to: string) {
+    const params = new URLSearchParams({
+      hotelId: String(hotelId),
+      from,
+      to,
+    });
+    return apiRequest<InventoryBlockedRanges>(`/inventory/blocked?${params.toString()}`);
   },
 };

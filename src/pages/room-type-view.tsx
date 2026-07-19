@@ -320,11 +320,9 @@ function ImageGallery({
   );
 }
 
-function RatePlanCard({ plan, basePrice }: { plan: RoomTypeRatePlan; basePrice?: number }) {
-  const total =
-    basePrice != null && plan.extraPrice != null
-      ? basePrice + plan.extraPrice
-      : undefined;
+function RatePlanCard({ plan }: { plan: RoomTypeRatePlan; basePrice?: number }) {
+  const occupancy = [...(plan.occupancyPrices ?? [])].sort((a, b) => a.guestCount - b.guestCount);
+  const fromPrice = occupancy[0]?.price;
 
   return (
     <article className="flex h-full flex-col rounded-2xl border border-border/70 bg-background p-4">
@@ -340,16 +338,24 @@ function RatePlanCard({ plan, basePrice }: { plan: RoomTypeRatePlan; basePrice?:
       ) : null}
 
       <div className="mt-3 space-y-1 text-sm">
-        <p>
-          <span className="text-muted-foreground">Extra </span>
-          <span className="font-medium">{formatCurrency(plan.extraPrice ?? 0)}</span>
-        </p>
-        {total != null ? (
+        {fromPrice != null ? (
           <p>
             <span className="text-muted-foreground">From </span>
-            <span className="font-semibold">{formatCurrency(total)}</span>
+            <span className="font-semibold">{formatCurrency(fromPrice)}</span>
             <span className="text-xs text-muted-foreground"> / night</span>
           </p>
+        ) : null}
+        {occupancy.length > 0 ? (
+          <ul className="mt-2 space-y-1 rounded-lg bg-muted/40 p-2">
+            {occupancy.map((item) => (
+              <li key={item.guestCount} className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-muted-foreground">
+                  {item.guestCount} guest{item.guestCount === 1 ? '' : 's'}
+                </span>
+                <span className="font-medium">{formatCurrency(item.price)}</span>
+              </li>
+            ))}
+          </ul>
         ) : null}
       </div>
 
