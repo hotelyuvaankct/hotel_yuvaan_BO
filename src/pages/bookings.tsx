@@ -97,7 +97,15 @@ function BookingCard({
       </div>
 
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/70 pt-4">
-        <p className="text-base font-semibold">{formatCurrency(booking.totalAmount)}</p>
+        <div>
+          <p className="text-base font-semibold">{formatCurrency(booking.totalAmount)}</p>
+          {booking.bookingStatus === 6 && booking.refund?.amount != null ? (
+            <p className="text-xs text-muted-foreground">
+              Refunded {formatCurrency(booking.refund.amount)}
+              {booking.refund.status ? ` · ${booking.refund.status}` : ''}
+            </p>
+          ) : null}
+        </div>
         <div className="flex flex-wrap justify-end gap-2">
           <Button variant="outline" size="sm" onClick={() => undefined}>
             <Link to={`/bookings/${booking.id}`} className="inline-flex items-center gap-2">

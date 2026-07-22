@@ -359,10 +359,61 @@ export type Booking = {
   notes?: string;
   cancellationReason?: string;
   cancelledAt?: string;
+  refund?: BookingRefund;
   status?: number;
   rooms?: BookingRoomLine[];
   createdAt?: string;
   updatedAt?: string;
+};
+
+export type BookingRefund = {
+  id?: number;
+  amount?: number;
+  percent?: number;
+  status?: string;
+  channel?: string;
+  cancelledBy?: string;
+  hoursBeforeCheckIn?: number;
+  initiatedAt?: string;
+  completedAt?: string;
+  note?: string;
+  failureReason?: string;
+  paymentRefunded?: boolean;
+};
+
+export type CancellationQuote = {
+  bookingId: number;
+  bookingCode: string;
+  paidAmount?: number;
+  refundPercent?: number;
+  refundAmount?: number;
+  hoursBeforeCheckIn?: number;
+  matchedMinHoursBeforeCheckIn?: number;
+  cancelledBy?: string;
+  note?: string;
+  refundable?: boolean;
+};
+
+export type CancellationPolicyTier = {
+  id?: number;
+  minHoursBeforeCheckIn: number;
+  refundPercent: number;
+  sortOrder?: number;
+};
+
+export type CancellationPolicyConfig = {
+  tiers: CancellationPolicyTier[];
+  adminCancelRefundPercent: number;
+  cancelOtpExpiryMinutes?: number;
+};
+
+export type UpdateCancellationPolicyPayload = {
+  tiers: Array<{
+    minHoursBeforeCheckIn: number;
+    refundPercent: number;
+    sortOrder?: number;
+  }>;
+  adminCancelRefundPercent: number;
 };
 
 export type CreateBookingPayload = {
@@ -394,6 +445,7 @@ export type UpdateBookingPayload = {
 };
 
 export type CancelBookingPayload = {
+  otpCode: string;
   cancellationReason?: string;
 };
 
@@ -758,3 +810,149 @@ export type InventoryBlockedRange = {
 export type InventoryBlockedRanges = {
   ranges: InventoryBlockedRange[];
 };
+
+export type TransactionListItem = {
+  id: string;
+  type: 'PAYMENT' | 'REFUND' | 'ORDER' | string;
+  sourceId: number;
+  bookingId?: number;
+  bookingCode?: string;
+  guestName?: string;
+  guestEmail?: string;
+  amount: number;
+  currency?: string;
+  statusLabel?: string;
+  statusCode?: number;
+  gateway?: string;
+  gatewayPaymentId?: string;
+  gatewayOrderId?: string;
+  gatewayRefundId?: string;
+  settled?: boolean;
+  gatewaySettlementId?: string;
+  occurredAt?: string;
+  warning?: string;
+};
+
+export type TransactionDetail = TransactionListItem & {
+  guestPhone?: string;
+  settledAt?: string;
+  failureReason?: string;
+  notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  paidAt?: string;
+  initiatedAt?: string;
+  completedAt?: string;
+  paymentMethodLabel?: string;
+  paymentMethod?: number;
+  refundPercent?: number;
+  hoursBeforeCheckIn?: number;
+  cancelledBy?: string;
+  channel?: string;
+  receipt?: string;
+  paymentId?: number;
+  policySnapshot?: string;
+  bookingMoney?: {
+    subtotalAmount?: number;
+    discountAmount?: number;
+    taxAmount?: number;
+    processingFeeAmount?: number;
+    processingFeeGstAmount?: number;
+    totalAmount?: number;
+  };
+  linkedRefunds?: Array<{
+    id: number;
+    amount: number;
+    status?: number;
+    statusLabel?: string;
+    gatewayRefundId?: string;
+    refundPercent?: number;
+    cancelledBy?: string;
+    createdAt?: string;
+    completedAt?: string;
+  }>;
+};
+
+export type TransactionSummary = {
+  successfulPayments: number;
+  successfulPaymentAmount: number;
+  failedPayments: number;
+  refundCount: number;
+  refundedAmount: number;
+  todayCaptures: number;
+  todayCaptureAmount: number;
+  openOrders: number;
+};
+
+export type SettlementListItem = {
+  id: number;
+  gatewaySettlementId: string;
+  kind: string;
+  status: string;
+  amount: number;
+  fees: number;
+  tax: number;
+  netAmount: number;
+  currency?: string;
+  utr?: string;
+  triggeredBy?: number;
+  gatewayCreatedAt?: string;
+  lastSyncedAt?: string;
+};
+
+export type SettlementItem = {
+  id: number;
+  entityId: string;
+  entityType: string;
+  amount: number;
+  fee: number;
+  tax: number;
+  credit: number;
+  debit: number;
+  settled?: boolean;
+  onHold?: boolean;
+  paymentId?: number;
+  refundId?: number;
+  bookingId?: number;
+  bookingCode?: string;
+  settledAt?: string;
+};
+
+export type SettlementDetail = SettlementListItem & {
+  amountRequested?: number;
+  amountSettled?: number;
+  amountPending?: number;
+  amountReversed?: number;
+  settleFullBalance?: boolean;
+  description?: string;
+  bankCreditNote?: string;
+  items: SettlementItem[];
+};
+
+export type SettlementDashboard = {
+  settledAmount: number;
+  pendingUnsettledEstimate: number;
+  pendingNote?: string;
+  lastSyncedAt?: string;
+  lastSyncError?: string;
+  instantSettlementsEnabled?: boolean;
+  processedCount: number;
+  failedCount: number;
+  inFlightInstantCount: number;
+  recentSettlements: SettlementListItem[];
+};
+
+export type SettlementSyncResult = {
+  lastSyncedAt?: string;
+  settlementsUpserted: number;
+  itemsUpserted: number;
+  message?: string;
+  instantSettlementsEnabled?: boolean;
+};
+
+export type InstantSettlementPayload = {
+  amount?: number;
+  settleFullBalance: boolean;
+  description?: string;
+};
+

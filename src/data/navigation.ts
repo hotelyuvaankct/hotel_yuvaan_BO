@@ -9,6 +9,8 @@ import {
   Images,
   TicketPercent,
   CalendarClock,
+  ArrowLeftRight,
+  Landmark,
 } from 'lucide-react';
 
 export type NavigationItem = {
@@ -36,6 +38,20 @@ export const navigationItems: NavigationItem[] = [
     description: 'Manage reservations and arrivals',
     icon: CalendarRange,
     moduleSlug: 'bookings',
+  },
+  {
+    label: 'Transactions',
+    href: '/transactions',
+    description: 'Payments, refunds, and checkout orders',
+    icon: ArrowLeftRight,
+    moduleSlug: 'payments',
+  },
+  {
+    label: 'Settlements',
+    href: '/settlements',
+    description: 'Razorpay bank settlements and instant settle',
+    icon: Landmark,
+    moduleSlug: 'settlements',
   },
   {
     label: 'Rooms',
