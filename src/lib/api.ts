@@ -20,6 +20,8 @@ import type {
   BulkCreateRoomsPayload,
   BulkDeleteRoomsPayload,
   CancelBookingPayload,
+  CancellationPolicyConfig,
+  CancellationQuote,
   CreateRolePayload,
   CreateUserPayload,
   DashboardStats,
@@ -53,6 +55,7 @@ import type {
   UpsertCouponPayload,
   ValidateCouponPayload,
   PricingConfig,
+  UpdateCancellationPolicyPayload,
   UpdatePricingConfigPayload,
   UpsertRoomPayload,
   UpsertRoomTypePayload,
@@ -66,6 +69,14 @@ import type {
   BulkInventoryPayload,
   InventoryBlockPayload,
   InventoryBlockedRanges,
+  TransactionListItem,
+  TransactionDetail,
+  TransactionSummary,
+  SettlementListItem,
+  SettlementDetail,
+  SettlementDashboard,
+  SettlementSyncResult,
+  InstantSettlementPayload,
 } from '@/lib/api-types';
 
 import { getApiBaseUrl } from '@/config/env';
@@ -395,8 +406,14 @@ export const api = {
   updateBooking(id: number, payload: UpdateBookingPayload) {
     return apiRequest<Booking>(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
   },
-  cancelBooking(id: number, payload: CancelBookingPayload = {}) {
+  cancelBooking(id: number, payload: CancelBookingPayload) {
     return apiRequest<Booking>(`/bookings/${id}/cancel`, { method: 'POST', body: JSON.stringify(payload) });
+  },
+  getCancellationQuote(id: number) {
+    return apiRequest<CancellationQuote>(`/bookings/${id}/cancellation-quote`);
+  },
+  requestCancelOtp(id: number) {
+    return apiRequest<null>(`/bookings/${id}/cancel/request-otp`, { method: 'POST' });
   },
   getDashboardStats(filter: DashboardStatsFilter = {}) {
     const params = new URLSearchParams();
@@ -495,6 +512,15 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  getCancellationPolicy() {
+    return apiRequest<CancellationPolicyConfig>('/config/cancellation-policy');
+  },
+  updateCancellationPolicy(payload: UpdateCancellationPolicyPayload) {
+    return apiRequest<CancellationPolicyConfig>('/config/cancellation-policy', {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
   getInventoryGrid(hotelId: number, from: string, to: string) {
     const params = new URLSearchParams({
       hotelId: String(hotelId),
@@ -541,5 +567,75 @@ export const api = {
       to,
     });
     return apiRequest<InventoryBlockedRanges>(`/inventory/blocked?${params.toString()}`);
+  },
+  listTransactions(filters: {
+    page?: number;
+    size?: number;
+    type?: string;
+    bookingCode?: string;
+    gatewayId?: string;
+    status?: string;
+    from?: string;
+    to?: string;
+    amountMin?: number;
+    amountMax?: number;
+  } = {}) {
+    const params = new URLSearchParams({
+      page: String(filters.page ?? 0),
+      size: String(filters.size ?? 20),
+    });
+    if (filters.type) params.set('type', filters.type);
+    if (filters.bookingCode?.trim()) params.set('bookingCode', filters.bookingCode.trim());
+    if (filters.gatewayId?.trim()) params.set('gatewayId', filters.gatewayId.trim());
+    if (filters.status) params.set('status', filters.status);
+    if (filters.from) params.set('from', filters.from);
+    if (filters.to) params.set('to', filters.to);
+    if (filters.amountMin != null) params.set('amountMin', String(filters.amountMin));
+    if (filters.amountMax != null) params.set('amountMax', String(filters.amountMax));
+    return apiRequest<PageResponse<TransactionListItem>>(`/transactions?${params.toString()}`);
+  },
+  getTransaction(id: string) {
+    return apiRequest<TransactionDetail>(`/transactions/${encodeURIComponent(id)}`);
+  },
+  getTransactionSummary() {
+    return apiRequest<TransactionSummary>('/transactions/summary');
+  },
+  getSettlementDashboard(filter: { from?: string; to?: string } = {}) {
+    const params = new URLSearchParams();
+    if (filter.from) params.set('from', filter.from);
+    if (filter.to) params.set('to', filter.to);
+    const query = params.toString();
+    return apiRequest<SettlementDashboard>(`/settlements/dashboard${query ? `?${query}` : ''}`);
+  },
+  listSettlements(filters: {
+    page?: number;
+    size?: number;
+    kind?: string;
+    status?: string;
+    from?: string;
+    to?: string;
+  } = {}) {
+    const params = new URLSearchParams({
+      page: String(filters.page ?? 0),
+      size: String(filters.size ?? 20),
+    });
+    if (filters.kind) params.set('kind', filters.kind);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.from) params.set('from', filters.from);
+    if (filters.to) params.set('to', filters.to);
+    return apiRequest<PageResponse<SettlementListItem>>(`/settlements?${params.toString()}`);
+  },
+  getSettlement(id: number) {
+    return apiRequest<SettlementDetail>(`/settlements/${id}`);
+  },
+  syncSettlements() {
+    return apiRequest<SettlementSyncResult>('/settlements/sync', { method: 'POST' });
+  },
+  createInstantSettlement(payload: InstantSettlementPayload, idempotencyKey: string) {
+    return apiRequest<SettlementListItem>('/settlements/instant', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 };

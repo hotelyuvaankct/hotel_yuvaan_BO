@@ -26,6 +26,10 @@ import { RolesPage } from '@/pages/roles';
 import { RoleFormPage } from '@/pages/role-form';
 import { RoleViewPage } from '@/pages/role-view';
 import { SettingsPage } from '@/pages/settings';
+import { TransactionsPage } from '@/pages/transactions';
+import { TransactionViewPage } from '@/pages/transaction-view';
+import { SettlementsPage } from '@/pages/settlements';
+import { SettlementViewPage } from '@/pages/settlement-view';
 import { LoginPage } from '@/pages/login';
 import { SetPasswordPage } from '@/pages/set-password';
 import { NotFoundPage } from '@/pages/not-found';
@@ -66,6 +70,10 @@ export const router = createBrowserRouter([
           { path: 'coupons/new', element: <CouponFormPage /> },
           { path: 'coupons/:id', element: <CouponViewPage /> },
           { path: 'coupons/:id/edit', element: <CouponFormPage /> },
+          { path: 'transactions', element: <TransactionsPage /> },
+          { path: 'transactions/:id', element: <TransactionViewPage /> },
+          { path: 'settlements', element: <SettlementsPage /> },
+          { path: 'settlements/:id', element: <SettlementViewPage /> },
           { path: 'users', element: <UsersPage /> },
           { path: 'users/new', element: <UserFormPage /> },
           { path: 'users/:id', element: <UserViewPage /> },
