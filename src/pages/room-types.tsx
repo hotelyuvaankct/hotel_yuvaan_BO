@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { SelectField } from '@/components/ui/form-fields';
 import { Status } from '@/lib/constants';
+import { sortRoomTypes } from '@/lib/room-types';
 
 function formatCurrency(value?: number) {
   if (value == null) return '-';
@@ -42,6 +43,9 @@ function RoomTypeCard({
           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
             {roomType.description || 'No description'}
           </p>
+          {roomType.sortOrder != null ? (
+            <p className="mt-1 text-xs font-medium text-primary">Order #{roomType.sortOrder}</p>
+          ) : null}
         </div>
         <Badge
           variant={roomType.status === Status.ACTIVE ? 'success' : 'secondary'}
@@ -128,7 +132,8 @@ export function RoomTypesPage() {
   async function load(activeHotelId = hotelId) {
     setLoading(true);
     try {
-      setRoomTypes(await api.listRoomTypes(activeHotelId ? Number(activeHotelId) : undefined));
+      const items = await api.listRoomTypes(activeHotelId ? Number(activeHotelId) : undefined);
+      setRoomTypes(sortRoomTypes(items ?? []));
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load room types.', 'error');
     } finally {

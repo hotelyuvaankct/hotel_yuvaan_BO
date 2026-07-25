@@ -18,6 +18,7 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { SelectField, TextField } from '@/components/ui/form-fields';
 import { Status } from '@/lib/constants';
 import { addDaysIso, getRoomDateFilterErrors, normalizeRoomDateFilters, todayIso } from '@/lib/form-validation';
+import { sortRoomTypes } from '@/lib/room-types';
 
 function createDefaultFilters() {
   const checkIn = todayIso();
@@ -202,7 +203,7 @@ export function RoomsPage() {
     const hotelId = filters.hotelId ? Number(filters.hotelId) : undefined;
     void api.listRoomTypes(hotelId)
       .then((items) => {
-        setRoomTypes(items ?? []);
+        setRoomTypes(sortRoomTypes(items ?? []));
         setFilters((current) => {
           const nextRoomTypeId = items.some((item) => String(item.id) === current.roomTypeId)
             ? current.roomTypeId

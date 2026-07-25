@@ -146,6 +146,7 @@ export type RoomType = {
   maxChildren?: number;
   basePrice?: number;
   totalRooms?: number;
+  sortOrder?: number;
   amenities?: string;
   status?: number;
   images?: RoomImage[];
@@ -319,6 +320,7 @@ export type UpsertRoomTypePayload = {
   maxAdults?: number;
   maxChildren?: number;
   basePrice: number;
+  sortOrder?: number;
   amenities?: string;
   status?: number;
   deletedImageIds?: number[];
@@ -513,6 +515,7 @@ export type AvailableRoomType = {
   originalPrice?: number;
   discountPercent?: number;
   totalNights?: number;
+  sortOrder?: number;
   primaryImageUrl?: string;
   amenities?: string[];
   badges?: string[];
@@ -527,18 +530,6 @@ export type RatePlan = {
   originalPrice?: number;
   discountPercent?: number;
   totalNights?: number;
-};
-
-export type RoomUpgrade = {
-  roomTypeId: number;
-  name: string;
-  description?: string;
-  maxGuests?: number;
-  availableRooms?: number;
-  upgradePrice?: number;
-  primaryImageUrl?: string;
-  amenities?: string[];
-  badges?: string[];
 };
 
 export type BookingQuote = {
@@ -569,7 +560,6 @@ export type CheckoutBookingPayload = {
   adults?: number;
   children?: number;
   rooms?: number;
-  upgradeRoomTypeId?: number;
   guestName: string;
   guestEmail?: string;
   guestPhone?: string;
@@ -730,6 +720,7 @@ export type InventoryDayCell = {
 export type InventoryRoomTypeRow = {
   roomTypeId: number;
   roomTypeName: string;
+  sortOrder?: number;
   physicalRoomCount?: number;
   maxGuests?: number;
   inventoryExceedsPhysical?: boolean;

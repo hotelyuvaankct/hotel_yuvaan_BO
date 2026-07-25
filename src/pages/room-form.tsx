@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageLoader } from '@/components/common/loading-state';
 import { SelectField, TextField, inputClass } from '@/components/ui/form-fields';
+import { sortRoomTypes } from '@/lib/room-types';
 
 export function RoomFormPage() {
   const { id } = useParams();
@@ -53,7 +54,7 @@ export function RoomFormPage() {
 
         if (roomId) {
           const room = await api.getRoom(roomId);
-          setRoomTypes(await api.listRoomTypes(room.hotelId));
+          setRoomTypes(sortRoomTypes(await api.listRoomTypes(room.hotelId)));
           setForm({
             hotelId: String(room.hotelId),
             roomTypeId: String(room.roomTypeId),
@@ -85,7 +86,7 @@ export function RoomFormPage() {
     api.listRoomTypes(hotelId)
       .then((items) => {
         if (!active) return;
-        setRoomTypes(items ?? []);
+        setRoomTypes(sortRoomTypes(items ?? []));
         setForm((current) => ({
           ...current,
           roomTypeId: items.some((item) => String(item.id) === current.roomTypeId)

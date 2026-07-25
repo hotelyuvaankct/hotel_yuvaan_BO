@@ -82,6 +82,7 @@ export function RoomTypeFormPage() {
     maxAdults: '2',
     maxChildren: '0',
     basePrice: '',
+    sortOrder: '1',
   });
 
   const capacity = useMemo(() => {
@@ -122,6 +123,7 @@ export function RoomTypeFormPage() {
             maxAdults: String(roomType.maxAdults ?? 2),
             maxChildren: String(roomType.maxChildren ?? 0),
             basePrice: String(roomType.basePrice ?? ''),
+            sortOrder: String(roomType.sortOrder ?? 1),
           });
           const savedAmenities = parseAmenities(roomType.amenities);
           const knownCodes: string[] = [];
@@ -222,6 +224,11 @@ export function RoomTypeFormPage() {
       showToast('At least one image is required.', 'error');
       return;
     }
+    const sortOrder = Number(form.sortOrder);
+    if (!Number.isFinite(sortOrder) || sortOrder < 1) {
+      showToast('Order must be a whole number of 1 or higher.', 'error');
+      return;
+    }
     for (const variant of variants) {
       for (let guest = 1; guest <= capacity; guest += 1) {
         const raw = variant.occupancyPrices[guest];
@@ -257,6 +264,7 @@ export function RoomTypeFormPage() {
       maxAdults: Number(form.maxAdults),
       maxChildren: Number(form.maxChildren),
       basePrice: Number(form.basePrice),
+      sortOrder,
       amenities: JSON.stringify(amenities),
       ...(isEdit ? {} : { status: Status.ACTIVE }),
       deletedImageIds: deletedImageIds.length > 0 ? deletedImageIds : undefined,
@@ -341,6 +349,15 @@ export function RoomTypeFormPage() {
               type="number"
               value={form.basePrice}
               onChange={(event) => setForm((value) => ({ ...value, basePrice: event.target.value }))}
+            />
+            <TextField
+              label="Order"
+              required
+              min={1}
+              type="number"
+              value={form.sortOrder}
+              onChange={(event) => setForm((value) => ({ ...value, sortOrder: event.target.value }))}
+              hint="1 = top / best room. Higher numbers are lower tiers (e.g. Super=1, Deluxe=2, Twin=3). Upgrades offer the next lower number."
             />
             <TextField
               label="Description"
