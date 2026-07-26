@@ -130,11 +130,22 @@ export function LoginPage() {
             </label>
 
             <div className="space-y-2">
-              <label className="block space-y-2 text-sm font-medium text-white/90">
-                Password
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-sm font-medium text-white/90" htmlFor="login-password">
+                  Password
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs font-medium text-gold-300 underline-offset-4 hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <label className="block" htmlFor="login-password">
                 <span className={inputShellClass}>
                   <LockKeyhole className="h-4 w-4 shrink-0 text-white/50" />
                   <input
+                    id="login-password"
                     required
                     minLength={6}
                     type={showPassword ? 'text' : 'password'}

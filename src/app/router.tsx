@@ -31,6 +31,7 @@ import { TransactionViewPage } from '@/pages/transaction-view';
 import { SettlementsPage } from '@/pages/settlements';
 import { SettlementViewPage } from '@/pages/settlement-view';
 import { LoginPage } from '@/pages/login';
+import { ForgotPasswordPage } from '@/pages/forgot-password';
 import { SetPasswordPage } from '@/pages/set-password';
 import { NotFoundPage } from '@/pages/not-found';
 
@@ -41,6 +42,7 @@ function DefaultRoute() {
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  { path: '/forgot-password', element: <ForgotPasswordPage /> },
   { path: '/set-password', element: <SetPasswordPage /> },
   {
     path: '/',

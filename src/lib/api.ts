@@ -33,6 +33,8 @@ import type {
   PageResponse,
   Permission,
   PermissionPayload,
+  ForgotPasswordRequestOtpPayload,
+  ForgotPasswordVerifyOtpPayload,
   RequestPasswordOtpResponse,
   ResendSetupEmailPayload,
   ResendSetupEmailResponse,
@@ -254,6 +256,27 @@ export const api = {
     return apiRequest<void>('/profile/password/reset', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+  forgotPasswordRequestOtp(payload: ForgotPasswordRequestOtpPayload) {
+    return apiRequest<RequestPasswordOtpResponse>('/auth/forgot-password/request-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
+    });
+  },
+  forgotPasswordVerifyOtp(payload: ForgotPasswordVerifyOtpPayload) {
+    return apiRequest<VerifyPasswordOtpResponse>('/auth/forgot-password/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
+    });
+  },
+  forgotPasswordReset(payload: ResetPasswordPayload) {
+    return apiRequest<void>('/auth/forgot-password/reset', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+      skipAuth: true,
     });
   },
   profile() {

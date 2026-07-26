@@ -220,6 +220,7 @@ export type ResendSetupEmailResponse = {
 export type RequestPasswordOtpResponse = {
   maskedEmail?: string;
   message?: string;
+  expiresAt?: string;
 };
 
 export type VerifyPasswordOtpPayload = {
@@ -228,11 +229,21 @@ export type VerifyPasswordOtpPayload = {
 
 export type VerifyPasswordOtpResponse = {
   resetToken: string;
+  expiresAt?: string;
 };
 
 export type ResetPasswordPayload = {
   resetToken: string;
   newPassword: string;
+};
+
+export type ForgotPasswordRequestOtpPayload = {
+  email: string;
+};
+
+export type ForgotPasswordVerifyOtpPayload = {
+  email: string;
+  otp: string;
 };
 
 export type PasswordLifecycleErrorCode =

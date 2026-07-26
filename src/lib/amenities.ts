@@ -1,6 +1,5 @@
 import {
   Bath,
-  BedDouble,
   Coffee,
   ConciergeBell,
   Croissant,
@@ -55,7 +54,6 @@ export const AmenityCode = {
   ROOM_SERVICE: 'ROOM_SERVICE',
   SAFE: 'SAFE',
   FREE_PARKING: 'FREE_PARKING',
-  EXTRA_BED: 'EXTRA_BED',
 } as const;
 
 export type AmenityCode = (typeof AmenityCode)[keyof typeof AmenityCode];
@@ -118,7 +116,6 @@ export const AMENITY_GROUPS: AmenityGroup[] = [
       { code: AmenityCode.ROOM_SERVICE, label: 'Room service', icon: ConciergeBell },
       { code: AmenityCode.SAFE, label: 'Safe', icon: Lock },
       { code: AmenityCode.FREE_PARKING, label: 'Free parking', icon: ParkingCircle },
-      { code: AmenityCode.EXTRA_BED, label: 'Extra bed available', icon: BedDouble },
     ],
   },
 ];

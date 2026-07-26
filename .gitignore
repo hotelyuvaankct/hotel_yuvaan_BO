@@ -40,3 +40,5 @@ graphify-out/
 
 # Graphify cache/output
 .graphify/
+
+docs/

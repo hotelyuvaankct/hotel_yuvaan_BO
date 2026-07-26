@@ -464,6 +464,7 @@ export function SettingsPage() {
                             adminCancelRefundPercent: Number(e.target.value),
                           }))
                         }
+                        hint="Percent of the full amount the guest paid (includes processing fee). 100 = full refund."
                       />
                       <div className="space-y-3">
                         {policy.tiers.map((tier, index) => (
