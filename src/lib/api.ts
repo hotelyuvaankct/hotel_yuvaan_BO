@@ -407,7 +407,7 @@ export const api = {
     page?: number;
     size?: number;
     hotelId?: number;
-    bookingStatus?: number;
+    bookingStatuses?: number[];
     guestName?: string;
     checkInFrom?: string;
     checkInTo?: string;
@@ -417,11 +417,16 @@ export const api = {
       size: String(filters.size ?? 10),
     });
     if (filters.hotelId) params.set('hotelId', String(filters.hotelId));
-    if (filters.bookingStatus) params.set('bookingStatus', String(filters.bookingStatus));
+    for (const status of filters.bookingStatuses ?? []) {
+      params.append('bookingStatuses', String(status));
+    }
     if (filters.guestName?.trim()) params.set('guestName', filters.guestName.trim());
     if (filters.checkInFrom) params.set('checkInFrom', filters.checkInFrom);
     if (filters.checkInTo) params.set('checkInTo', filters.checkInTo);
     return apiRequest<PageResponse<Booking>>(`/bookings?${params.toString()}`);
+  },
+  checkOutBooking(id: number) {
+    return apiRequest<Booking>(`/bookings/${id}/check-out`, { method: 'POST' });
   },
   getBooking(id: number) {
     return apiRequest<Booking>(`/bookings/${id}`);

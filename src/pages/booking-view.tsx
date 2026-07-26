@@ -131,7 +131,7 @@ export function BookingViewPage() {
 
     setCheckingOut(true);
     try {
-      const updated = await api.updateBooking(booking.id, { bookingStatus: 5 });
+      const updated = await api.checkOutBooking(booking.id);
       setBooking(updated);
       showToast('Guest checked out and rooms released.', 'success');
     } catch (err) {
@@ -169,7 +169,7 @@ export function BookingViewPage() {
         actions={
           booking ? (
             <div className="flex flex-wrap gap-2">
-              {canUpdate && booking.bookingStatus === 4 ? (
+              {canUpdate && (booking.bookingStatus === 3 || booking.bookingStatus === 4) ? (
                 <Button
                   variant="gold"
                   size="sm"

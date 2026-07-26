@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, CalendarDays, CalendarPlus, Eye, RefreshCw, UserRound, X } from 'lucide-react';
+import { Building2, CalendarDays, CalendarPlus, Eye, LogOut, RefreshCw, UserRound, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Booking } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { bookingListStatusFilters, bookingStatusOptions, optionLabel } from '@/lib/enums';
+import { bookingStatusOptions, optionLabel } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
 import { Pagination } from '@/components/common/pagination';
-import { SelectField, TextField } from '@/components/ui/form-fields';
+import { TextField } from '@/components/ui/form-fields';
 
-const emptyFilters = { bookingStatus: '', search: '' };
+const DEFAULT_STATUSES = [3, 4]; // Confirmed + Checked in
+const emptyFilters = { bookingStatuses: DEFAULT_STATUSES as number[], search: '' };
 
 function statusVariant(status?: number): 'gold' | 'success' | 'danger' | 'warning' | 'secondary' {
   // Booked / active stay
@@ -51,11 +53,37 @@ function formatDate(value?: string) {
 function BookingCard({
   booking,
   canUpdate,
+  onCheckedOut,
 }: {
   booking: Booking;
   canUpdate: boolean;
+  onCheckedOut: () => void;
 }) {
+  const { confirm } = useConfirm();
+  const { showToast } = useToast();
+  const [checkingOut, setCheckingOut] = useState(false);
   const showUpdate = canUpdate && booking.bookingStatus !== 6 && booking.bookingStatus !== 5;
+  const showCheckout = canUpdate && (booking.bookingStatus === 3 || booking.bookingStatus === 4);
+
+  async function checkOutBooking() {
+    const confirmed = await confirm({
+      title: 'Check out guest?',
+      description: `This will complete booking ${booking.bookingCode} and release its assigned rooms.`,
+      confirmLabel: 'Check out',
+    });
+    if (!confirmed) return;
+
+    setCheckingOut(true);
+    try {
+      await api.checkOutBooking(booking.id);
+      showToast('Guest checked out and rooms released.', 'success');
+      onCheckedOut();
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Unable to check out this booking.', 'error');
+    } finally {
+      setCheckingOut(false);
+    }
+  }
 
   return (
     <article className="flex h-full flex-col rounded-2xl border border-border/70 bg-background p-4 shadow-[0_4px_16px_rgb(0,0,0,0.03)] transition-colors hover:border-primary/30">
@@ -121,6 +149,17 @@ function BookingCard({
               </Link>
             </Button>
           ) : null}
+          {showCheckout ? (
+            <Button
+              variant="gold"
+              size="sm"
+              disabled={checkingOut}
+              onClick={() => void checkOutBooking()}
+            >
+              <LogOut className="h-4 w-4" />
+              {checkingOut ? 'Checking out…' : 'Checkout'}
+            </Button>
+          ) : null}
         </div>
       </div>
     </article>
@@ -145,7 +184,7 @@ export function BookingsPage() {
       const result = await api.listBookings({
         page: targetPage,
         size: 10,
-        bookingStatus: activeFilters.bookingStatus ? Number(activeFilters.bookingStatus) : undefined,
+        bookingStatuses: activeFilters.bookingStatuses,
         guestName: activeFilters.search,
       });
       setBookings(result.content ?? []);
@@ -166,7 +205,7 @@ export function BookingsPage() {
       void load(0, filters);
     }, 350);
     return () => window.clearTimeout(timeout);
-  }, [canRead, filters.bookingStatus, filters.search]);
+  }, [canRead, filters.bookingStatuses, filters.search]);
 
   if (!canRead) {
     return (
@@ -193,30 +232,47 @@ export function BookingsPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <SelectField
-              variant="filter"
-              wrapperClassName="w-full sm:w-[200px]"
-              value={filters.bookingStatus}
-              placeholder="All statuses"
-              options={bookingListStatusFilters.map((option) => ({ value: option.value, label: option.label }))}
-              onChange={(event) => setFilters((current) => ({ ...current, bookingStatus: event.target.value }))}
-            />
-            <TextField
-              placeholder="Search guest or booking ID"
-              value={filters.search}
-              onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 shrink-0"
-              onClick={() => setFilters(emptyFilters)}
-              aria-label="Clear filters"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {bookingStatusOptions.map((option) => {
+                const selected = filters.bookingStatuses.includes(option.value);
+                return (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    size="sm"
+                    variant={selected ? 'gold' : 'outline'}
+                    onClick={() =>
+                      setFilters((current) => {
+                        const next = selected
+                          ? current.bookingStatuses.filter((status) => status !== option.value)
+                          : [...current.bookingStatuses, option.value];
+                        return { ...current, bookingStatuses: next };
+                      })
+                    }
+                  >
+                    {option.label}
+                  </Button>
+                );
+              })}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+              <TextField
+                placeholder="Search guest or booking ID"
+                value={filters.search}
+                onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 shrink-0"
+                onClick={() => setFilters({ bookingStatuses: DEFAULT_STATUSES, search: '' })}
+                aria-label="Clear filters"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {loading ? <LoadingState /> : null}
@@ -226,7 +282,12 @@ export function BookingsPage() {
           {!loading && bookings.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {bookings.map((booking) => (
-                <BookingCard key={booking.id} booking={booking} canUpdate={canUpdate} />
+                <BookingCard
+                  key={booking.id}
+                  booking={booking}
+                  canUpdate={canUpdate}
+                  onCheckedOut={() => void load(page, filters)}
+                />
               ))}
             </div>
           ) : null}

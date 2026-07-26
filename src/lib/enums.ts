@@ -36,12 +36,6 @@ export const bookingStatusOptions = [
   { value: 8, label: 'Expired' },
 ];
 
-/** Primary list filters: Booked / Completed / Cancelled */
-export const bookingListStatusFilters = [
-  { value: 3, label: 'Booked' },
-  { value: 5, label: 'Completed' },
-  { value: 6, label: 'Cancelled' },
-];
 
 export const bookingSourceOptions = [
   { value: 1, label: 'Website' },
