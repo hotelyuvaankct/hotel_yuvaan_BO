@@ -1,4 +1,4 @@
-import { navigationItems, type NavigationItem } from '@/data/navigation';
+import { navigationItems, type NavigationItem } from '@/config/navigation';
 import type { PermissionSet } from '@/lib/api-types';
 
 function hasReadAccess(perms: Record<string, PermissionSet> | undefined, moduleSlug: string) {

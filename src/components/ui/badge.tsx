@@ -1,31 +1,58 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-type BadgeVariant = 'default' | 'secondary' | 'outline' | 'gold' | 'success' | 'warning' | 'danger';
+export type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+
+/** @deprecated Prefer `tone`. Kept for migration. */
+type LegacyBadgeVariant = 'default' | 'secondary' | 'outline' | 'gold' | 'success' | 'warning' | 'danger';
 
 type BadgeProps = React.HTMLAttributes<HTMLSpanElement> & {
-  variant?: BadgeVariant;
+  tone?: BadgeTone;
+  /** @deprecated Use `tone` instead. */
+  variant?: LegacyBadgeVariant;
 };
 
-const variantStyles: Record<BadgeVariant, string> = {
-  default: 'bg-foreground text-background',
-  secondary: 'bg-secondary text-secondary-foreground',
-  outline: 'border border-border bg-background text-foreground',
-  gold: 'bg-gold-100 text-gold-900 dark:bg-gold-500/15 dark:text-gold-100',
-  success: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200',
-  warning: 'bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200',
-  danger: 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-200',
+const toneStyles: Record<BadgeTone, string> = {
+  success: 'bg-success text-success-foreground',
+  warning: 'bg-warning/15 text-warning-foreground',
+  danger: 'bg-destructive/10 text-destructive',
+  /* info reuses muted until a dedicated --info token is approved */
+  info: 'bg-muted text-muted-foreground',
+  neutral: 'bg-muted text-muted-foreground',
 };
 
-export function Badge({ className, variant = 'default', ...props }: BadgeProps) {
+function resolveTone(tone?: BadgeTone, variant?: LegacyBadgeVariant): BadgeTone {
+  if (tone) return tone;
+  switch (variant) {
+    case 'success':
+      return 'success';
+    case 'warning':
+      return 'warning';
+    case 'danger':
+      return 'danger';
+    case 'gold':
+      return 'warning';
+    case 'outline':
+    case 'secondary':
+    case 'default':
+    default:
+      return 'neutral';
+  }
+}
+
+export function Badge({ className, tone, variant, ...props }: BadgeProps) {
+  const resolved = resolveTone(tone, variant);
+
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium transition-colors',
-        variantStyles[variant],
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors',
+        toneStyles[resolved],
         className,
       )}
       {...props}
     />
   );
 }
+
+export type { BadgeProps };

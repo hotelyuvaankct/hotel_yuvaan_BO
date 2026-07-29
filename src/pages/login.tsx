@@ -97,8 +97,8 @@ export function LoginPage() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
         style={{ backgroundImage: "url('/images/login-bg.jpg')" }}
       />
-      <div aria-hidden className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/45 to-amber-950/60" />
+      <div aria-hidden className="absolute inset-0 bg-overlay backdrop-blur-[2px]" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/45 to-brand/60" />
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         <div className="mb-8 text-center">
@@ -106,7 +106,7 @@ export function LoginPage() {
           <p className="mt-2 text-sm text-white/70">Backoffice access</p>
         </div>
 
-        <div className="rounded-3xl border border-white/20 bg-white/10 p-6 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:p-8">
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:p-8">
           <div className="mb-6 space-y-1.5">
             <h1 className="text-xl font-semibold text-white">Sign in</h1>
             <p className="text-sm text-white/65">Use your backend credentials to continue.</p>
@@ -169,7 +169,7 @@ export function LoginPage() {
 
             {info ? (
               <div
-                className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-50 backdrop-blur-sm"
+                className="rounded-xl border border-gold-border/40 bg-gold/15 px-3 py-2 text-sm text-gold-muted backdrop-blur-sm"
                 role="status"
               >
                 {info}
@@ -177,7 +177,7 @@ export function LoginPage() {
             ) : null}
 
             {error ? (
-              <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100 backdrop-blur-sm" role="alert">
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground backdrop-blur-sm" role="alert">
                 {error}
               </div>
             ) : null}
@@ -195,7 +195,7 @@ export function LoginPage() {
               </Button>
             ) : null}
 
-            <Button type="submit" variant="gold" className="mt-2 w-full shadow-lg shadow-amber-900/30" disabled={loading}>
+            <Button type="submit" variant="primary" className="mt-2 w-full shadow-lg shadow-brand/30" disabled={loading}>
               <LockKeyhole className="h-4 w-4" />
               {loading ? 'Please wait' : 'Sign in'}
             </Button>

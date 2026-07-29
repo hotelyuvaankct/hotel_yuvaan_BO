@@ -26,9 +26,34 @@ export default {
                 ring: 'hsl(var(--ring))',
                 background: 'hsl(var(--background))',
                 foreground: 'hsl(var(--foreground))',
+                /* Primary = Hotel_Yuvaan gold family (not blue) */
                 primary: {
                     DEFAULT: 'hsl(var(--primary))',
-                    foreground: 'hsl(var(--primary-foreground))'
+                    foreground: 'hsl(var(--primary-foreground))',
+                    50: 'hsl(var(--primary-50))',
+                    100: 'hsl(var(--primary-100))',
+                    200: 'hsl(var(--primary-200))',
+                    300: 'hsl(var(--primary-300))',
+                    400: 'hsl(var(--primary-400))',
+                    500: 'hsl(var(--primary-500))',
+                    600: 'hsl(var(--primary-600))',
+                    700: 'hsl(var(--primary-700))',
+                    800: 'hsl(var(--primary-800))',
+                    900: 'hsl(var(--primary-900))',
+                },
+                /* Warm cream / stone neutrals */
+                neutral: {
+                    0: 'hsl(var(--neutral-0))',
+                    50: 'hsl(var(--neutral-50))',
+                    100: 'hsl(var(--neutral-100))',
+                    200: 'hsl(var(--neutral-200))',
+                    300: 'hsl(var(--neutral-300))',
+                    400: 'hsl(var(--neutral-400))',
+                    500: 'hsl(var(--neutral-500))',
+                    600: 'hsl(var(--neutral-600))',
+                    700: 'hsl(var(--neutral-700))',
+                    800: 'hsl(var(--neutral-800))',
+                    900: 'hsl(var(--neutral-900))',
                 },
                 secondary: {
                     DEFAULT: 'hsl(var(--secondary))',
@@ -64,100 +89,96 @@ export default {
                     border: 'hsl(var(--sidebar-border))',
                     ring: 'hsl(var(--sidebar-ring))'
                 },
-                gold: {
-                    50: '#fefcf3',
-                    100: '#fef7e0',
-                    200: '#fcecc0',
-                    300: '#f9d895',
-                    400: '#f5c068',
-                    500: '#f2a944',
-                    600: '#e39429',
-                    700: '#bc7b1f',
-                    800: '#976220',
-                    900: '#7a511e',
+                brand: {
+                    DEFAULT: 'hsl(var(--brand))',
+                    foreground: 'hsl(var(--brand-foreground))',
+                    hover: 'hsl(var(--brand-hover))',
+                    muted: 'hsl(var(--brand-muted))',
                 },
-                bronze: {
-                    50: '#faf8f3',
-                    100: '#f4ede0',
-                    200: '#e7d8c0',
-                    300: '#d7bd95',
-                    400: '#c59d68',
-                    500: '#b88244',
-                    600: '#a66d39',
-                    700: '#8a5730',
-                    800: '#70472b',
-                    900: '#5c3c26',
-                }
+                /* Legacy gold aliases → primary CSS vars (existing variant="gold" keeps working) */
+                gold: {
+                    DEFAULT: 'hsl(var(--gold))',
+                    strong: 'hsl(var(--gold-strong))',
+                    bright: 'hsl(var(--gold-bright))',
+                    deep: 'hsl(var(--gold-deep))',
+                    border: 'hsl(var(--gold-border))',
+                    muted: 'hsl(var(--gold-muted))',
+                    50: 'hsl(var(--primary-50))',
+                    100: 'hsl(var(--primary-100))',
+                    200: 'hsl(var(--primary-200))',
+                    300: 'hsl(var(--primary-200))',
+                    400: 'hsl(var(--primary-400))',
+                    500: 'hsl(var(--primary-500))',
+                    600: 'hsl(var(--primary-600))',
+                    700: 'hsl(var(--primary-700))',
+                    800: 'hsl(var(--brand-muted))',
+                    900: 'hsl(var(--brand))',
+                },
+                surface: {
+                    DEFAULT: 'hsl(var(--surface))',
+                    elevated: 'hsl(var(--surface-elevated))',
+                },
+                success: {
+                    DEFAULT: 'hsl(var(--success))',
+                    foreground: 'hsl(var(--success-foreground))',
+                    50: 'hsl(var(--success-50))',
+                    500: 'hsl(var(--success-500))',
+                    600: 'hsl(var(--success-600))',
+                    700: 'hsl(var(--success-700))',
+                },
+                warning: {
+                    DEFAULT: 'hsl(var(--warning))',
+                    foreground: 'hsl(var(--warning-foreground))',
+                    50: 'hsl(var(--warning-50))',
+                    500: 'hsl(var(--warning-500))',
+                    600: 'hsl(var(--warning-600))',
+                    700: 'hsl(var(--warning-700))',
+                },
+                /* Legacy aliases — prefer destructive in new code */
+                danger: {
+                    DEFAULT: 'hsl(var(--destructive))',
+                    50: 'hsl(var(--danger-50))',
+                    500: 'hsl(var(--danger-500))',
+                    600: 'hsl(var(--danger-600))',
+                    700: 'hsl(var(--danger-700))',
+                },
+                /* Default glass backdrop opacity. (Used by bg-overlay in custom modals) */
+                overlay: 'hsl(var(--overlay) / 0.25)',
             },
+            /* Radius chain off --radius (0.625rem). xl/2xl/full stay Tailwind defaults. */
             borderRadius: {
                 lg: 'var(--radius)',
                 md: 'calc(var(--radius) - 2px)',
-                sm: 'calc(var(--radius) - 4px)'
+                sm: 'calc(var(--radius) - 4px)',
             },
             keyframes: {
                 'accordion-down': {
-                    from: {
-                        height: '0'
-                    },
-                    to: {
-                        height: 'var(--radix-accordion-content-height)'
-                    }
+                    from: { height: '0' },
+                    to: { height: 'var(--radix-accordion-content-height)' }
                 },
                 'accordion-up': {
-                    from: {
-                        height: 'var(--radix-accordion-content-height)'
-                    },
-                    to: {
-                        height: '0'
-                    }
+                    from: { height: 'var(--radix-accordion-content-height)' },
+                    to: { height: '0' }
                 },
                 'fade-in-up': {
-                    '0%': {
-                        opacity: '0',
-                        transform: 'translateY(30px)'
-                    },
-                    '100%': {
-                        opacity: '1',
-                        transform: 'translateY(0)'
-                    }
+                    '0%': { opacity: '0', transform: 'translateY(30px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' }
                 },
                 'fade-in-left': {
-                    '0%': {
-                        opacity: '0',
-                        transform: 'translateX(-30px)'
-                    },
-                    '100%': {
-                        opacity: '1',
-                        transform: 'translateX(0)'
-                    }
+                    '0%': { opacity: '0', transform: 'translateX(-30px)' },
+                    '100%': { opacity: '1', transform: 'translateX(0)' }
                 },
                 'fade-in-right': {
-                    '0%': {
-                        opacity: '0',
-                        transform: 'translateX(30px)'
-                    },
-                    '100%': {
-                        opacity: '1',
-                        transform: 'translateX(0)'
-                    }
+                    '0%': { opacity: '0', transform: 'translateX(30px)' },
+                    '100%': { opacity: '1', transform: 'translateX(0)' }
                 },
                 'scale-in': {
-                    '0%': {
-                        opacity: '0',
-                        transform: 'scale(0.9)'
-                    },
-                    '100%': {
-                        opacity: '1',
-                        transform: 'scale(1)'
-                    }
+                    '0%': { opacity: '0', transform: 'scale(0.9)' },
+                    '100%': { opacity: '1', transform: 'scale(1)' }
                 },
                 'shimmer': {
-                    '0%': {
-                        transform: 'translateX(-100%)'
-                    },
-                    '100%': {
-                        transform: 'translateX(100%)'
-                    }
+                    '0%': { transform: 'translateX(-100%)' },
+                    '100%': { transform: 'translateX(100%)' }
                 },
                 'marquee': {
                     '0%': { transform: 'translateX(0%)' },
@@ -175,8 +196,9 @@ export default {
                 'marquee': 'marquee 25s linear infinite',
             },
             fontFamily: {
-                'playfair': ['Playfair Display', 'serif'],
-                'inter': ['Inter', 'sans-serif'],
+                sans: ['Inter', 'sans-serif'],
+                inter: ['Inter', 'sans-serif'],
+                playfair: ['Playfair Display', 'serif'],
             }
         }
     },

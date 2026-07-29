@@ -301,7 +301,7 @@ export function DateRangePicker({
               <Button type="button" variant="outline" size="sm" className="h-9 min-w-[88px]" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="button" variant="gold" size="sm" className="h-9 min-w-[88px]" disabled={!canApply} onClick={apply}>
+              <Button type="button" variant="primary" size="sm" className="h-9 min-w-[88px]" disabled={!canApply} onClick={apply}>
                 Apply
               </Button>
             </div>
