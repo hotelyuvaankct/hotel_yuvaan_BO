@@ -739,7 +739,17 @@ function EditableRow({
         <span className="inline-flex max-w-full items-center gap-2">
           {icon}
           <span className="min-w-0">
-            <span className="block truncate text-xs font-semibold text-foreground">{label}</span>
+            <span className="flex items-center gap-1.5">
+              <span className="block truncate text-xs font-semibold text-foreground">{label}</span>
+              {canUpdate ? (
+                <span
+                  className="shrink-0 rounded-sm border border-input bg-background px-1 py-px text-[9px] font-semibold tracking-wide text-muted-foreground uppercase"
+                  title="Editable — click or drag cells"
+                >
+                  Edit
+                </span>
+              ) : null}
+            </span>
             {hint ? (
               <span className="block text-[10px] font-medium text-muted-foreground">{hint}</span>
             ) : null}
@@ -752,37 +762,44 @@ function EditableRow({
         const isLocked = locked.has(date);
         const value = values[index];
         const isZeroAvail = isAvailability && value === '0';
+        const isEditable = canUpdate && !isLocked;
 
         return (
           <td
             key={date}
             data-cell={key}
             className={cn(
-              'relative border-b border-r border-border bg-card px-1.5 py-2.5 text-center transition-colors',
-              canUpdate && !isLocked && 'cursor-cell',
-              canUpdate && !isLocked && !isSelected && 'hover:bg-muted',
+              'relative border-b border-r border-border bg-card px-1 py-2 text-center transition-colors',
+              isEditable && 'cursor-cell',
+              isEditable && !isSelected && 'hover:bg-muted',
               isSelected && 'bg-card',
               isLocked && !isSelected && 'bg-danger-50',
             )}
             style={{ width: COL_WIDTH }}
             onPointerDown={(event) => {
-              if (!canUpdate || isLocked) return;
+              if (!isEditable) return;
               event.preventDefault();
               onBeginSelect(roomTypeId, rowKey, kind, date, ratePlanCode, guestCount);
             }}
             onPointerEnter={() => {
-              if (!canUpdate || isLocked) return;
+              if (!isEditable) return;
               onExtendSelect(roomTypeId, rowKey, date);
             }}
           >
             <span
               className={cn(
                 'inline-flex min-h-7 min-w-[2.75rem] items-center justify-center gap-1 px-1.5 text-xs tabular-nums',
-                isAvailability ? 'font-semibold text-foreground' : 'font-medium text-foreground',
+                isAvailability ? 'font-semibold' : 'font-medium',
                 isZeroAvail && !isLocked && 'text-muted-foreground',
-                isSelected && 'font-semibold text-foreground',
                 isLocked && 'font-semibold text-destructive',
+                !isLocked && 'text-foreground',
+                // Diff / field style: editable values look like compact inputs
+                isEditable &&
+                  'rounded-sm border border-input bg-background shadow-none hover:border-brand',
+                isSelected && isEditable && 'border-brand ring-1 ring-brand',
+                !isEditable && !isLocked && 'text-muted-foreground',
               )}
+              title={isEditable ? 'Click or drag to edit' : isLocked ? 'Stop sell' : undefined}
             >
               {value}
               {isLocked ? <Lock className="h-3 w-3 text-destructive" /> : null}

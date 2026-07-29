@@ -51,6 +51,18 @@ export function InventoryEditPopover({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [onCancel]);
 
+  useEffect(() => {
+    function onPointerDown(event: PointerEvent) {
+      if (saving) return;
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (panelRef.current?.contains(target)) return;
+      onCancel();
+    }
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => document.removeEventListener('pointerdown', onPointerDown, true);
+  }, [onCancel, saving]);
+
   useLayoutEffect(() => {
     if (!anchorRect) {
       setCoords(null);
@@ -78,71 +90,64 @@ export function InventoryEditPopover({
 
   return createPortal(
     <div
-      className="pointer-events-none fixed inset-0 z-[200]"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onCancel();
+      ref={panelRef}
+      role="dialog"
+      aria-labelledby={titleId}
+      className="fixed z-[200] w-[280px] rounded-lg border border-border bg-card p-4 shadow-lg"
+      style={{
+        left: coords?.left ?? anchorRect.left + anchorRect.width / 2,
+        top: coords?.top ?? anchorRect.top - GAP,
+        transform:
+          placement === 'above' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
       }}
     >
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-labelledby={titleId}
-        className="pointer-events-auto absolute w-[280px] rounded-lg border border-border bg-card p-4 shadow-lg"
-        style={{
-          left: coords?.left ?? anchorRect.left + anchorRect.width / 2,
-          top: coords?.top ?? anchorRect.top - GAP,
-          transform:
-            placement === 'above' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
-        }}
-      >
-        <h3 id={titleId} className="text-sm font-semibold text-foreground">
-          {kind === 'availability' ? 'Update total rooms' : 'Update rate'}
-        </h3>
+      <h3 id={titleId} className="text-sm font-semibold text-foreground">
+        {kind === 'availability' ? 'Update total rooms' : 'Update rate'}
+      </h3>
 
-        <label className="mt-3 flex items-center justify-between gap-3 text-sm text-foreground">
-          <span className="shrink-0">
-            {kind === 'availability' ? 'Total rooms' : 'Sell exclusive rate'}
-          </span>
-          <input
-            ref={inputRef}
-            type="number"
-            min={0}
-            step={1}
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && canSave) onSave(parsed);
-            }}
-            className={cn(fieldControlClass, 'h-9 w-24 px-2 text-center tabular-nums')}
-          />
-        </label>
+      <label className="mt-3 flex items-center justify-between gap-3 text-sm text-foreground">
+        <span className="shrink-0">
+          {kind === 'availability' ? 'Total rooms' : 'Sell exclusive rate'}
+        </span>
+        <input
+          ref={inputRef}
+          type="number"
+          min={0}
+          step={1}
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && canSave) onSave(parsed);
+          }}
+          className={cn(fieldControlClass, 'h-9 w-24 px-2 text-center tabular-nums')}
+        />
+      </label>
 
-        {kind === 'availability' ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            To close availability, please set to 0.
-          </p>
-        ) : null}
+      {kind === 'availability' ? (
+        <p className="mt-2 text-xs text-muted-foreground">
+          To close availability, please set to 0.
+        </p>
+      ) : null}
 
-        <div className="mt-4 flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onCancel}
-            disabled={saving}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            className={cn(!canSave && 'opacity-50')}
-            disabled={!canSave}
-            onClick={() => onSave(parsed)}
-          >
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-        </div>
+      <div className="mt-4 flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onCancel}
+          disabled={saving}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className={cn(!canSave && 'opacity-50')}
+          disabled={!canSave}
+          onClick={() => onSave(parsed)}
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </Button>
       </div>
     </div>,
     document.body,
