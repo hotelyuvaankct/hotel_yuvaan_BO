@@ -14,7 +14,7 @@ import type { DashboardCalendar, DashboardCalendarEvent } from '@/lib/api-types'
 import { bookingSourceOptions, bookingStatusOptions, optionLabel } from '@/lib/enums';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SelectField, TextField } from '@/components/ui/form-fields';
 import { LoadingOverlay } from '@/features/dashboard/components/charts';
 import { cn } from '@/lib/utils';
 
@@ -27,10 +27,13 @@ const MONTHS = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-const DAY_AGENDA_LENGTH = 5;
+const VIEW_OPTIONS: Array<{ value: CalendarView; label: string }> = [
+  { value: 'month', label: 'Month' },
+  { value: 'week', label: 'Week' },
+  { value: 'day', label: 'Day' },
+];
 
-const selectClass =
-  'h-9 rounded-lg border border-input bg-background px-2 text-sm font-medium outline-none transition-colors hover:border-ring/40 focus:ring-2 focus:ring-ring/60 [color-scheme:light] dark:[color-scheme:dark]';
+const DAY_AGENDA_LENGTH = 5;
 
 function yearRange() {
   const current = new Date().getFullYear();
@@ -39,20 +42,20 @@ function yearRange() {
 
 const STATUS_DOT: Record<number, string> = {
   1: 'bg-muted-foreground',
-  2: 'bg-warning',
-  3: 'bg-success',
-  4: 'bg-brand',
-  5: 'bg-warning',
+  2: 'bg-muted-foreground',
+  3: 'bg-brand',
+  4: 'bg-brand-muted',
+  5: 'bg-gold',
   6: 'bg-destructive',
   7: 'bg-destructive',
   8: 'bg-muted-foreground',
 };
 
-function statusVariant(status: number) {
-  if (status === 3) return 'success' as const;
-  if (status === 4 || status === 5) return 'gold' as const;
-  if (status === 1 || status === 2) return 'warning' as const;
-  return 'secondary' as const;
+function statusTone(status: number): 'neutral' | 'warning' | 'danger' | 'info' {
+  if (status === 3 || status === 4) return 'info';
+  if (status === 5) return 'warning';
+  if (status === 6 || status === 7) return 'danger';
+  return 'neutral';
 }
 
 function pad(n: number) {
@@ -196,128 +199,115 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
   if (!canRead) return null;
 
   return (
-    <Card>
-      <CardHeader className="flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <section className="space-y-4 border-t border-border pt-6">
+      <div className="space-y-4">
         <div>
-          <CardTitle>Booking calendar</CardTitle>
-          <CardDescription>Every active booking across its stay window.</CardDescription>
+          <h2 className="text-base font-semibold text-foreground">Booking calendar</h2>
+          <p className="text-sm text-muted-foreground">Every active booking across its stay window.</p>
         </div>
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end lg:w-auto">
-          <div className="inline-flex w-full rounded-xl border border-border bg-muted/30 p-1 sm:w-auto">
-            {(['month', 'week', 'day'] as CalendarView[]).map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={cn(
-                  'flex-1 rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-all sm:flex-none',
-                  view === value
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-                onClick={() => setView(value)}
-              >
-                {value}
-              </button>
-            ))}
-          </div>
+        <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
+          <div className="flex w-max min-w-full flex-nowrap items-end gap-3">
+            <SelectField
+              variant="filter"
+              label="View"
+              wrapperClassName="min-w-[120px]"
+              value={view}
+              onChange={(event) => setView(event.target.value as CalendarView)}
+              options={VIEW_OPTIONS}
+            />
 
-          {/* Period selectors (own row on mobile so the month name has room) */}
-          <div className="flex w-full items-center gap-2 sm:w-auto">
             {view === 'month' ? (
               <>
-                <select
-                  className={cn(selectClass, 'min-w-0 flex-1 sm:w-[130px] sm:flex-none')}
+                <SelectField
+                  variant="filter"
+                  label="Month"
+                  wrapperClassName="min-w-[140px]"
                   value={cursor.getMonth()}
-                  onChange={(e) => setCursor(new Date(cursor.getFullYear(), Number(e.target.value), 1))}
-                  aria-label="Select month"
-                >
-                  {MONTHS.map((label, index) => (
-                    <option key={label} value={index}>{label}</option>
-                  ))}
-                </select>
-                <select
-                  className={cn(selectClass, 'w-[90px] shrink-0')}
+                  onChange={(event) =>
+                    setCursor(new Date(cursor.getFullYear(), Number(event.target.value), 1))
+                  }
+                  options={MONTHS.map((label, index) => ({ value: index, label }))}
+                />
+                <SelectField
+                  variant="filter"
+                  label="Year"
+                  wrapperClassName="min-w-[100px]"
                   value={cursor.getFullYear()}
-                  onChange={(e) => setCursor(new Date(Number(e.target.value), cursor.getMonth(), 1))}
-                  aria-label="Select year"
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
+                  onChange={(event) =>
+                    setCursor(new Date(Number(event.target.value), cursor.getMonth(), 1))
+                  }
+                  options={years.map((year) => ({ value: year, label: String(year) }))}
+                />
               </>
             ) : null}
 
             {view === 'week' ? (
               <>
-                <select
-                  className={cn(selectClass, 'min-w-0 flex-1 sm:w-[200px] sm:flex-none')}
+                <SelectField
+                  variant="filter"
+                  label="Week"
+                  wrapperClassName="min-w-[240px]"
                   value={weekInfo.weekNo}
-                  onChange={(e) => {
-                    const target = weekOptions.find((w) => w.weekNo === Number(e.target.value));
+                  onChange={(event) => {
+                    const target = weekOptions.find((w) => w.weekNo === Number(event.target.value));
                     if (target) setCursor(target.start);
                   }}
-                  aria-label="Select week"
-                >
-                  {weekOptions.map((week) => {
+                  options={weekOptions.map((week) => {
                     const end = addDays(week.start, 6);
                     const range = `${new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(week.start)} – ${new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(end)}`;
-                    return (
-                      <option key={week.weekNo} value={week.weekNo}>
-                        Week {week.weekNo} · {range}
-                      </option>
-                    );
+                    return {
+                      value: week.weekNo,
+                      label: `Week ${week.weekNo} · ${range}`,
+                    };
                   })}
-                </select>
-                <select
-                  className={cn(selectClass, 'w-[90px] shrink-0')}
+                />
+                <SelectField
+                  variant="filter"
+                  label="Year"
+                  wrapperClassName="min-w-[100px]"
                   value={weekInfo.year}
-                  onChange={(e) => {
-                    const nextYear = Number(e.target.value);
+                  onChange={(event) => {
+                    const nextYear = Number(event.target.value);
                     const weeks = weeksOfYear(nextYear);
                     const target = weeks[Math.min(weekInfo.weekNo - 1, weeks.length - 1)];
                     if (target) setCursor(target.start);
                   }}
-                  aria-label="Select year"
-                >
-                  {years.map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
+                  options={years.map((year) => ({ value: year, label: String(year) }))}
+                />
               </>
             ) : null}
 
             {view === 'day' ? (
-              <input
+              <TextField
+                label="Date"
                 type="date"
-                className={cn(selectClass, 'min-w-0 flex-1 px-3 sm:w-[180px] sm:flex-none')}
+                wrapperClassName="min-w-[180px]"
+                className="[color-scheme:light] dark:[color-scheme:dark]"
                 value={toDateKey(cursor)}
-                onChange={(e) => {
-                  if (e.target.value) setCursor(new Date(`${e.target.value}T00:00:00`));
+                onChange={(event) => {
+                  if (event.target.value) setCursor(new Date(`${event.target.value}T00:00:00`));
                 }}
-                aria-label="Select start date"
               />
             ) : null}
-          </div>
 
-          {/* Navigation */}
-          <div className="flex w-full items-center gap-2 sm:w-auto">
-            <Button variant="outline" size="icon" className="shrink-0" disabled={loading} onClick={() => shift(-1)} aria-label="Previous">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="icon" className="shrink-0" disabled={loading} onClick={() => shift(1)} aria-label="Next">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" disabled={loading} onClick={() => setCursor(new Date())}>
-              Today
-            </Button>
+            <div className="flex items-end gap-2">
+              <Button variant="outline" size="icon" className="shrink-0" disabled={loading} onClick={() => shift(-1)} aria-label="Previous">
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon" className="shrink-0" disabled={loading} onClick={() => shift(1)} aria-label="Next">
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" className="h-10 shrink-0" disabled={loading} onClick={() => setCursor(new Date())}>
+                Today
+              </Button>
+            </div>
           </div>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent>
+      <div>
         {error ? (
-          <div className="mb-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div className="mb-3 rounded-xl border border-border bg-muted px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         ) : null}
@@ -362,7 +352,7 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
           <StatusLegend />
           <p className="text-xs text-muted-foreground">{calendar?.totalEvents ?? 0} booking(s) in view</p>
         </div>
-      </CardContent>
+      </div>
 
       {selectedDay
         ? createPortal(
@@ -374,7 +364,7 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
             document.body,
           )
         : null}
-    </Card>
+    </section>
   );
 }
 
@@ -600,7 +590,13 @@ function EventRow({ event }: { event: DashboardCalendarEvent }) {
       </div>
       <div className="flex items-center gap-3">
         <div className="text-right">
-          <Badge variant={statusVariant(event.bookingStatus)}>
+          <Badge
+            tone={statusTone(event.bookingStatus)}
+            className={cn(
+              (event.bookingStatus === 3 || event.bookingStatus === 4) &&
+                'bg-brand text-brand-foreground',
+            )}
+          >
             {optionLabel(bookingStatusOptions, event.bookingStatus)}
           </Badge>
           {money ? <p className="mt-1 text-sm font-semibold">{money}</p> : null}
@@ -695,13 +691,18 @@ function StatusLegend() {
     { label: 'Cancelled', dot: STATUS_DOT[6] },
   ];
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      {items.map((item) => (
-        <span key={item.label} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <span className={cn('h-2 w-2 rounded-full', item.dot)} />
-          {item.label}
-        </span>
-      ))}
+    <div className="space-y-1.5">
+      <p className="text-sm font-medium text-foreground">Status</p>
+      <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
+        <div className="flex w-max min-w-full flex-nowrap items-center gap-x-4">
+          {items.map((item) => (
+            <span key={item.label} className="inline-flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span className={cn('h-2 w-2 rounded-full', item.dot)} />
+              {item.label}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

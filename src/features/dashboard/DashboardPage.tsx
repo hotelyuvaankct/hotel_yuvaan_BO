@@ -23,12 +23,12 @@ import { BookingCalendar } from '@/features/dashboard/components/booking-calenda
 import { cn } from '@/lib/utils';
 
 const STATUS_COLORS = {
-  pending: '#f59e0b',
-  confirmed: '#10b981',
-  checkedIn: '#0ea5e9',
-  checkedOut: '#8b5cf6',
-  cancelled: '#f43f5e',
-  active: '#0ea5e9',
+  pending: '#8a7a68',
+  confirmed: '#4b3621',
+  checkedIn: '#6e5640',
+  checkedOut: '#c9a227',
+  cancelled: '#b91c1c',
+  active: '#a67c52',
 } as const;
 
 function formatCurrency(value?: number) {
@@ -90,48 +90,43 @@ export function DashboardPage() {
     void loadStats();
   }, [loadStats]);
 
-  // Trimmed to the KPIs that matter most.
+  // Trimmed to the KPIs that matter most — brand / gold / muted only.
   const kpiCards = useMemo(
     () => stats ? [
       {
         label: 'Revenue (range)',
         value: formatCurrency(stats.rangeRevenue),
         icon: CircleDollarSign,
-        value_class: 'text-success',
-        icon_class: 'bg-success/15 text-success',
-        glow: 'from-success/10',
+        value_class: 'text-brand',
+        icon_class: 'bg-brand text-brand-foreground',
       },
       {
         label: 'Bookings (range)',
         value: String(stats.rangeBookings),
         icon: CalendarRange,
-        value_class: 'text-brand',
-        icon_class: 'bg-brand-muted text-brand',
-        glow: 'from-brand/10',
+        value_class: 'text-foreground',
+        icon_class: 'bg-muted text-brand',
       },
       {
         label: 'Completion ratio',
         value: `${stats.completionRatio.toFixed(1)}%`,
         icon: TrendingUp,
-        value_class: 'text-success',
-        icon_class: 'bg-success/15 text-success',
-        glow: 'from-success/10',
+        value_class: 'text-brand',
+        icon_class: 'bg-muted text-brand',
       },
       {
         label: 'Cancellation ratio',
         value: `${stats.cancellationRatio.toFixed(1)}%`,
         icon: TrendingDown,
         value_class: 'text-destructive',
-        icon_class: 'bg-destructive/10 text-destructive',
-        glow: 'from-destructive/10',
+        icon_class: 'bg-danger-50 text-destructive',
       },
       {
         label: 'Total rooms',
         value: String(stats.totalRooms),
         icon: BedDouble,
-        value_class: 'text-gold-700 dark:text-gold-300',
-        icon_class: 'bg-gold-100 text-gold-700 dark:bg-gold-500/15 dark:text-gold-200',
-        glow: 'from-gold-500/10',
+        value_class: 'text-foreground',
+        icon_class: 'bg-gold-muted text-brand',
       },
       {
         label: 'Backoffice users',
@@ -139,7 +134,6 @@ export function DashboardPage() {
         icon: Users,
         value_class: 'text-foreground',
         icon_class: 'bg-muted text-muted-foreground',
-        glow: 'from-muted/30',
       },
     ] : [],
     [stats],
@@ -175,17 +169,20 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      {canReadDashboard ? (
-        <>
-          {/* KPI date filter */}
-          <Card>
-            <CardHeader className="flex-row flex-wrap items-end justify-between gap-4">
-              <div>
-                <CardTitle>Key performance indicators</CardTitle>
-                <CardDescription>Filter KPIs by booking creation date &amp; time.</CardDescription>
-              </div>
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="space-y-1 text-xs font-medium text-muted-foreground">
+      <Card>
+        <CardHeader className="gap-4">
+          <div>
+            <CardTitle>Dashboard</CardTitle>
+            <CardDescription>
+              {canReadDashboard
+                ? 'KPIs, booking trends, and stay calendar in one place.'
+                : 'Booking calendar for your accessible date range.'}
+            </CardDescription>
+          </div>
+          {canReadDashboard ? (
+            <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
+              <div className="flex w-max min-w-full flex-nowrap items-end gap-3">
+                <label className="space-y-1.5 text-sm font-medium text-foreground">
                   <span>From</span>
                   <input
                     type="datetime-local"
@@ -195,7 +192,7 @@ export function DashboardPage() {
                     className={cn(fieldControlClass, 'w-[210px] [color-scheme:light] dark:[color-scheme:dark]')}
                   />
                 </label>
-                <label className="space-y-1 text-xs font-medium text-muted-foreground">
+                <label className="space-y-1.5 text-sm font-medium text-foreground">
                   <span>To</span>
                   <input
                     type="datetime-local"
@@ -205,11 +202,16 @@ export function DashboardPage() {
                     className={cn(fieldControlClass, 'w-[210px] [color-scheme:light] dark:[color-scheme:dark]')}
                   />
                 </label>
-                <Button onClick={() => setAppliedRange({ from: fromInput, to: toInput })} disabled={statsLoading}>
+                <Button
+                  className="shrink-0"
+                  onClick={() => setAppliedRange({ from: fromInput, to: toInput })}
+                  disabled={statsLoading}
+                >
                   Apply
                 </Button>
                 <Button
                   variant="outline"
+                  className="shrink-0"
                   disabled={statsLoading}
                   onClick={() => {
                     setFromInput(defaultFrom);
@@ -217,85 +219,84 @@ export function DashboardPage() {
                     setAppliedRange({ from: defaultFrom, to: defaultTo });
                   }}
                 >
-                  <RefreshCw className="mr-1 h-4 w-4" /> Reset
+                  <RefreshCw className="h-4 w-4" />
+                  Reset
                 </Button>
               </div>
-            </CardHeader>
-          </Card>
-
-          {statsError ? (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {statsError}
             </div>
           ) : null}
+        </CardHeader>
 
-          {statsLoading && !stats ? (
-            <FullPageLoader label="Loading KPIs..." />
-          ) : (
-            <div className="relative space-y-6">
-              <LoadingOverlay show={statsLoading} />
+        <CardContent className="space-y-6">
+          {canReadDashboard ? (
+            <>
+              {statsError ? (
+                <div className="rounded-xl border border-border bg-muted px-4 py-3 text-sm text-destructive">
+                  {statsError}
+                </div>
+              ) : null}
 
-              <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                {kpiCards.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Card
-                      key={item.label}
-                      className="group relative overflow-hidden transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_12px_36px_rgb(0,0,0,0.08)]"
-                    >
-                      <div
-                        className={cn(
-                          'pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br to-transparent opacity-70 blur-2xl transition-opacity duration-300 group-hover:opacity-100',
-                          item.glow,
-                        )}
-                      />
-                      <CardContent className="relative flex flex-col gap-3 p-5">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{item.label}</p>
-                          <div className={cn('rounded-xl p-2.5 transition-transform duration-300 group-hover:scale-110', item.icon_class)}>
-                            <Icon className="h-4 w-4" />
+              {statsLoading && !stats ? (
+                <FullPageLoader label="Loading KPIs..." />
+              ) : (
+                <div className="relative space-y-6">
+                  <LoadingOverlay show={statsLoading} />
+
+                  <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    {kpiCards.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={item.label}
+                          className="rounded-xl border border-border bg-card p-5 transition-shadow duration-200 hover:shadow-md"
+                        >
+                          <div className="flex flex-col gap-3">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                {item.label}
+                              </p>
+                              <div className={cn('rounded-lg p-2', item.icon_class)}>
+                                <Icon className="h-4 w-4" />
+                              </div>
+                            </div>
+                            <p className={cn('text-2xl font-bold tracking-tight', item.value_class)}>
+                              {item.value}
+                            </p>
                           </div>
                         </div>
-                        <p className={cn('text-2xl font-bold tracking-tight', item.value_class)}>{item.value}</p>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </section>
+                      );
+                    })}
+                  </section>
 
-              {/* Comparison graphs */}
-              <section className="grid gap-4 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Bookings by status</CardTitle>
-                    <CardDescription>Selected range comparison.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <BarChart data={statusBars} />
-                  </CardContent>
-                </Card>
+                  <section className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-xl border border-border bg-card p-5">
+                      <div className="mb-4">
+                        <h2 className="text-base font-semibold text-foreground">Bookings by status</h2>
+                        <p className="text-sm text-muted-foreground">Selected range comparison.</p>
+                      </div>
+                      <BarChart data={statusBars} />
+                    </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Outcome split</CardTitle>
-                    <CardDescription>Completed vs cancelled vs in-progress.</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <DonutChart
-                      data={outcomeSegments}
-                      centerValue={`${(stats?.completionRatio ?? 0).toFixed(0)}%`}
-                      centerLabel="completed"
-                    />
-                  </CardContent>
-                </Card>
-              </section>
-            </div>
-          )}
-        </>
-      ) : null}
+                    <div className="rounded-xl border border-border bg-card p-5">
+                      <div className="mb-4">
+                        <h2 className="text-base font-semibold text-foreground">Outcome split</h2>
+                        <p className="text-sm text-muted-foreground">Completed vs cancelled vs in-progress.</p>
+                      </div>
+                      <DonutChart
+                        data={outcomeSegments}
+                        centerValue={`${(stats?.completionRatio ?? 0).toFixed(0)}%`}
+                        centerLabel="completed"
+                      />
+                    </div>
+                  </section>
+                </div>
+              )}
+            </>
+          ) : null}
 
-      {/* Booking calendar */}
-      {canReadBookings ? <BookingCalendar canRead /> : null}
+          {canReadBookings ? <BookingCalendar canRead /> : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }

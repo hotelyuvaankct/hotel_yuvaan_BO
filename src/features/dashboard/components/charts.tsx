@@ -11,7 +11,7 @@ function niceNumber(value: number) {
   return new Intl.NumberFormat('en-IN').format(value);
 }
 
-/** Horizontal bar chart for comparing category magnitudes. */
+/** Vertical column chart — brand-friendly comparison graph. */
 export function BarChart({ data, valueFormatter }: { data: ChartDatum[]; valueFormatter?: (n: number) => string }) {
   const max = Math.max(1, ...data.map((d) => d.value));
   const format = valueFormatter ?? niceNumber;
@@ -23,28 +23,30 @@ export function BarChart({ data, valueFormatter }: { data: ChartDatum[]; valueFo
 
   return (
     <div className="space-y-4">
-      {data.map((d) => (
-        <div key={d.label} className="space-y-1.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-2 font-medium text-muted-foreground">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: d.color }} />
-              {d.label}
-            </span>
-            <span
-              className="rounded-full px-2 py-0.5 text-[11px] font-semibold"
-              style={{ backgroundColor: `${d.color}1f`, color: d.color }}
-            >
-              {format(d.value)}
-            </span>
+      <div className="flex h-48 items-end gap-2 border-b border-border pb-0 sm:gap-3">
+        {data.map((d) => {
+          const height = Math.max((d.value / max) * 100, d.value > 0 ? 6 : 0);
+          return (
+            <div key={d.label} className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2">
+              <span className="text-[11px] font-semibold tabular-nums text-foreground">{format(d.value)}</span>
+              <div className="flex h-36 w-full items-end justify-center">
+                <div
+                  className="w-full max-w-[48px] rounded-t-md transition-[height] duration-700 ease-out"
+                  style={{ height: `${height}%`, backgroundColor: d.color }}
+                  title={`${d.label}: ${format(d.value)}`}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex gap-2 sm:gap-3">
+        {data.map((d) => (
+          <div key={d.label} className="min-w-0 flex-1 text-center">
+            <p className="truncate text-[11px] font-medium text-muted-foreground">{d.label}</p>
           </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full transition-[width] duration-700 ease-out"
-              style={{ width: `${(d.value / max) * 100}%`, backgroundColor: d.color }}
-            />
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -84,7 +86,7 @@ export function DonutChart({
 
   return (
     <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center sm:justify-around">
-      <svg viewBox="0 0 160 160" className="h-40 w-40 -rotate-90">
+      <svg viewBox="0 0 160 160" className="h-44 w-44 -rotate-90">
         <circle cx="80" cy="80" r={radius} fill="none" stroke="currentColor" className="text-muted" strokeWidth={stroke} />
         {total > 0
           ? segments.map((s) => (
@@ -118,14 +120,14 @@ export function DonutChart({
           return (
             <li
               key={d.label}
-              className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors hover:bg-muted/60"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card px-2.5 py-2 text-xs"
             >
               <span className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                <span className="text-muted-foreground">{d.label}</span>
+                <span className="font-medium text-foreground">{d.label}</span>
               </span>
               <span className="flex items-baseline gap-1.5">
-                <span className="font-semibold">{format(d.value)}</span>
+                <span className="font-semibold tabular-nums text-foreground">{format(d.value)}</span>
                 <span className="text-[10px] text-muted-foreground">{(fraction * 100).toFixed(0)}%</span>
               </span>
             </li>
@@ -141,13 +143,13 @@ export function LoadingOverlay({ show, label = 'Updating...' }: { show: boolean;
   return (
     <div
       className={cn(
-        'pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/60 backdrop-blur-[1px] transition-opacity duration-200',
+        'pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-card/70 transition-opacity duration-200',
         show ? 'opacity-100' : 'opacity-0',
       )}
       aria-hidden={!show}
     >
-      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
-        <svg className="h-3.5 w-3.5 animate-spin text-primary" viewBox="0 0 24 24" fill="none">
+      <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
+        <svg className="h-3.5 w-3.5 animate-spin text-brand" viewBox="0 0 24 24" fill="none">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.4 0 0 5.4 0 12h4z" />
         </svg>
