@@ -126,17 +126,15 @@ export function CouponListCard({
       <div className="flex flex-1 flex-col gap-4 p-5 pl-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={isWebsite ? 'success' : 'gold'}>{typeLabel}</Badge>
+            <Badge tone={isWebsite ? 'success' : 'warning'}>{typeLabel}</Badge>
             {tab === 'deactivated' ? (
-              <Badge variant="secondary">Deactivated</Badge>
+              <Badge tone="neutral">Deactivated</Badge>
             ) : null}
             {expiryStatus === 'expiring-soon' ? (
-              <Badge variant="warning">Expires soon</Badge>
+              <Badge tone="warning">Expires soon</Badge>
             ) : null}
             {expiryStatus === 'expired' ? (
-              <Badge variant="outline" className="border-destructive/40 text-destructive">
-                Expired
-              </Badge>
+              <Badge tone="danger">Expired</Badge>
             ) : null}
           </div>
           <div className="flex items-center gap-1">

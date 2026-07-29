@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   BedDouble,
   Building2,
   Check,
@@ -52,7 +51,6 @@ function sortRatePlans(plans: RoomTypeRatePlan[]) {
 export function RoomTypeViewPage() {
   const { id } = useParams();
   const roomTypeId = Number(id);
-  const navigate = useNavigate();
   const { session } = useAuth();
   const { showToast } = useToast();
   const canRead = hasPermission(session?.perms, 'room-types', 'read');
@@ -99,32 +97,37 @@ export function RoomTypeViewPage() {
   if (!roomType) {
     return (
       <div className="space-y-6 animate-fade-in-up">
-        <Button variant="ghost" onClick={() => navigate('/room-types')}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to room types
-        </Button>
-        <EmptyState label="No room type details found." />
+        <Card>
+          <CardHeader>
+            <CardTitle>Room type details</CardTitle>
+            <CardDescription>Room type information, amenities, and rate plans.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EmptyState label="No room type details found." />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button variant="ghost" onClick={() => navigate('/room-types')}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to room types
-        </Button>
-        {canUpdate ? (
-          <Button variant="primary" size="sm" onClick={() => undefined}>
-            <Link to={`/room-types/${roomType.id}/edit`} className="inline-flex items-center gap-2">
-              <Edit className="h-4 w-4" />
-              Update room type
-            </Link>
-          </Button>
-        ) : null}
-      </div>
-
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>{roomType.name}</CardTitle>
+            <CardDescription>{roomType.hotelName || 'Room type details, amenities, and rate plans.'}</CardDescription>
+          </div>
+          {canUpdate ? (
+            <Button variant="primary" size="sm" onClick={() => undefined}>
+              <Link to={`/room-types/${roomType.id}/edit`} className="inline-flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                Update room type
+              </Link>
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
         <ImageGallery
           roomName={roomType.name}
@@ -228,6 +231,8 @@ export function RoomTypeViewPage() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
         </CardContent>
       </Card>
     </div>

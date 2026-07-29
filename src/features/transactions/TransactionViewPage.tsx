@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, CheckCircle2, Circle, Copy } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Check, CheckCircle2, Circle, Copy } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { TransactionDetail } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 
 function formatCurrency(value?: number) {
   if (value == null) return '₹0';
@@ -85,7 +84,6 @@ function CopyableId({
 
 export function TransactionViewPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { session } = useAuth();
   const { showToast } = useToast();
   const canRead = hasPermission(session?.perms, 'payments', 'read');
@@ -132,41 +130,36 @@ export function TransactionViewPage() {
 
   if (!transaction) {
     return (
-      <div className="space-y-4">
-        <PageToolbar
-          title="Transaction"
-          description="Transaction details"
-          actions={
-            <Button variant="outline" onClick={() => navigate('/transactions')}>
-              <ArrowLeft className="h-4 w-4" />
-              Back to ledger
-            </Button>
-          }
-        />
-        <EmptyState label="Transaction not found." />
+      <div className="space-y-4 animate-fade-in-up">
+        <Card>
+          <CardHeader>
+            <CardTitle>Transaction</CardTitle>
+            <CardDescription>Transaction details</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EmptyState label="Transaction not found." />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-4 animate-fade-in-up">
-      <PageToolbar
-        title={transaction.id}
-        description={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            <Badge tone="neutral">{transaction.type}</Badge>
-            <Badge tone={statusTone(transaction.statusLabel)}>{transaction.statusLabel || '-'}</Badge>
-            <span>{formatDateTime(transaction.occurredAt)}</span>
-          </span>
-        }
-        actions={
-          <Button variant="outline" onClick={() => navigate('/transactions')}>
-            <ArrowLeft className="h-4 w-4" />
-            Back to ledger
-          </Button>
-        }
-      />
-
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>{transaction.id}</CardTitle>
+            <CardDescription>
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <Badge tone="neutral">{transaction.type}</Badge>
+                <Badge tone={statusTone(transaction.statusLabel)}>{transaction.statusLabel || '-'}</Badge>
+                <span>{formatDateTime(transaction.occurredAt)}</span>
+              </span>
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -401,6 +394,8 @@ export function TransactionViewPage() {
           </CardContent>
         </Card>
       ) : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }

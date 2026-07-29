@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { HotelSummary, UpsertCouponPayload } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -138,10 +138,6 @@ export function CouponFormPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" onClick={() => navigate(isEdit && couponId ? `/coupons/${couponId}` : '/coupons')}>
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </Button>
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit coupon' : 'Create coupon'}</CardTitle>

@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Image as ImageIcon, Save, Trash2, X } from 'lucide-react';
+import { Image as ImageIcon, Save, Trash2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { UpsertGalleryImagePayload } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -189,13 +189,6 @@ export function GalleryFormPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" size="sm" asChild>
-        <Link to="/gallery" className="inline-flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Back to gallery
-        </Link>
-      </Button>
-
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit gallery image' : 'Upload gallery images'}</CardTitle>

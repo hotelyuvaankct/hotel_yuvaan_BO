@@ -12,7 +12,6 @@ import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 import { Pagination } from '@/components/common/pagination';
 import { ResponsiveList } from '@/components/ui/responsive-list';
 import type { DataTableColumn } from '@/components/ui/data-table';
@@ -151,11 +150,13 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <PageToolbar
-        title="Users"
-        description="Listing table is loaded from the users API."
-        actions={
-          <>
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>Users</CardTitle>
+            <CardDescription>Listing table is loaded from the users API.</CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
               Refresh
@@ -166,17 +167,9 @@ export function UsersPage() {
                 Add user
               </Link>
             </Button>
-          </>
-        }
-      />
-
-      <section>
-        <Card>
-          <CardHeader>
-            <CardTitle>User listing</CardTitle>
-            <CardDescription>View, edit, and delete user records.</CardDescription>
-          </CardHeader>
-          <CardContent>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
             <ResponsiveList
               columns={columns}
               data={users}
@@ -211,9 +204,8 @@ export function UsersPage() {
               loading={loading}
               onPageChange={(p) => void load(p)}
             />
-          </CardContent>
-        </Card>
-      </section>
+        </CardContent>
+      </Card>
     </div>
   );
 }

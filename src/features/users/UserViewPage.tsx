@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Edit } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { UserAccess } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -12,12 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 
 export function UserViewPage() {
   const { id } = useParams();
   const userId = Number(id);
-  const navigate = useNavigate();
   const { session } = useAuth();
   const { showToast } = useToast();
   const canRead = hasPermission(session?.perms, 'users', 'read');
@@ -52,33 +50,29 @@ export function UserViewPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" onClick={() => navigate('/users')}>
-        <ArrowLeft className="h-4 w-4" />
-        Back to users
-      </Button>
-
-      <PageToolbar
-        title="User details"
-        description={
-          canReadRoles
-            ? 'Profile, assigned roles, and effective module permissions from the API.'
-            : 'Profile and assigned role.'
-        }
-        actions={
-          access && canUpdate ? (
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>User details</CardTitle>
+            <CardDescription>
+              {canReadRoles
+                ? 'Profile, assigned roles, and effective module permissions from the API.'
+                : 'Profile and assigned role.'}
+            </CardDescription>
+          </div>
+          {access && canUpdate ? (
             <Button variant="primary" size="sm" onClick={() => undefined}>
               <Link to={`/users/${access.user.id}/edit`} className="inline-flex items-center gap-2">
                 <Edit className="h-4 w-4" />
                 Update user
               </Link>
             </Button>
-          ) : null
-        }
-      />
-
-      {!access ? <EmptyState label="No user details found." /> : null}
-      {access ? (
-        <div className={canReadRoles ? 'grid gap-6 xl:grid-cols-[0.8fr_1.2fr]' : 'grid gap-6'}>
+          ) : null}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {!access ? <EmptyState label="No user details found." /> : null}
+          {access ? (
+            <div className={canReadRoles ? 'grid gap-6 xl:grid-cols-[0.8fr_1.2fr]' : 'grid gap-6'}>
           <Card>
             <CardHeader>
               <CardTitle>{access.user.fullName || 'Unnamed user'}</CardTitle>
@@ -154,8 +148,10 @@ export function UserViewPage() {
               </CardContent>
             </Card>
           ) : null}
-        </div>
-      ) : null}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }
