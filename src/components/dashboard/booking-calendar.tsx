@@ -39,7 +39,7 @@ function yearRange() {
 
 const STATUS_DOT: Record<number, string> = {
   1: 'bg-slate-400',
-  2: 'bg-amber-400',
+  2: 'bg-warning',
   3: 'bg-emerald-500',
   4: 'bg-sky-500',
   5: 'bg-violet-500',

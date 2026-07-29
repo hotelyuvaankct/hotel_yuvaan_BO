@@ -3,66 +3,145 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme tokens mirrored from Hotel_Yuvaan (public web).
+   Edit here only — light (:root) and dark (.dark). */
 @layer base {
   :root {
-    --background: 40 33% 98%;
-    --foreground: 24 10% 12%;
-    --card: 0 0% 100%;
-    --card-foreground: 24 10% 12%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 24 10% 12%;
-    --primary: 35 92% 50%;
-    --primary-foreground: 36 100% 98%;
-    --secondary: 34 34% 92%;
-    --secondary-foreground: 24 10% 12%;
-    --muted: 34 25% 95%;
-    --muted-foreground: 25 8% 45%;
-    --accent: 38 80% 92%;
-    --accent-foreground: 24 10% 12%;
+    --page-bg: 40 33% 97%;
+
+    --background: var(--page-bg);
+    --foreground: 30 15% 15%;
+
+    --card: 40 33% 99%;
+    --card-foreground: 30 15% 15%;
+
+    --popover: 40 33% 99%;
+    --popover-foreground: 30 15% 15%;
+
+    /* Darker gold so white/cream text meets WCAG AA contrast */
+    --primary: 35 72% 30%;
+    --primary-foreground: 40 33% 98%;
+
+    --secondary: 35 20% 90%;
+    --secondary-foreground: 30 15% 15%;
+
+    --muted: 40 20% 94%;
+    --muted-foreground: 30 10% 45%;
+
+    --accent: 35 50% 85%;
+    --accent-foreground: 30 15% 15%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 32 20% 88%;
-    --input: 32 20% 88%;
-    --ring: 35 88% 55%;
-    --radius: 1rem;
-    --sidebar-background: 38 40% 97%;
-    --sidebar-foreground: 24 10% 18%;
-    --sidebar-primary: 35 92% 50%;
-    --sidebar-primary-foreground: 36 100% 98%;
-    --sidebar-accent: 36 33% 91%;
-    --sidebar-accent-foreground: 24 10% 18%;
-    --sidebar-border: 32 18% 86%;
-    --sidebar-ring: 35 88% 55%;
+
+    --border: 35 20% 85%;
+    --input: 35 20% 85%;
+    --ring: 35 65% 45%;
+
+    --radius: 0.75rem;
+
+    /* Brand tokens (HSL components) */
+    --brand: 30 39% 21%;              /* #4b3621 */
+    --brand-foreground: 36 33% 97%;
+    --brand-hover: 29 40% 17%;        /* #3d2b1a */
+    --brand-muted: 33 24% 44%;        /* #8b7355 */
+
+    --gold: 46 68% 47%;               /* #c9a227 */
+    --gold-strong: 39 59% 45%;        /* #b8892f */
+    --gold-bright: 35 87% 61%;        /* #f2a944 */
+    --gold-deep: 35 72% 43%;          /* #bc7b1f */
+    --gold-border: 43 60% 77%;        /* #e8d5a3 */
+    --gold-muted: 40 69% 87%;         /* #f5e6c8 */
+
+    --surface: 36 33% 97%;            /* #faf8f5 */
+    --surface-elevated: 35 44% 92%;   /* #f3ebe0 */
+
+    --success: 161 94% 30%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+
+    --overlay: 0 0% 0%;
+    --white: 0 0% 100%;
+    --black: 0 0% 0%;
+
+    --brand-hex: #4b3621;
+    --gold-hex: #c9a227;
+
+    --sidebar-background: 36 33% 97%;
+    --sidebar-foreground: 30 15% 18%;
+    --sidebar-primary: 30 39% 21%;
+    --sidebar-primary-foreground: 36 33% 97%;
+    --sidebar-accent: 35 44% 92%;
+    --sidebar-accent-foreground: 30 15% 18%;
+    --sidebar-border: 35 20% 85%;
+    --sidebar-ring: 46 68% 47%;
   }
 
   .dark {
-    --background: 24 10% 10%;
-    --foreground: 38 30% 96%;
-    --card: 24 10% 13%;
-    --card-foreground: 38 30% 96%;
-    --popover: 24 10% 13%;
-    --popover-foreground: 38 30% 96%;
-    --primary: 35 92% 56%;
-    --primary-foreground: 24 12% 12%;
-    --secondary: 24 10% 18%;
-    --secondary-foreground: 38 30% 96%;
-    --muted: 24 8% 16%;
-    --muted-foreground: 28 8% 65%;
-    --accent: 35 45% 22%;
-    --accent-foreground: 38 30% 96%;
-    --destructive: 0 62.8% 45%;
+    --page-bg: 20 14% 4%;
+
+    --background: 20 14% 4%;
+    --foreground: 45 25% 95%;
+
+    --card: 20 14% 6%;
+    --card-foreground: 45 25% 95%;
+
+    --popover: 20 14% 6%;
+    --popover-foreground: 45 25% 95%;
+
+    --primary: 35 65% 55%;
+    --primary-foreground: 20 14% 4%;
+
+    --secondary: 20 10% 10%;
+    --secondary-foreground: 45 25% 95%;
+
+    --muted: 20 10% 10%;
+    --muted-foreground: 35 15% 65%;
+
+    --accent: 20 15% 15%;
+    --accent-foreground: 45 25% 95%;
+
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 24 8% 20%;
-    --input: 24 8% 20%;
-    --ring: 35 92% 56%;
-    --sidebar-background: 24 10% 12%;
-    --sidebar-foreground: 38 28% 94%;
-    --sidebar-primary: 35 92% 56%;
-    --sidebar-primary-foreground: 24 12% 12%;
-    --sidebar-accent: 24 10% 18%;
-    --sidebar-accent-foreground: 38 28% 94%;
-    --sidebar-border: 24 8% 20%;
-    --sidebar-ring: 35 92% 56%;
+
+    --border: 20 10% 15%;
+    --input: 20 10% 15%;
+    --ring: 35 65% 55%;
+
+    --brand: 32 30% 68%;
+    --brand-foreground: 40 30% 96%;
+    --brand-hover: 28 38% 12%;
+    --brand-muted: 35 16% 68%;
+
+    --gold: 45 70% 55%;
+    --gold-strong: 39 65% 58%;
+    --gold-bright: 35 90% 65%;
+    --gold-deep: 35 72% 50%;
+    --gold-border: 35 25% 28%;
+    --gold-muted: 35 30% 22%;
+
+    --surface: 20 14% 8%;
+    --surface-elevated: 20 12% 12%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+
+    --overlay: 0 0% 0%;
+    --white: 0 0% 100%;
+    --black: 0 0% 0%;
+
+    --brand-hex: #4b3621;
+    --gold-hex: #d4b84a;
+
+    --sidebar-background: 20 14% 8%;
+    --sidebar-foreground: 45 25% 95%;
+    --sidebar-primary: 45 70% 55%;
+    --sidebar-primary-foreground: 20 14% 4%;
+    --sidebar-accent: 20 12% 12%;
+    --sidebar-accent-foreground: 45 25% 95%;
+    --sidebar-border: 20 10% 15%;
+    --sidebar-ring: 45 70% 55%;
   }
 
   * {
@@ -76,8 +155,8 @@
   body {
     @apply bg-background text-foreground font-inter antialiased;
     background-image:
-      radial-gradient(circle at top right, rgba(242, 169, 68, 0.12), transparent 32%),
-      radial-gradient(circle at bottom left, rgba(166, 109, 57, 0.1), transparent 28%);
+      radial-gradient(circle at top right, hsl(var(--gold) / 0.12), transparent 32%),
+      radial-gradient(circle at bottom left, hsl(var(--brand) / 0.1), transparent 28%);
     background-attachment: fixed;
   }
 

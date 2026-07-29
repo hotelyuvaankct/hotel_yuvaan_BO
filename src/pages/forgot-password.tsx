@@ -190,7 +190,7 @@ export function ForgotPasswordPage() {
         style={{ backgroundImage: "url('/images/login-bg.jpg')" }}
       />
       <div aria-hidden className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/45 to-amber-950/60" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/45 to-brand/60" />
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         <div className="mb-8 text-center">
@@ -233,7 +233,7 @@ export function ForgotPasswordPage() {
                   {error}
                 </div>
               ) : null}
-              <Button type="submit" variant="gold" className="w-full shadow-lg shadow-amber-900/30" disabled={busy}>
+              <Button type="submit" variant="gold" className="w-full shadow-lg shadow-brand/30" disabled={busy}>
                 <ShieldCheck className="h-4 w-4" />
                 {busy ? 'Sending…' : 'Send verification code'}
               </Button>

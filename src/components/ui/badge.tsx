@@ -11,10 +11,10 @@ const variantStyles: Record<BadgeVariant, string> = {
   default: 'bg-foreground text-background',
   secondary: 'bg-secondary text-secondary-foreground',
   outline: 'border border-border bg-background text-foreground',
-  gold: 'bg-gold-100 text-gold-900 dark:bg-gold-500/15 dark:text-gold-100',
-  success: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200',
-  warning: 'bg-amber-100 text-amber-900 dark:bg-amber-500/15 dark:text-amber-200',
-  danger: 'bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-200',
+  gold: 'bg-gold-muted text-brand dark:bg-gold/15 dark:text-gold-border',
+  success: 'bg-success/15 text-success dark:bg-success/20 dark:text-success-foreground',
+  warning: 'bg-warning/15 text-brand dark:bg-warning/20 dark:text-warning',
+  danger: 'bg-destructive/15 text-destructive dark:bg-destructive/25 dark:text-destructive-foreground',
 };
 
 export function Badge({ className, variant = 'default', ...props }: BadgeProps) {

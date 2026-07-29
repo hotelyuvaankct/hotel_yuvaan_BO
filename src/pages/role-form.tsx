@@ -216,7 +216,7 @@ export function RoleFormPage() {
                             <td key={key} className="px-3 py-3">
                               <input
                                 type="checkbox"
-                                className="h-4 w-4 accent-amber-500"
+                                className="h-4 w-4 accent-gold"
                                 checked={permission[key]}
                                 onChange={(event) => updatePermission(module.id, key, event.target.checked)}
                               />

@@ -216,7 +216,7 @@ export function CouponListCard({
                 <div
                   className={cn(
                     'h-full rounded-full transition-all',
-                    usagePercent >= 90 ? 'bg-amber-500' : 'bg-emerald-500',
+                    usagePercent >= 90 ? 'bg-warning' : 'bg-success',
                   )}
                   style={{ width: `${usagePercent}%` }}
                 />

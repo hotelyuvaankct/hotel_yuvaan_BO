@@ -245,7 +245,7 @@ export function TransactionViewPage() {
                 <span className="text-muted-foreground">Notes:</span> {transaction.notes}
               </p>
             ) : null}
-            {transaction.warning ? <p className="text-amber-600">{transaction.warning}</p> : null}
+            {transaction.warning ? <p className="text-warning">{transaction.warning}</p> : null}
             {transaction.failureReason ? (
               <p className="text-destructive">{transaction.failureReason}</p>
             ) : null}

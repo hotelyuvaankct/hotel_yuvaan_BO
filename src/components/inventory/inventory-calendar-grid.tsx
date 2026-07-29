@@ -498,7 +498,7 @@ function RoomTypeSection({
                   className={cn(
                     'text-sm font-semibold tabular-nums',
                     locked ? 'text-rose-700' : 'text-slate-900',
-                    total === 0 && !locked && 'text-amber-700',
+                    total === 0 && !locked && 'text-warning',
                   )}
                 >
                   {total != null ? total : '—'}
@@ -783,7 +783,7 @@ function EditableRow({
               className={cn(
                 'inline-flex min-h-7 min-w-[2.75rem] items-center justify-center gap-1 rounded-md px-1.5 text-xs tabular-nums',
                 isAvailability && 'font-semibold text-emerald-900',
-                isAvailability && isZeroAvail && !isLocked && !isSelected && 'bg-amber-100/80 text-amber-900',
+                isAvailability && isZeroAvail && !isLocked && !isSelected && 'bg-gold-muted/80 text-brand',
                 !isAvailability && 'font-medium text-slate-800',
                 isSelected && 'font-semibold text-sky-950',
                 isLocked && 'text-rose-700',

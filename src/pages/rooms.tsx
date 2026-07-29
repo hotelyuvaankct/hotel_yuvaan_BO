@@ -347,7 +347,7 @@ export function RoomsPage() {
                     <th className="px-3 py-2 font-medium">
                       <input
                         type="checkbox"
-                        className="h-4 w-4 accent-amber-500"
+                        className="h-4 w-4 accent-gold"
                         checked={allVisibleSelected}
                         ref={(element) => {
                           if (element) {
@@ -379,7 +379,7 @@ export function RoomsPage() {
                       <td className="px-3 py-3">
                         <input
                           type="checkbox"
-                          className="h-4 w-4 accent-amber-500"
+                          className="h-4 w-4 accent-gold"
                           checked={isRoomSelected(room.id, selection)}
                           onChange={(event) => toggleRoomSelection(room.id, event.target.checked)}
                           aria-label={`Select room ${room.roomNumber}`}

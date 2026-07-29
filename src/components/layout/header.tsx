@@ -62,7 +62,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         {/* User chip */}
         <div className="flex items-center gap-2 rounded-lg px-2 py-1">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-600 text-xs font-bold text-white shrink-0">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-gold-bright to-gold-deep text-xs font-bold text-white shrink-0">
             {initials || 'HY'}
           </div>
           <span className="hidden max-w-[120px] truncate text-sm font-medium sm:block">{userName}</span>

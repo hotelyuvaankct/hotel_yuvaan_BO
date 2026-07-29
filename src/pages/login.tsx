@@ -98,7 +98,7 @@ export function LoginPage() {
         style={{ backgroundImage: "url('/images/login-bg.jpg')" }}
       />
       <div aria-hidden className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
-      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/45 to-amber-950/60" />
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/45 to-brand/60" />
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         <div className="mb-8 text-center">
@@ -169,7 +169,7 @@ export function LoginPage() {
 
             {info ? (
               <div
-                className="rounded-xl border border-amber-300/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-50 backdrop-blur-sm"
+                className="rounded-xl border border-gold-border/40 bg-gold/15 px-3 py-2 text-sm text-gold-muted backdrop-blur-sm"
                 role="status"
               >
                 {info}
@@ -195,7 +195,7 @@ export function LoginPage() {
               </Button>
             ) : null}
 
-            <Button type="submit" variant="gold" className="mt-2 w-full shadow-lg shadow-amber-900/30" disabled={loading}>
+            <Button type="submit" variant="gold" className="mt-2 w-full shadow-lg shadow-brand/30" disabled={loading}>
               <LockKeyhole className="h-4 w-4" />
               {loading ? 'Please wait' : 'Sign in'}
             </Button>

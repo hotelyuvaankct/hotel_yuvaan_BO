@@ -346,7 +346,7 @@ export function TransactionsPage() {
                         ) : (
                           <span className="font-mono text-xs text-muted-foreground">-</span>
                         )}
-                        {row.warning ? <div className="text-amber-600">{row.warning}</div> : null}
+                        {row.warning ? <div className="text-warning">{row.warning}</div> : null}
                       </td>
                     </tr>
                     );

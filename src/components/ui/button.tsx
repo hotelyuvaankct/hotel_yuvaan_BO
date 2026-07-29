@@ -19,7 +19,7 @@ const variantStyles: Record<ButtonVariant, string> = {
   ghost:
     'bg-transparent text-foreground hover:bg-muted',
   gold:
-    'bg-gradient-to-r from-gold-400 to-gold-600 text-white shadow-lg shadow-gold-500/20 hover:from-gold-500 hover:to-gold-700',
+    'bg-gradient-to-r from-gold-bright to-gold-deep text-white shadow-lg shadow-gold/20 hover:from-gold hover:to-gold-strong',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
