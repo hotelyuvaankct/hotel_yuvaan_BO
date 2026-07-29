@@ -2,7 +2,6 @@ import { Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useAuth } from '@/lib/auth';
-import faviconSrc from '@/assests/Images/favicon.ico';
 
 export type HeaderProps = {
   onMenuClick: () => void;
@@ -42,8 +41,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       </Button>
 
       <div className="flex items-center gap-2 lg:hidden">
-        <img src={faviconSrc} alt="Hotel Yuvaan" className="h-6 w-6 rounded object-contain" />
-        <span className="font-playfair text-sm font-bold tracking-wide text-foreground">Hotel Yuvaan</span>
+        <img src="/logo.png" alt="Hotel Yuvaan" className="h-7 w-auto max-w-[120px] object-contain" />
       </div>
 
       <div className="flex-1" />
@@ -53,7 +51,9 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground">
             {initials || 'HY'}
           </div>
-          <span className="hidden max-w-[120px] truncate text-sm font-medium text-foreground sm:block">{userName}</span>
+          <span className="hidden max-w-[120px] truncate text-sm font-medium text-foreground sm:block">
+            {userName}
+          </span>
         </div>
 
         <Button

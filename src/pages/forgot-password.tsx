@@ -194,8 +194,12 @@ export function ForgotPasswordPage() {
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
         <div className="mb-8 text-center">
-          <p className="font-playfair text-4xl font-bold tracking-wide text-white drop-shadow-sm">Hotel Yuvaan</p>
-          <p className="mt-2 text-sm text-white/70">Backoffice access</p>
+          <img
+            src="/logo.png"
+            alt="Hotel Yuvaan"
+            className="mx-auto h-14 w-auto max-w-[220px] object-contain drop-shadow-sm"
+          />
+          <p className="mt-3 text-sm text-white/70">Reset your password</p>
         </div>
 
         <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:p-8">

@@ -4,7 +4,6 @@ import { navigationItems } from '@/config/navigation';
 import { useAuth } from '@/lib/auth';
 import { canAccessNavigationItem } from '@/lib/navigation-access';
 import { cn } from '@/lib/utils';
-import faviconSrc from '@/assests/Images/favicon.ico';
 
 export type SidebarProps = {
   collapsed: boolean;
@@ -45,15 +44,14 @@ export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onMobileClose
         >
           <div className={cn('flex items-center gap-2', collapsed && 'justify-center')}>
             <img
-              src={faviconSrc}
+              src={collapsed ? '/favicon.svg' : '/logo.png'}
               alt="Hotel Yuvaan"
-              className="h-7 w-7 shrink-0 rounded-md object-contain"
+              className={cn(
+                'shrink-0 object-contain',
+                collapsed ? 'h-7 w-7' : 'h-8 w-auto max-w-[140px]',
+              )}
             />
-            {!collapsed ? (
-              <span className="truncate font-playfair text-base font-bold tracking-wide text-sidebar-foreground">
-                Hotel Yuvaan
-              </span>
-            ) : null}
+            {!collapsed ? <span className="sr-only">Hotel Yuvaan</span> : null}
           </div>
 
           {!collapsed ? (
