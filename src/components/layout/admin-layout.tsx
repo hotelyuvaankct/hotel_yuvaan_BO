@@ -30,7 +30,7 @@ export function AdminLayout() {
     setCollapsed(collapsedBeforeFullBleed.current);
   }, [isFullBleed]);
 
-  const sidebarWidth = collapsed ? 'lg:pl-[60px]' : 'lg:pl-60';
+  const sidebarWidth = collapsed ? 'lg:pl-[60px]' : 'lg:pl-64';
 
   return (
     <div className={`min-h-screen bg-background text-foreground transition-all duration-300 ${sidebarWidth}`}>

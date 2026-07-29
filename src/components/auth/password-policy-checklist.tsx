@@ -24,7 +24,7 @@ export function PasswordPolicyChecklist({
             key={rule.id}
             className={cn(
               'flex items-start gap-2 text-sm',
-              rule.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
+              rule.passed ? 'text-success' : 'text-muted-foreground',
             )}
           >
             {rule.passed ? (

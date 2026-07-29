@@ -186,7 +186,7 @@ export function ChangePasswordFlow() {
               {error}
             </p>
           ) : null}
-          <Button type="button" variant="gold" disabled={busy} onClick={() => void requestOtp()}>
+          <Button type="button" variant="primary" disabled={busy} onClick={() => void requestOtp()}>
             <ShieldCheck className="h-4 w-4" />
             {busy ? 'Sending…' : 'Send verification code'}
           </Button>
@@ -219,7 +219,7 @@ export function ChangePasswordFlow() {
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <Button type="submit" variant="gold" disabled={busy || otp.length !== 6}>
+            <Button type="submit" variant="primary" disabled={busy || otp.length !== 6}>
               <KeyRound className="h-4 w-4" />
               {busy ? 'Verifying…' : 'Verify code'}
             </Button>
@@ -270,7 +270,7 @@ export function ChangePasswordFlow() {
           <div className="flex flex-wrap gap-2">
             <Button
               type="submit"
-              variant="gold"
+              variant="primary"
               disabled={busy || !isPasswordValid(password) || !passwordsMatch(password, confirmPassword)}
             >
               <LockKeyhole className="h-4 w-4" />

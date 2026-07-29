@@ -4,15 +4,17 @@ import { CalendarDays, ChevronDown, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const fieldControlClass =
-  'h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none transition-colors focus:ring-2 focus:ring-ring/60 disabled:cursor-not-allowed disabled:opacity-60';
+  'h-10 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-60';
 
 export const filterControlClass =
-  'h-10 w-full rounded-xl border bg-background px-3 text-sm outline-none transition-colors focus:ring-2 focus:ring-ring/60';
+  'h-10 w-full rounded-sm border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-brand focus:ring-1 focus:ring-ring';
 
 function controlClass(error?: string, className?: string, base = fieldControlClass) {
   return cn(
     base,
-    error ? 'border-destructive focus:ring-destructive/30' : 'border-input hover:border-ring/40',
+    error
+      ? 'border-destructive focus:border-destructive focus:ring-destructive'
+      : 'hover:border-ring/40',
     className,
   );
 }
@@ -29,9 +31,9 @@ type FieldShellProps = {
 export function FieldShell({ label, error, hint, required, className, children }: FieldShellProps) {
   const Wrapper = label || error || hint ? 'label' : 'div';
   return (
-    <Wrapper className={cn('block space-y-2 text-sm font-medium', className)}>
+    <Wrapper className={cn('mb-0 block space-y-1.5 text-sm font-medium text-foreground', className)}>
       {label ? (
-        <span>
+        <span className="mb-0 block">
           {label}
           {required ? <span className="text-destructive"> *</span> : null}
         </span>

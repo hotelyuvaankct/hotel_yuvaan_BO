@@ -30,51 +30,38 @@ export function Header({ onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border/70 bg-background/90 px-3 backdrop-blur-xl sm:px-4">
-      {/* Mobile hamburger */}
+    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur-xl sm:px-4">
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden shrink-0"
+        className="shrink-0 lg:hidden"
         onClick={onMenuClick}
         aria-label="Open sidebar"
       >
         <Menu className="h-5 w-5" />
       </Button>
 
-      {/* Mobile logo (only visible when sidebar is hidden on mobile) */}
       <div className="flex items-center gap-2 lg:hidden">
         <img src={faviconSrc} alt="Hotel Yuvaan" className="h-6 w-6 rounded object-contain" />
-        <span className="font-playfair text-sm font-bold tracking-wide">Hotel Yuvaan</span>
+        <span className="font-playfair text-sm font-bold tracking-wide text-foreground">Hotel Yuvaan</span>
       </div>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right-side actions */}
       <div className="flex items-center gap-1.5">
-        {/* Theme toggle — light theme only
-        <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle theme" className="rounded-lg">
-          {resolvedTheme === 'dark' ? <SunMedium className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />}
-        </Button>
-        <div className="mx-1 h-5 w-px bg-border" />
-        */}
-
-        {/* User chip */}
         <div className="flex items-center gap-2 rounded-lg px-2 py-1">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-gold-bright to-gold-deep text-xs font-bold text-white shrink-0">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground">
             {initials || 'HY'}
           </div>
-          <span className="hidden max-w-[120px] truncate text-sm font-medium sm:block">{userName}</span>
+          <span className="hidden max-w-[120px] truncate text-sm font-medium text-foreground sm:block">{userName}</span>
         </div>
 
-        {/* Logout */}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => void confirmLogout()}
           aria-label="Sign out"
-          className="rounded-lg text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground"
         >
           <LogOut className="h-4 w-4" />
         </Button>

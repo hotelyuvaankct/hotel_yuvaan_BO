@@ -1,13 +1,15 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Modal } from '@/components/ui/modal';
 
 type ConfirmOptions = {
   title: string;
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** Defaults to danger for destructive confirmations. */
+  tone?: 'danger' | 'primary';
 };
 
 type ConfirmDialogState = ConfirmOptions & {
@@ -41,56 +43,34 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  const tone = dialog?.tone ?? 'danger';
+
   return (
     <ConfirmContext.Provider value={value}>
       {children}
-      {dialog
-        ? createPortal(
-            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/55 px-4 backdrop-blur-sm">
-              <div
-                role="alertdialog"
-                aria-modal="true"
-                aria-labelledby="confirm-dialog-title"
-                aria-describedby="confirm-dialog-description"
-                className="w-full max-w-md rounded-xl border border-border bg-card p-5 text-card-foreground shadow-2xl"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-                      <AlertTriangle className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <h2 id="confirm-dialog-title" className="text-lg font-semibold">
-                        {dialog.title}
-                      </h2>
-                      <p id="confirm-dialog-description" className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {dialog.description}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    onClick={() => close(false)}
-                    aria-label="Close confirmation"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-
-                <div className="mt-6 flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => close(false)}>
-                    {dialog.cancelLabel ?? 'Cancel'}
-                  </Button>
-                  <Button className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => close(true)}>
-                    {dialog.confirmLabel ?? 'Confirm'}
-                  </Button>
-                </div>
+      <Modal isOpen={Boolean(dialog)} onClose={() => close(false)} size="sm">
+        {dialog ? (
+          <>
+            <Modal.Header title={dialog.title} onClose={() => close(false)} />
+            <Modal.Body>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                </span>
+                <p className="leading-6 text-muted-foreground">{dialog.description}</p>
               </div>
-            </div>,
-            document.body,
-          )
-        : null}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="outline" onClick={() => close(false)}>
+                {dialog.cancelLabel ?? 'Cancel'}
+              </Button>
+              <Button variant={tone === 'danger' ? 'danger' : 'primary'} onClick={() => close(true)}>
+                {dialog.confirmLabel ?? 'Confirm'}
+              </Button>
+            </Modal.Footer>
+          </>
+        ) : null}
+      </Modal>
     </ConfirmContext.Provider>
   );
 }

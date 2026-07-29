@@ -189,7 +189,7 @@ export function ForgotPasswordPage() {
         className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-105"
         style={{ backgroundImage: "url('/images/login-bg.jpg')" }}
       />
-      <div aria-hidden className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" />
+      <div aria-hidden className="absolute inset-0 bg-overlay backdrop-blur-[2px]" />
       <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/45 to-brand/60" />
 
       <div className="relative z-10 w-full max-w-md animate-fade-in-up">
@@ -198,7 +198,7 @@ export function ForgotPasswordPage() {
           <p className="mt-2 text-sm text-white/70">Backoffice access</p>
         </div>
 
-        <div className="rounded-3xl border border-white/20 bg-white/10 p-6 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:p-8">
+        <div className="rounded-2xl border border-white/20 bg-white/10 p-6 shadow-2xl shadow-black/40 backdrop-blur-2xl sm:p-8">
           <div className="mb-6 space-y-1.5">
             <h1 className="text-xl font-semibold text-white">Forgot password</h1>
             <p className="text-sm text-white/65">
@@ -226,14 +226,14 @@ export function ForgotPasswordPage() {
                     className="w-full bg-transparent text-white placeholder:text-white/35 outline-none"
                   />
                 </span>
-                {fieldErrors.email ? <span className="text-xs text-red-200">{fieldErrors.email}</span> : null}
+                {fieldErrors.email ? <span className="text-xs text-destructive-foreground">{fieldErrors.email}</span> : null}
               </label>
               {error ? (
-                <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100" role="alert">
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground" role="alert">
                   {error}
                 </div>
               ) : null}
-              <Button type="submit" variant="gold" className="w-full shadow-lg shadow-brand/30" disabled={busy}>
+              <Button type="submit" variant="primary" className="w-full shadow-lg shadow-brand/30" disabled={busy}>
                 <ShieldCheck className="h-4 w-4" />
                 {busy ? 'Sending…' : 'Send verification code'}
               </Button>
@@ -262,14 +262,14 @@ export function ForgotPasswordPage() {
                     className="w-full bg-transparent text-white placeholder:text-white/35 outline-none tracking-[0.3em]"
                   />
                 </span>
-                {fieldErrors.otp ? <span className="text-xs text-red-200">{fieldErrors.otp}</span> : null}
+                {fieldErrors.otp ? <span className="text-xs text-destructive-foreground">{fieldErrors.otp}</span> : null}
               </label>
               {error ? (
-                <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100" role="alert">
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground" role="alert">
                   {error}
                 </div>
               ) : null}
-              <Button type="submit" variant="gold" className="w-full" disabled={busy || otp.length !== 6}>
+              <Button type="submit" variant="primary" className="w-full" disabled={busy || otp.length !== 6}>
                 <KeyRound className="h-4 w-4" />
                 {busy ? 'Verifying…' : 'Verify code'}
               </Button>
@@ -301,7 +301,7 @@ export function ForgotPasswordPage() {
                     className="w-full bg-transparent text-white placeholder:text-white/35 outline-none"
                   />
                 </span>
-                {fieldErrors.password ? <span className="text-xs text-red-200">{fieldErrors.password}</span> : null}
+                {fieldErrors.password ? <span className="text-xs text-destructive-foreground">{fieldErrors.password}</span> : null}
               </label>
               <label className="block space-y-2 text-sm font-medium text-white/90">
                 Confirm password
@@ -318,20 +318,20 @@ export function ForgotPasswordPage() {
                   />
                 </span>
                 {fieldErrors.confirmPassword ? (
-                  <span className="text-xs text-red-200">{fieldErrors.confirmPassword}</span>
+                  <span className="text-xs text-destructive-foreground">{fieldErrors.confirmPassword}</span>
                 ) : null}
               </label>
               <div className="rounded-xl border border-white/15 bg-black/20 p-3 text-white/80">
                 <PasswordPolicyChecklist password={password} />
               </div>
               {error ? (
-                <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-100" role="alert">
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-foreground" role="alert">
                   {error}
                 </div>
               ) : null}
               <Button
                 type="submit"
-                variant="gold"
+                variant="primary"
                 className="w-full"
                 disabled={busy || !isPasswordValid(password) || !passwordsMatch(password, confirmPassword)}
               >

@@ -1,6 +1,6 @@
 import { ChevronRight, Home } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { navigationItems } from '@/data/navigation';
+import { navigationItems } from '@/config/navigation';
 
 const actionLabels: Record<string, string> = {
   new: 'Add',
