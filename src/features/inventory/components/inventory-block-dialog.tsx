@@ -58,7 +58,7 @@ export function InventoryBlockDialog({ open, mode, hotelId, maxDate, conflicts, 
             />
           ) : null}
           {conflicts.length > 0 ? (
-            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+            <div className="rounded-md border border-border bg-muted p-3 text-sm">
               <p className="font-medium text-destructive">Conflicting bookings</p>
               <ul className="mt-2 space-y-1">
                 {conflicts.map((conflict) => (

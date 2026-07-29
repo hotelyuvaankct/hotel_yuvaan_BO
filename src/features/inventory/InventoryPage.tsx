@@ -238,7 +238,7 @@ export function InventoryPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-10 min-w-[112px] border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive"
+              className="h-10 min-w-[112px]"
               onClick={() => {
                 setBlockMode('block');
                 setConflicts([]);
@@ -251,7 +251,7 @@ export function InventoryPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-10 min-w-[112px] border-success/30 bg-success/10 text-success hover:bg-success/15 hover:text-success"
+              className="h-10 min-w-[112px]"
               onClick={() => {
                 setBlockMode('unblock');
                 setConflicts([]);

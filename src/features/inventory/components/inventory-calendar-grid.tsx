@@ -298,19 +298,19 @@ export function InventoryCalendarGrid({
                   key={date}
                   className={cn(
                     'sticky top-0 z-20 border-b border-r border-border px-1.5 py-2.5 text-center',
-                    meta.isSunday && 'bg-destructive/10 text-destructive',
-                    meta.isSaturday && 'bg-accent text-foreground',
-                    !meta.isSaturday && !meta.isSunday && 'bg-muted text-foreground',
+                    meta.isSaturday || meta.isSunday
+                      ? 'bg-muted text-foreground'
+                      : 'bg-card text-foreground',
                   )}
                   style={{ width: COL_WIDTH, minWidth: COL_WIDTH }}
                 >
-                  <div className="text-[10px] font-semibold tracking-wide uppercase opacity-70">
+                  <div className="text-[10px] font-semibold tracking-wide uppercase text-muted-foreground">
                     {meta.dayName}
                   </div>
                   <div className="mt-0.5 text-sm font-semibold tabular-nums leading-none">
                     {meta.dayNum}
                   </div>
-                  <div className="mt-0.5 text-[10px] font-medium opacity-60">{meta.month}</div>
+                  <div className="mt-0.5 text-[10px] font-medium text-muted-foreground">{meta.month}</div>
                 </th>
               );
             })}
@@ -345,7 +345,7 @@ export function InventoryCalendarGrid({
             dayCount={
               datesInRange(dates, selection.startDate, selection.endDate).length
             }
-            dragging={dragging}
+            showBadge={dragging}
           />
           {!dragging ? (
             <InventoryEditPopover
@@ -367,21 +367,18 @@ function SelectionChrome({
   anchorRect,
   containerRect,
   dayCount,
-  dragging,
+  showBadge,
 }: {
   anchorRect: DOMRect;
   containerRect: DOMRect;
   dayCount: number;
-  dragging: boolean;
+  showBadge: boolean;
 }) {
   const left = anchorRect.left - containerRect.left;
   const top = anchorRect.top - containerRect.top;
   return (
     <div
-      className={cn(
-        'pointer-events-none absolute z-30 box-border rounded-md border-2 border-brand',
-        dragging ? 'bg-brand/35 shadow-[0_0_0_1px_rgba(14,165,233,0.35)]' : 'bg-brand/25',
-      )}
+      className="pointer-events-none absolute z-30 box-border rounded-sm border-2 border-brand bg-transparent"
       style={{
         left,
         top,
@@ -389,14 +386,14 @@ function SelectionChrome({
         height: anchorRect.height,
       }}
     >
-      <span className="absolute top-1/2 left-0 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white shadow-md ring-2 ring-white">
-        <Grip className="h-3 w-3" />
+      <span className="absolute top-1/2 left-0 flex h-4 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm bg-brand text-brand-foreground ring-2 ring-card">
+        <Grip className="h-2.5 w-2.5" />
       </span>
-      <span className="absolute top-1/2 right-0 flex h-5 w-5 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white shadow-md ring-2 ring-white">
-        <Grip className="h-3 w-3" />
+      <span className="absolute top-1/2 right-0 flex h-4 w-4 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm bg-brand text-brand-foreground ring-2 ring-card">
+        <Grip className="h-2.5 w-2.5" />
       </span>
-      {dayCount > 0 ? (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-semibold text-white shadow-md">
+      {showBadge && dayCount > 0 ? (
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-foreground">
           {dayCount} day{dayCount === 1 ? '' : 's'} selected
         </span>
       ) : null}
@@ -436,7 +433,7 @@ function RoomTypeSection({
 
   return (
     <>
-      <tr className="bg-muted/90">
+      <tr className="bg-muted">
         <td
           className="sticky left-0 z-10 border-y border-r border-border bg-muted px-3 py-3"
           style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}
@@ -446,10 +443,10 @@ function RoomTypeSection({
             className="flex w-full items-center gap-2.5 text-left"
             onClick={() => onToggleCollapse(roomType.roomTypeId)}
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-card text-muted-foreground shadow-sm ring-1 ring-border">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-card text-muted-foreground ring-1 ring-border">
               {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </span>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-white shadow-sm">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-foreground">
               <BedDouble className="h-4 w-4" />
             </span>
             <span className="min-w-0">
@@ -484,7 +481,7 @@ function RoomTypeSection({
               key={date}
               className={cn(
                 'border-y border-r border-border bg-muted px-1 py-2 text-center',
-                locked && 'bg-destructive/10',
+                locked && 'bg-danger-50',
               )}
               style={{ width: COL_WIDTH }}
               title={
@@ -496,17 +493,17 @@ function RoomTypeSection({
               <div className="flex flex-col items-center gap-0.5 leading-tight">
                 <span
                   className={cn(
-                    'text-sm font-semibold tabular-nums',
-                    locked ? 'text-destructive' : 'text-foreground',
-                    total === 0 && !locked && 'text-warning',
+                    'inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-foreground',
+                    locked && 'text-destructive',
                   )}
                 >
                   {total != null ? total : '—'}
+                  {locked ? <Lock className="h-3 w-3 text-destructive" /> : null}
                 </span>
                 <span
                   className={cn(
-                    'text-[10px] font-medium tabular-nums',
-                    locked ? 'text-destructive' : 'text-muted-foreground',
+                    'text-[10px] font-medium tabular-nums text-muted-foreground',
+                    locked && 'text-destructive',
                   )}
                 >
                   {sellPrice != null ? `₹${sellPrice}` : '—'}
@@ -522,7 +519,7 @@ function RoomTypeSection({
           <EditableRow
             label="Total rooms"
             hint="Rooms to sell · drag to edit"
-            icon={<Users className="h-3.5 w-3.5 text-success" />}
+            icon={<Users className="h-3.5 w-3.5 text-muted-foreground" />}
             tone="availability"
             roomTypeId={roomType.roomTypeId}
             rowKey="total-rooms"
@@ -614,7 +611,7 @@ function RatePlanOccupancyBlock({
     <>
       <tr>
         <td
-          className="sticky left-0 z-10 border-b border-r border-border bg-muted/90 px-4 py-2.5"
+          className="sticky left-0 z-10 border-b border-r border-border bg-muted px-4 py-2.5"
           style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}
         >
           <span className="inline-flex max-w-full items-center gap-2">
@@ -632,7 +629,7 @@ function RatePlanOccupancyBlock({
         {dates.map((date) => (
           <td
             key={date}
-            className="border-b border-r border-border bg-muted/90"
+            className="border-b border-r border-border bg-muted"
             style={{ width: COL_WIDTH }}
           />
         ))}
@@ -642,7 +639,7 @@ function RatePlanOccupancyBlock({
           key={`${planCode}-${guestCount}`}
           label={`${guestCount} guest${guestCount === 1 ? '' : 's'}`}
           hint="Sell rate"
-          icon={<Users className="h-3.5 w-3.5 text-brand" />}
+          icon={<Users className="h-3.5 w-3.5 text-muted-foreground" />}
           indent
           tone="rate"
           roomTypeId={roomType.roomTypeId}
@@ -718,11 +715,10 @@ function EditableRow({
   const isAvailability = tone === 'availability';
 
   return (
-    <tr className={isAvailability ? 'bg-success/10' : 'bg-card'}>
+    <tr className="bg-card">
       <td
         className={cn(
-          'sticky left-0 z-10 border-b border-r border-border py-2.5',
-          isAvailability ? 'bg-success/15' : 'bg-card',
+          'sticky left-0 z-10 border-b border-r border-border bg-card py-2.5',
           indent ? 'pl-8 pr-3' : 'px-4',
         )}
         style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}
@@ -730,14 +726,7 @@ function EditableRow({
         <span className="inline-flex max-w-full items-center gap-2">
           {icon}
           <span className="min-w-0">
-            <span
-              className={cn(
-                'block truncate text-xs font-semibold',
-                isAvailability ? 'text-success' : 'text-foreground',
-              )}
-            >
-              {label}
-            </span>
+            <span className="block truncate text-xs font-semibold text-foreground">{label}</span>
             {hint ? (
               <span className="block text-[10px] font-medium text-muted-foreground">{hint}</span>
             ) : null}
@@ -756,17 +745,11 @@ function EditableRow({
             key={date}
             data-cell={key}
             className={cn(
-              'relative border-b border-r border-border px-1.5 py-2.5 text-center transition-colors',
-              isAvailability ? 'bg-success/10' : 'bg-card',
+              'relative border-b border-r border-border bg-card px-1.5 py-2.5 text-center transition-colors',
               canUpdate && !isLocked && 'cursor-cell',
-              canUpdate && !isLocked && isAvailability && !isSelected && 'hover:bg-success/20',
-              canUpdate && !isLocked && !isAvailability && !isSelected && 'hover:bg-accent',
-              isSelected &&
-                (isAvailability
-                  ? 'bg-accent ring-1 ring-inset ring-brand/50'
-                  : 'bg-accent ring-1 ring-inset ring-brand/50'),
-              isLocked && !isSelected && 'bg-destructive/10 text-destructive',
-              isLocked && isSelected && 'bg-accent text-destructive',
+              canUpdate && !isLocked && !isSelected && 'hover:bg-muted',
+              isSelected && 'bg-card',
+              isLocked && !isSelected && 'bg-danger-50',
             )}
             style={{ width: COL_WIDTH }}
             onPointerDown={(event) => {
@@ -781,12 +764,11 @@ function EditableRow({
           >
             <span
               className={cn(
-                'inline-flex min-h-7 min-w-[2.75rem] items-center justify-center gap-1 rounded-md px-1.5 text-xs tabular-nums',
-                isAvailability && 'font-semibold text-success',
-                isAvailability && isZeroAvail && !isLocked && !isSelected && 'bg-gold-muted/80 text-brand',
-                !isAvailability && 'font-medium text-foreground',
+                'inline-flex min-h-7 min-w-[2.75rem] items-center justify-center gap-1 px-1.5 text-xs tabular-nums',
+                isAvailability ? 'font-semibold text-foreground' : 'font-medium text-foreground',
+                isZeroAvail && !isLocked && 'text-muted-foreground',
                 isSelected && 'font-semibold text-foreground',
-                isLocked && 'text-destructive',
+                isLocked && 'font-semibold text-destructive',
               )}
             >
               {value}

@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
+import { fieldControlClass } from '@/components/ui/form-fields';
 import { cn } from '@/lib/utils';
 
 export type InventoryEditKind = 'availability' | 'rate';
@@ -86,7 +87,7 @@ export function InventoryEditPopover({
         ref={panelRef}
         role="dialog"
         aria-labelledby={titleId}
-        className="pointer-events-auto absolute w-[280px] rounded-xl border border-border bg-background p-4 shadow-xl"
+        className="pointer-events-auto absolute w-[280px] rounded-lg border border-border bg-card p-4 shadow-lg"
         style={{
           left: coords?.left ?? anchorRect.left + anchorRect.width / 2,
           top: coords?.top ?? anchorRect.top - GAP,
@@ -94,7 +95,7 @@ export function InventoryEditPopover({
             placement === 'above' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
         }}
       >
-        <h3 id={titleId} className="text-base font-semibold text-foreground">
+        <h3 id={titleId} className="text-sm font-semibold text-foreground">
           {kind === 'availability' ? 'Update total rooms' : 'Update rate'}
         </h3>
 
@@ -112,7 +113,7 @@ export function InventoryEditPopover({
             onKeyDown={(event) => {
               if (event.key === 'Enter' && canSave) onSave(parsed);
             }}
-            className="h-9 w-24 rounded-md border border-brand px-2 text-center text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={cn(fieldControlClass, 'h-9 w-24 px-2 text-center tabular-nums')}
           />
         </label>
 
@@ -127,7 +128,6 @@ export function InventoryEditPopover({
             type="button"
             variant="outline"
             size="sm"
-            className="h-9 border-brand text-brand hover:bg-accent"
             onClick={onCancel}
             disabled={saving}
           >
@@ -136,23 +136,13 @@ export function InventoryEditPopover({
           <Button
             type="button"
             size="sm"
-            className={cn('h-9 bg-brand text-white hover:bg-brand', !canSave && 'opacity-50')}
+            className={cn(!canSave && 'opacity-50')}
             disabled={!canSave}
             onClick={() => onSave(parsed)}
           >
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </div>
-
-        <span
-          aria-hidden
-          className={cn(
-            'absolute left-1/2 -translate-x-1/2 border-8 border-transparent',
-            placement === 'above'
-              ? 'top-full border-t-background'
-              : 'bottom-full border-b-background',
-          )}
-        />
       </div>
     </div>,
     document.body,
