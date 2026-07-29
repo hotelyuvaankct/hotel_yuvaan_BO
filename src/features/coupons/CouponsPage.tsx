@@ -116,49 +116,61 @@ export function CouponsPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="inline-flex rounded-xl border border-border bg-muted/30 p-1">
-                {(['active', 'deactivated'] as CouponTab[]).map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    className={cn(
-                      'rounded-lg px-4 py-2 text-sm font-medium transition-all',
-                      tab === value
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground',
-                    )}
-                    onClick={() => {
-                      setTab(value);
-                      setPage(0);
-                    }}
-                  >
-                    {tabLabels[value]}
-                  </button>
-                ))}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+            <div className="min-w-0 space-y-1.5">
+              <p className="text-sm font-medium text-foreground">Status</p>
+              <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
+                <div className="flex w-max min-w-full flex-nowrap items-center gap-3">
+                  <div className="inline-flex shrink-0 rounded-xl border border-border bg-muted/30 p-1">
+                    {(['active', 'deactivated'] as CouponTab[]).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className={cn(
+                          'rounded-lg px-4 py-2 text-sm font-medium transition-all',
+                          tab === value
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground',
+                        )}
+                        onClick={() => {
+                          setTab(value);
+                          setPage(0);
+                        }}
+                      >
+                        {tabLabels[value]}
+                      </button>
+                    ))}
+                  </div>
+                  {!loading ? (
+                    <p className="inline-flex shrink-0 items-center gap-1.5 text-sm text-muted-foreground">
+                      <Tag className="h-3.5 w-3.5" />
+                      {totalElements} {tabLabels[tab].toLowerCase()} coupon
+                      {totalElements === 1 ? '' : 's'}
+                      {search ? ` matching "${search}"` : ''}
+                    </p>
+                  ) : null}
+                </div>
               </div>
-              {!loading ? (
-                <p className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Tag className="h-3.5 w-3.5" />
-                  {totalElements} {tabLabels[tab].toLowerCase()} coupon
-                  {totalElements === 1 ? '' : 's'}
-                  {search ? ` matching "${search}"` : ''}
-                </p>
-              ) : null}
             </div>
-            <div className="relative w-full sm:max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="search"
-                className={cn(filterControlClass, 'pl-9')}
-                placeholder="Search by code or title"
-                value={search}
-                onChange={(event) => {
-                  setSearch(event.target.value);
-                  setPage(0);
-                }}
-              />
+
+            <div className="w-full space-y-1.5 lg:max-w-sm lg:shrink-0">
+              <label className="block text-sm font-medium text-foreground" htmlFor="coupon-search">
+                Search
+              </label>
+              <div className="relative w-full">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  id="coupon-search"
+                  type="search"
+                  className={cn(filterControlClass, 'pl-9')}
+                  placeholder="Search by code or title"
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setPage(0);
+                  }}
+                />
+              </div>
             </div>
           </div>
 

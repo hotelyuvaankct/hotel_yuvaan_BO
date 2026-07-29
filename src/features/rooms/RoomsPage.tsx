@@ -423,6 +423,7 @@ export function RoomsPage() {
               }}
             />
             <TextField
+              label="Room number"
               placeholder="Search room number"
               value={filters.roomNumber}
               onChange={(event) => setFilters((current) => ({ ...current, roomNumber: event.target.value }))}
@@ -430,6 +431,7 @@ export function RoomsPage() {
             {canReadRoomTypes ? (
               <SelectField
                 variant="filter"
+                label="Room type"
                 value={filters.roomTypeId}
                 placeholder="All room types"
                 options={roomTypes.map((roomType) => ({ value: roomType.id, label: roomType.name }))}
@@ -440,6 +442,7 @@ export function RoomsPage() {
             )}
             <SelectField
               variant="filter"
+              label="Availability"
               value={filters.roomStatus}
               placeholder="All availability"
               options={roomStatusOptions.map((option) => ({ value: option.value, label: option.label }))}
@@ -455,6 +458,7 @@ export function RoomsPage() {
                 setFilterErrors({});
               }}
               aria-label="Clear filters"
+              title="Clear filters"
             >
               <X className="h-4 w-4" />
             </Button>

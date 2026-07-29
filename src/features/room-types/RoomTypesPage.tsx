@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
-import type { HotelSummary, RoomType } from '@/lib/api-types';
+import type { RoomType } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { optionLabel, recordStatusOptions } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
@@ -12,7 +12,6 @@ import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
-import { SelectField } from '@/components/ui/form-fields';
 import { ResponsiveList } from '@/components/ui/responsive-list';
 import type { DataTableColumn } from '@/components/ui/data-table';
 import { Status } from '@/lib/constants';
@@ -82,14 +81,12 @@ export function RoomTypesPage() {
   const canUpdate = hasPermission(session?.perms, 'room-types', 'update');
   const canDelete = hasPermission(session?.perms, 'room-types', 'delete');
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [hotels, setHotels] = useState<HotelSummary[]>([]);
-  const [hotelId, setHotelId] = useState('');
   const [loading, setLoading] = useState(true);
 
-  async function load(activeHotelId = hotelId) {
+  async function load() {
     setLoading(true);
     try {
-      const items = await api.listRoomTypes(activeHotelId ? Number(activeHotelId) : undefined);
+      const items = await api.listRoomTypes();
       setRoomTypes(sortRoomTypes(items ?? []));
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Unable to load room types.', 'error');
@@ -116,16 +113,8 @@ export function RoomTypesPage() {
 
   useEffect(() => {
     if (!canRead) return;
-    void Promise.all([api.listHotels(), load()])
-      .then(([hotelList]) => setHotels(hotelList ?? []))
-      .catch(() => undefined);
+    void load();
   }, [canRead]);
-
-  useEffect(() => {
-    if (!canRead) return;
-    const timeout = window.setTimeout(() => void load(hotelId), 250);
-    return () => window.clearTimeout(timeout);
-  }, [canRead, hotelId]);
 
   const columns = useMemo<Array<DataTableColumn<RoomType>>>(
     () => [
@@ -218,15 +207,6 @@ export function RoomTypesPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <SelectField
-            variant="filter"
-            wrapperClassName="max-w-sm"
-            value={hotelId}
-            placeholder="All hotels"
-            options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
-            onChange={(event) => setHotelId(event.target.value)}
-          />
-
           <ResponsiveList
             columns={columns}
             data={roomTypes}

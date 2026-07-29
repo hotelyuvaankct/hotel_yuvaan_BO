@@ -140,6 +140,7 @@ export function GalleryPage() {
         <CardContent className="space-y-4">
           <SelectField
             variant="filter"
+            label="Category"
             wrapperClassName="max-w-sm"
             value={categoryFilter}
             options={GALLERY_CATEGORY_FILTERS.map((category) => ({

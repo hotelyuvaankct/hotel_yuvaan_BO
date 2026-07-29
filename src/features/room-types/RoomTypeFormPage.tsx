@@ -3,7 +3,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Save, X, Image as ImageIcon } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
-import type { HotelSummary, UpsertRoomTypePayload, RoomImage, RoomTypeRatePlan } from '@/lib/api-types';
+import type { UpsertRoomTypePayload, RoomImage, RoomTypeRatePlan } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { Status } from '@/lib/constants';
 import { hasPermission } from '@/lib/permissions';
@@ -11,7 +11,7 @@ import { useToast } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { SelectField, TextField, inputClass } from '@/components/ui/form-fields';
+import { TextField, inputClass } from '@/components/ui/form-fields';
 import { AMENITY_GROUPS, normalizeAmenity, parseAmenities } from '@/lib/amenities';
 import { RATE_PLAN_OPTIONS } from '@/lib/rate-plans';
 
@@ -65,7 +65,7 @@ export function RoomTypeFormPage() {
   const canCreate = hasPermission(session?.perms, 'room-types', 'create');
   const canUpdate = hasPermission(session?.perms, 'room-types', 'update');
   const canSave = isEdit ? canUpdate : canCreate;
-  const [hotels, setHotels] = useState<HotelSummary[]>([]);
+  const [hotelId, setHotelId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -76,7 +76,6 @@ export function RoomTypeFormPage() {
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenities, setCustomAmenities] = useState('');
   const [form, setForm] = useState({
-    hotelId: '',
     name: '',
     description: '',
     maxAdults: '2',
@@ -109,15 +108,15 @@ export function RoomTypeFormPage() {
     async function load() {
       try {
         const hotelList = await api.listHotels();
-        setHotels(hotelList ?? []);
+        const defaultHotelId = String(hotelList[0]?.id ?? '');
         if (roomTypeId) {
           const roomType = await api.getRoomType(roomTypeId);
           const nextCapacity = Math.max(
             (roomType.maxAdults ?? 2) + (roomType.maxChildren ?? 0),
             1,
           );
+          setHotelId(String(roomType.hotelId ?? defaultHotelId));
           setForm({
-            hotelId: String(roomType.hotelId),
             name: roomType.name,
             description: roomType.description ?? '',
             maxAdults: String(roomType.maxAdults ?? 2),
@@ -165,7 +164,7 @@ export function RoomTypeFormPage() {
             }),
           );
         } else {
-          setForm((current) => ({ ...current, hotelId: String(hotelList[0]?.id ?? '') }));
+          setHotelId(defaultHotelId);
           setVariants(buildDefaultVariants(2));
         }
       } catch (err) {
@@ -238,6 +237,10 @@ export function RoomTypeFormPage() {
         }
       }
     }
+    if (!hotelId) {
+      showToast('No hotel is configured. Add a hotel before creating room types.', 'error');
+      return;
+    }
     setSaving(true);
     const customList = customAmenities.split(',').map((value) => value.trim()).filter(Boolean);
     const amenities = Array.from(new Set([...selectedAmenities, ...customList]));
@@ -258,7 +261,7 @@ export function RoomTypeFormPage() {
       }),
     }));
     const payload: UpsertRoomTypePayload = {
-      hotelId: Number(form.hotelId),
+      hotelId: Number(hotelId),
       name: form.name.trim(),
       description: form.description.trim() || undefined,
       maxAdults: Number(form.maxAdults),
@@ -303,21 +306,16 @@ export function RoomTypeFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update room type' : 'Add room type'}</CardTitle>
-          <CardDescription>Room types belong to one hotel and drive room occupancy and pricing defaults.</CardDescription>
+          <CardDescription>
+            Set occupancy, base price, amenities, and rate plans for this room category.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-            <SelectField
-              label="Hotel"
-              required
-              value={form.hotelId}
-              placeholder="Select hotel"
-              options={hotels.map((hotel) => ({ value: hotel.id, label: hotel.name }))}
-              onChange={(event) => setForm((value) => ({ ...value, hotelId: event.target.value }))}
-            />
             <TextField
               label="Name"
               required
+              wrapperClassName="md:col-span-2"
               value={form.name}
               onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))}
             />

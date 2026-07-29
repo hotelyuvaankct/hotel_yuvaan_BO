@@ -244,33 +244,42 @@ export function BookingsPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap gap-2">
-              {bookingStatusOptions.map((option) => {
-                const selected = filters.bookingStatuses.includes(option.value);
-                return (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    size="sm"
-                    variant={selected ? 'primary' : 'outline'}
-                    onClick={() =>
-                      setFilters((current) => {
-                        const next = selected
-                          ? current.bookingStatuses.filter((status) => status !== option.value)
-                          : [...current.bookingStatuses, option.value];
-                        return { ...current, bookingStatuses: next };
-                      })
-                    }
-                  >
-                    {option.label}
-                  </Button>
-                );
-              })}
+          <div className="flex flex-col gap-4">
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-foreground">Status</p>
+              <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
+                <div className="flex w-max min-w-full flex-nowrap gap-2">
+                  {bookingStatusOptions.map((option) => {
+                    const selected = filters.bookingStatuses.includes(option.value);
+                    return (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        size="sm"
+                        variant={selected ? 'primary' : 'outline'}
+                        className="shrink-0"
+                        onClick={() =>
+                          setFilters((current) => {
+                            const next = selected
+                              ? current.bookingStatuses.filter((status) => status !== option.value)
+                              : [...current.bookingStatuses, option.value];
+                            return { ...current, bookingStatuses: next };
+                          })
+                        }
+                      >
+                        {option.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
               <TextField
+                label="Search"
                 placeholder="Search guest or booking ID"
+                wrapperClassName="min-w-[220px] flex-1"
                 value={filters.search}
                 onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
               />
@@ -281,6 +290,7 @@ export function BookingsPage() {
                 className="h-10 w-10 shrink-0"
                 onClick={() => setFilters({ bookingStatuses: DEFAULT_STATUSES, search: '' })}
                 aria-label="Clear filters"
+                title="Clear filters"
               >
                 <X className="h-4 w-4" />
               </Button>

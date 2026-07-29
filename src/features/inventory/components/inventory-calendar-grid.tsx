@@ -310,8 +310,8 @@ export function InventoryCalendarGrid({
                   className={cn(
                     stickyDateHeaderClass,
                     'px-1.5 py-2.5 text-center',
-                    meta.isSaturday || meta.isSunday
-                      ? 'bg-muted text-foreground'
+                    meta.isSunday
+                      ? 'bg-danger-50 text-foreground'
                       : 'bg-card text-foreground',
                   )}
                   style={{ width: COL_WIDTH, minWidth: COL_WIDTH }}

@@ -329,6 +329,7 @@ export function SettlementsPage() {
             <p className="text-base font-semibold">Settlement history</p>
             <div className="grid gap-3 md:grid-cols-2">
               <SelectField
+                variant="filter"
                 label="Kind"
                 value={kind}
                 onChange={(e) => setKind(e.target.value)}
@@ -339,6 +340,7 @@ export function SettlementsPage() {
                 ]}
               />
               <SelectField
+                variant="filter"
                 label="Status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}

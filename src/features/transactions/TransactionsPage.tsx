@@ -326,6 +326,7 @@ export function TransactionsPage() {
 
           <div className="grid gap-3 md:grid-cols-4">
             <SelectField
+              variant="filter"
               label="Type"
               value={type}
               onChange={(e) => setType(e.target.value)}
@@ -336,6 +337,7 @@ export function TransactionsPage() {
               ]}
             />
             <SelectField
+              variant="filter"
               label="Status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
