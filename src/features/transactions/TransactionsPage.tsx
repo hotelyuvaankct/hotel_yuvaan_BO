@@ -10,7 +10,6 @@ import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 import { Pagination } from '@/components/common/pagination';
 import { SelectField, TextField } from '@/components/ui/form-fields';
 import { ResponsiveList } from '@/components/ui/responsive-list';
@@ -290,11 +289,16 @@ export function TransactionsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <PageToolbar
-        title="Transactions"
-        description="All platform payments, refunds, and checkout orders linked to bookings."
-        actions={
-          <>
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>Transactions</CardTitle>
+            <CardDescription>
+              All platform payments, refunds, and checkout orders linked to bookings.
+              {!loading ? ` ${totalElements} transaction${totalElements === 1 ? '' : 's'} in ledger.` : ''}
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
               <Download className="h-4 w-4" />
               Export page CSV
@@ -303,34 +307,23 @@ export function TransactionsPage() {
               <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
-          </>
-        }
-      />
-
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {kpiCards.map((card) => (
-          <Card key={card.label}>
-            <CardHeader className="pb-2">
-              <CardDescription>{card.label}</CardDescription>
-              <CardTitle className="text-xl">{card.value}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground">{card.sub}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader className="pb-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle className="text-base">Ledger</CardTitle>
-            {!loading ? (
-              <p className="text-sm text-muted-foreground">{totalElements} transaction{totalElements === 1 ? '' : 's'}</p>
-            ) : null}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {kpiCards.map((card) => (
+              <Card key={card.label}>
+                <CardHeader className="pb-2">
+                  <CardDescription>{card.label}</CardDescription>
+                  <CardTitle className="text-xl">{card.value}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs text-muted-foreground">{card.sub}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
           <div className="grid gap-3 md:grid-cols-4">
             <SelectField
               label="Type"

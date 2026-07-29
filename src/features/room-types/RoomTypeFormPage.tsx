@@ -1,7 +1,7 @@
 import { createPortal } from 'react-dom';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, X, Image as ImageIcon } from 'lucide-react';
+import { Save, X, Image as ImageIcon } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { HotelSummary, UpsertRoomTypePayload, RoomImage, RoomTypeRatePlan } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -300,10 +300,6 @@ export function RoomTypeFormPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" onClick={() => navigate('/room-types')}>
-        <ArrowLeft className="h-4 w-4" />
-        Back to room types
-      </Button>
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update room type' : 'Add room type'}</CardTitle>

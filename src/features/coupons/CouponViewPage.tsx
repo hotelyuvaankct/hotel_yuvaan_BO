@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { Edit } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Coupon, CouponUsage } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -44,7 +44,6 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 export function CouponViewPage() {
   const { id } = useParams();
   const couponId = Number(id);
-  const navigate = useNavigate();
   const location = useLocation();
   const { session } = useAuth();
   const { showToast } = useToast();
@@ -103,31 +102,26 @@ export function CouponViewPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" onClick={() => navigate('/coupons')}>
-        <ArrowLeft className="h-4 w-4" />
-        Back to coupons
-      </Button>
-
-      {!coupon ? (
-        <EmptyState label="No coupon details found." />
-      ) : (
-        <>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="font-mono text-2xl font-bold">{coupon.code}</h1>
-              <p className="text-sm text-muted-foreground">{coupon.title}</p>
-            </div>
-            {canUpdate ? (
-              <Button variant="primary" size="sm" asChild>
-                <Link to={`/coupons/${coupon.id}/edit`} className="inline-flex items-center gap-2">
-                  <Edit className="h-4 w-4" />
-                  Edit coupon
-                </Link>
-              </Button>
-            ) : null}
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle className="font-mono">{coupon?.code ?? 'Coupon details'}</CardTitle>
+            <CardDescription>{coupon?.title ?? 'Coupon information and usage history.'}</CardDescription>
           </div>
-
-          <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          {coupon && canUpdate ? (
+            <Button variant="primary" size="sm" asChild>
+              <Link to={`/coupons/${coupon.id}/edit`} className="inline-flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                Edit coupon
+              </Link>
+            </Button>
+          ) : null}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {!coupon ? (
+            <EmptyState label="No coupon details found." />
+          ) : (
+            <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
             <Card>
               <CardHeader>
                 <CardTitle>Coupon details</CardTitle>
@@ -214,9 +208,10 @@ export function CouponViewPage() {
                 ) : null}
               </CardContent>
             </Card>
-          </div>
-        </>
-      )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

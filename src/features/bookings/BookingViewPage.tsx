@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Ban, Edit, LogOut } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Ban, LogOut } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Booking, CancellationQuote } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 import { TextField } from '@/components/ui/form-fields';
 
 function formatCurrency(value?: number) {
@@ -28,7 +27,6 @@ function formatDate(value?: string) {
 export function BookingViewPage() {
   const { id } = useParams();
   const bookingId = Number(id);
-  const navigate = useNavigate();
   const { session } = useAuth();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -158,16 +156,13 @@ export function BookingViewPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" onClick={() => navigate('/bookings')}>
-        <ArrowLeft className="h-4 w-4" />
-        Back to bookings
-      </Button>
-
-      <PageToolbar
-        title="Booking details"
-        description="Reservation summary, guest information, and room lines."
-        actions={
-          booking ? (
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>Booking details</CardTitle>
+            <CardDescription>Reservation summary, guest information, and room lines.</CardDescription>
+          </div>
+          {booking ? (
             <div className="flex flex-wrap gap-2">
               {canUpdate && (booking.bookingStatus === 3 || booking.bookingStatus === 4) ? (
                 <Button
@@ -180,14 +175,6 @@ export function BookingViewPage() {
                   {checkingOut ? 'Checking out...' : 'Check out'}
                 </Button>
               ) : null}
-              {canUpdate && booking.bookingStatus !== 6 && booking.bookingStatus !== 5 ? (
-                <Button variant="primary" size="sm" onClick={() => undefined}>
-                  <Link to={`/bookings/${booking.id}/edit`} className="inline-flex items-center gap-2">
-                    <Edit className="h-4 w-4" />
-                    Update
-                  </Link>
-                </Button>
-              ) : null}
               {canDelete && booking.bookingStatus !== 6 && booking.bookingStatus !== 5 ? (
                 <Button variant="outline" size="sm" disabled={cancelBusy} onClick={() => void openCancelFlow()}>
                   <Ban className="h-4 w-4" />
@@ -195,13 +182,12 @@ export function BookingViewPage() {
                 </Button>
               ) : null}
             </div>
-          ) : null
-        }
-      />
-
-      {!booking ? <EmptyState label="No booking details found." /> : null}
-      {booking ? (
-        <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+          ) : null}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {!booking ? <EmptyState label="No booking details found." /> : null}
+          {booking ? (
+            <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
           <Card>
             <CardHeader>
               <CardTitle>{booking.bookingCode}</CardTitle>
@@ -281,8 +267,10 @@ export function BookingViewPage() {
               </CardContent>
             </Card>
           </div>
-        </div>
-      ) : null}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {cancelOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4">

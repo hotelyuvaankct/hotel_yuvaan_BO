@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ImagePlus, Save, Star, Trash2, Upload } from 'lucide-react';
+import { ImagePlus, Save, Star, Trash2, Upload } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { BulkCreateRoomsPayload, HotelSummary, RoomType, UpsertRoomPayload } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -167,11 +167,6 @@ export function RoomFormPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" onClick={() => navigate('/rooms')}>
-        <ArrowLeft className="h-4 w-4" />
-        Back to rooms
-      </Button>
-
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update room' : 'Add room'}</CardTitle>

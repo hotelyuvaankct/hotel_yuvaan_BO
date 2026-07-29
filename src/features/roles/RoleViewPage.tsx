@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Edit } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Edit } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { Permission, Role } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
@@ -12,12 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 
 export function RoleViewPage() {
   const { id } = useParams();
   const roleId = Number(id);
-  const navigate = useNavigate();
   const { session } = useAuth();
   const { showToast } = useToast();
   const canRead = hasPermission(session?.perms, 'roles', 'read');
@@ -54,29 +52,25 @@ export function RoleViewPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <Button variant="ghost" onClick={() => navigate('/roles')}>
-        <ArrowLeft className="h-4 w-4" />
-        Back to roles
-      </Button>
-
-      <PageToolbar
-        title="Role details"
-        description="Role metadata and selected module CRUD permissions."
-        actions={
-          role && canUpdate ? (
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>Role details</CardTitle>
+            <CardDescription>Role metadata and selected module CRUD permissions.</CardDescription>
+          </div>
+          {role && canUpdate ? (
             <Button variant="primary" size="sm" onClick={() => undefined}>
               <Link to={`/roles/${role.id}/edit`} className="inline-flex items-center gap-2">
                 <Edit className="h-4 w-4" />
                 Update role
               </Link>
             </Button>
-          ) : null
-        }
-      />
-
-      {!role ? <EmptyState label="No role details found." /> : null}
-      {role ? (
-        <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+          ) : null}
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {!role ? <EmptyState label="No role details found." /> : null}
+          {role ? (
+            <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
           <Card>
             <CardHeader>
               <CardTitle>{role.displayName}</CardTitle>
@@ -129,8 +123,10 @@ export function RoleViewPage() {
               </table>
             </CardContent>
           </Card>
-        </div>
-      ) : null}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }

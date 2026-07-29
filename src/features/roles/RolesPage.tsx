@@ -12,7 +12,6 @@ import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 import { ResponsiveList } from '@/components/ui/responsive-list';
 import type { DataTableColumn } from '@/components/ui/data-table';
 import { Status } from '@/lib/constants';
@@ -151,11 +150,15 @@ export function RolesPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <PageToolbar
-        title="Roles"
-        description="Listing table is loaded from the roles API."
-        actions={
-          <>
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>Roles</CardTitle>
+            <CardDescription>
+              Only the ADMIN role is protected. Deleting another role also deletes all users assigned to it.
+            </CardDescription>
+          </div>
+          <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
               Refresh
@@ -166,16 +169,9 @@ export function RolesPage() {
                 Add role
               </Link>
             </Button>
-          </>
-        }
-      />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Role listing</CardTitle>
-          <CardDescription>Only the ADMIN role is protected. Deleting another role also deletes all users assigned to it.</CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <ResponsiveList
             columns={columns}
             data={roles}

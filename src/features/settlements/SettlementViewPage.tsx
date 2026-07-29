@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, CheckCircle2, Circle, Copy } from 'lucide-react';
+import { Link, useParams } from 'react-router-dom';
+import { Check, CheckCircle2, Circle, Copy } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { SettlementDetail } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { PageToolbar } from '@/components/common/page-toolbar';
 
 function formatCurrency(value?: number) {
   if (value == null) return '₹0';
@@ -85,7 +83,6 @@ function CopyableValue({
 export function SettlementViewPage() {
   const { id } = useParams();
   const settlementId = Number(id);
-  const navigate = useNavigate();
   const { session } = useAuth();
   const { showToast } = useToast();
   const canRead = hasPermission(session?.perms, 'settlements', 'read');
@@ -132,41 +129,36 @@ export function SettlementViewPage() {
 
   if (!settlement) {
     return (
-      <div className="space-y-4">
-        <PageToolbar
-          title="Settlement"
-          description="Settlement details"
-          actions={
-            <Button variant="outline" onClick={() => navigate('/settlements')}>
-              <ArrowLeft className="h-4 w-4" />
-              Back to settlements
-            </Button>
-          }
-        />
-        <EmptyState label="Settlement not found." />
+      <div className="space-y-4 animate-fade-in-up">
+        <Card>
+          <CardHeader>
+            <CardTitle>Settlement</CardTitle>
+            <CardDescription>Settlement details</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <EmptyState label="Settlement not found." />
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-4 animate-fade-in-up">
-      <PageToolbar
-        title={settlement.gatewaySettlementId}
-        description={
-          <span className="inline-flex flex-wrap items-center gap-2">
-            <Badge tone="neutral">{settlement.kind}</Badge>
-            <Badge tone={statusTone(settlement.status)}>{settlement.status}</Badge>
-            <span>{formatDateTime(settlement.gatewayCreatedAt)}</span>
-          </span>
-        }
-        actions={
-          <Button variant="outline" onClick={() => navigate('/settlements')}>
-            <ArrowLeft className="h-4 w-4" />
-            Back to settlements
-          </Button>
-        }
-      />
-
+      <Card>
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+          <div>
+            <CardTitle>{settlement.gatewaySettlementId}</CardTitle>
+            <CardDescription>
+              <span className="inline-flex flex-wrap items-center gap-2">
+                <Badge tone="neutral">{settlement.kind}</Badge>
+                <Badge tone={statusTone(settlement.status)}>{settlement.status}</Badge>
+                <span>{formatDateTime(settlement.gatewayCreatedAt)}</span>
+              </span>
+            </CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -318,6 +310,8 @@ export function SettlementViewPage() {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
         </CardContent>
       </Card>
     </div>
