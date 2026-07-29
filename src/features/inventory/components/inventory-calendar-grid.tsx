@@ -10,6 +10,14 @@ import {
 const LABEL_WIDTH = 248;
 const COL_WIDTH = 80;
 
+/** Sticky left label column — solid bg + edge so horizontal scroll keeps labels pinned */
+const stickyLabelClass =
+  'sticky left-0 z-20 border-r border-border shadow-[2px_0_0_0_hsl(var(--border))]';
+const stickyLabelHeaderClass =
+  'sticky left-0 top-0 z-40 border-b border-r border-border bg-muted shadow-[2px_0_0_0_hsl(var(--border))]';
+const stickyDateHeaderClass =
+  'sticky top-0 z-30 border-b border-r border-border';
+
 export type InventorySelection = {
   roomTypeId: number;
   rowKey: string;
@@ -281,13 +289,16 @@ export function InventoryCalendarGrid({
   }
 
   return (
-    <div ref={rootRef} className="relative min-w-max select-none pb-4">
-      <table className="border-separate border-spacing-0 text-sm">
+    <div ref={rootRef} className="relative w-max min-w-full select-none">
+      <table className="w-max border-separate border-spacing-0 text-sm">
         <thead>
           <tr>
             <th
-              className="sticky left-0 top-0 z-30 border-b border-r border-border bg-muted px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-muted-foreground uppercase"
-              style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}
+              className={cn(
+                stickyLabelHeaderClass,
+                'bg-muted px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground uppercase',
+              )}
+              style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
             >
               Rooms & rates
             </th>
@@ -297,7 +308,8 @@ export function InventoryCalendarGrid({
                 <th
                   key={date}
                   className={cn(
-                    'sticky top-0 z-20 border-b border-r border-border px-1.5 py-2.5 text-center',
+                    stickyDateHeaderClass,
+                    'px-1.5 py-2.5 text-center',
                     meta.isSaturday || meta.isSunday
                       ? 'bg-muted text-foreground'
                       : 'bg-card text-foreground',
@@ -435,8 +447,8 @@ function RoomTypeSection({
     <>
       <tr className="bg-muted">
         <td
-          className="sticky left-0 z-10 border-y border-r border-border bg-muted px-3 py-3"
-          style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}
+          className={cn(stickyLabelClass, 'border-y bg-muted px-3 py-3')}
+          style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
         >
           <button
             type="button"
@@ -611,8 +623,8 @@ function RatePlanOccupancyBlock({
     <>
       <tr>
         <td
-          className="sticky left-0 z-10 border-b border-r border-border bg-muted px-4 py-2.5"
-          style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}
+          className={cn(stickyLabelClass, 'border-b bg-muted px-4 py-2.5')}
+          style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
         >
           <span className="inline-flex max-w-full items-center gap-2">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-card text-muted-foreground ring-1 ring-border">
@@ -718,10 +730,11 @@ function EditableRow({
     <tr className="bg-card">
       <td
         className={cn(
-          'sticky left-0 z-10 border-b border-r border-border bg-card py-2.5',
+          stickyLabelClass,
+          'border-b bg-card py-2.5',
           indent ? 'pl-8 pr-3' : 'px-4',
         )}
-        style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH }}
+        style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
       >
         <span className="inline-flex max-w-full items-center gap-2">
           {icon}

@@ -41,34 +41,36 @@ export function AdminLayout() {
         onMobileClose={() => setMobileOpen(false)}
       />
 
-      <div
-        className={cn(
-          'relative flex flex-col',
-          isFullBleed ? 'h-screen overflow-hidden' : 'min-h-screen',
-        )}
-      >
+          <div
+            className={cn(
+              'relative flex flex-col',
+              isFullBleed ? 'h-screen overflow-hidden' : 'min-h-screen',
+            )}
+          >
         <Header onMenuClick={() => setMobileOpen((o) => !o)} />
 
         <main
           className={cn(
-            'flex min-h-0 flex-1 flex-col',
+            'flex min-h-0 min-w-0 flex-1 flex-col',
             isFullBleed ? 'overflow-hidden p-0' : 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8',
           )}
         >
           <div
             className={cn(
-              'flex w-full min-h-0 flex-1 flex-col',
-              isFullBleed ? 'max-w-none gap-0' : 'mx-auto max-w-7xl gap-6',
+              'flex w-full min-h-0 min-w-0 flex-1 flex-col',
+              isFullBleed ? 'max-w-none gap-0 overflow-hidden' : 'mx-auto max-w-7xl gap-6',
             )}
           >
             {isFullBleed ? (
-              <div className="border-b border-border/70 px-3 py-2 sm:px-4">
+              <div className="shrink-0 border-b border-border bg-card px-3 py-1.5 sm:px-4">
                 <Breadcrumbs />
               </div>
             ) : (
               <Breadcrumbs />
             )}
-            <Outlet />
+            <div className={cn(isFullBleed && 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden')}>
+              <Outlet />
+            </div>
           </div>
         </main>
       </div>

@@ -40,6 +40,7 @@ export function InventoryPage() {
   const [blockOpen, setBlockOpen] = useState(false);
   const [blockMode, setBlockMode] = useState<'block' | 'unblock'>('block');
   const [conflicts, setConflicts] = useState<InventoryBlockConflict[]>([]);
+  const [portWidth, setPortWidth] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadingMoreRef = useRef(false);
 
@@ -126,6 +127,17 @@ export function InventoryPage() {
         setLoading(false);
       });
   }, [canRead, loadInitial, showToast]);
+
+  // Keep toolbar viewport-wide while horizontal-scrolling the grid
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const update = () => setPortWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loading]);
 
   const dates = useMemo(() => grid?.roomTypes[0]?.days.map((d) => d.date) ?? [], [grid]);
 
@@ -225,98 +237,116 @@ export function InventoryPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-muted">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-card px-4 py-4 sm:px-6">
-        <div className="min-w-0 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Inventory</h1>
-          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
-            Set how many rooms you can sell each night, then adjust guest rates by date.
-          </p>
-        </div>
-        {canUpdate ? (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 min-w-[112px]"
-              onClick={() => {
-                setBlockMode('block');
-                setConflicts([]);
-                setBlockOpen(true);
-              }}
-            >
-              <Lock className="h-4 w-4" />
-              Block
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 min-w-[112px]"
-              onClick={() => {
-                setBlockMode('unblock');
-                setConflicts([]);
-                setBlockOpen(true);
-              }}
-            >
-              <Unlock className="h-4 w-4" />
-              Unblock
-            </Button>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex flex-wrap items-end gap-3 border-b border-border bg-card px-4 py-3 sm:gap-4 sm:px-6">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 border-border"
-          onClick={() => {
-            if (!hotelId) return;
-            void loadInitial(hotelId);
-            scrollRef.current?.scrollTo({ left: 0, behavior: 'smooth' });
-          }}
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-card">
+      <div
+        ref={scrollRef}
+        className="absolute inset-0 overflow-auto overscroll-contain bg-card"
+        onScroll={handleGridScroll}
+      >
+        {/*
+          Toolbar scrolls away vertically so the date row can pin to top:0.
+          sticky left + measured width keeps filters on-screen while scrolling dates sideways.
+        */}
+        <div
+          className="sticky left-0 z-50 border-b border-border bg-card"
+          style={portWidth > 0 ? { width: portWidth } : undefined}
         >
-          Today
-        </Button>
-        <DateRangePicker
-          variant="filter"
-          label="Stay dates"
-          wrapperClassName="min-w-[240px]"
-          startValue={rangeStart}
-          endValue={rangeEnd}
-          minDate={todayIso()}
-          maxDate={grid?.inventoryToDate ?? undefined}
-          onChange={(start, end) => {
-            setRangeStart(start);
-            setRangeEnd(end);
-            if (hotelId) void loadRange(hotelId, start, end);
-          }}
-        />
-        <SelectField
-          variant="filter"
-          label="Rooms"
-          wrapperClassName="min-w-[180px]"
-          value={roomFilter}
-          onChange={(event) => setRoomFilter(event.target.value)}
-          options={[
-            { value: 'all', label: `All rooms (${grid?.roomTypes.length ?? 0})` },
-            ...(grid?.roomTypes.map((row) => ({
-              value: String(row.roomTypeId),
-              label: row.roomTypeName,
-            })) ?? []),
-          ]}
-        />
-      </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
+            <div className="min-w-0">
+              <h1 className="text-lg font-semibold tracking-tight text-foreground">Inventory</h1>
+              <p className="truncate text-xs text-muted-foreground">
+                Set sellable rooms and guest rates by date
+              </p>
+            </div>
+            {canUpdate ? (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 min-w-[96px]"
+                  onClick={() => {
+                    setBlockMode('block');
+                    setConflicts([]);
+                    setBlockOpen(true);
+                  }}
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  Block
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 min-w-[96px]"
+                  onClick={() => {
+                    setBlockMode('unblock');
+                    setConflicts([]);
+                    setBlockOpen(true);
+                  }}
+                >
+                  <Unlock className="h-3.5 w-3.5" />
+                  Unblock
+                </Button>
+              </div>
+            ) : null}
+          </div>
 
-      <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-wrap items-end gap-2 border-t border-border px-4 py-2 sm:gap-3 sm:px-5">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={() => {
+                if (!hotelId) return;
+                void loadInitial(hotelId);
+                scrollRef.current?.scrollTo({ left: 0, top: 0, behavior: 'smooth' });
+              }}
+            >
+              Today
+            </Button>
+            <DateRangePicker
+              variant="filter"
+              label="Stay dates"
+              wrapperClassName="min-w-[220px]"
+              startValue={rangeStart}
+              endValue={rangeEnd}
+              minDate={todayIso()}
+              maxDate={grid?.inventoryToDate ?? undefined}
+              onChange={(start, end) => {
+                setRangeStart(start);
+                setRangeEnd(end);
+                if (hotelId) void loadRange(hotelId, start, end);
+              }}
+            />
+            <SelectField
+              variant="filter"
+              label="Rooms"
+              wrapperClassName="min-w-[160px]"
+              value={roomFilter}
+              onChange={(event) => setRoomFilter(event.target.value)}
+              options={[
+                { value: 'all', label: `All rooms (${grid?.roomTypes.length ?? 0})` },
+                ...(grid?.roomTypes.map((row) => ({
+                  value: String(row.roomTypeId),
+                  label: row.roomTypeName,
+                })) ?? []),
+              ]}
+            />
+          </div>
+        </div>
+
         {loading ? (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 bg-card px-4">
+          <div className="flex min-h-[320px] flex-col items-center justify-center gap-3 px-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <Loader2 className="h-6 w-6 animate-spin text-brand" />
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-foreground">Loading inventory</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">Fetching room rates and availability…</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Fetching room rates and availability…
+              </p>
             </div>
           </div>
         ) : !grid || grid.roomTypes.length === 0 ? (
@@ -324,44 +354,37 @@ export function InventoryPage() {
             <EmptyState label="No room types yet. Create room types first, then configure inventory dates here." />
           </div>
         ) : (
-          <div className="relative flex min-h-0 flex-1 flex-col">
-            <div
-              ref={scrollRef}
-              className="min-h-0 flex-1 overflow-auto bg-card"
-              onScroll={handleGridScroll}
-            >
-              <InventoryCalendarGrid
-                roomTypes={visibleRoomTypes}
-                dates={dates}
-                canUpdate={canUpdate}
-                collapsed={collapsed}
-                onToggleCollapse={(roomTypeId) =>
-                  setCollapsed((prev) => ({ ...prev, [roomTypeId]: !prev[roomTypeId] }))
-                }
-                onSaveAvailability={saveAvailability}
-                onSaveRate={saveRate}
-              />
-            </div>
-            {loadingMore ? (
-              <div
-                className="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-36 items-center justify-end pr-4 sm:w-44"
-                aria-live="polite"
-                aria-busy="true"
-                aria-label="Loading more dates"
-              >
-                <div
-                  aria-hidden
-                  className="absolute inset-0 bg-gradient-to-l from-card via-card/70 to-transparent"
-                />
-                <div className="relative flex items-center gap-2 rounded-full border border-border bg-card/95 px-3 py-1.5 text-xs font-medium text-foreground shadow-md shadow-foreground/5 backdrop-blur-sm">
-                  <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-brand" />
-                  <span>Loading dates</span>
-                </div>
-              </div>
-            ) : null}
-          </div>
+          <InventoryCalendarGrid
+            roomTypes={visibleRoomTypes}
+            dates={dates}
+            canUpdate={canUpdate}
+            collapsed={collapsed}
+            onToggleCollapse={(roomTypeId) =>
+              setCollapsed((prev) => ({ ...prev, [roomTypeId]: !prev[roomTypeId] }))
+            }
+            onSaveAvailability={saveAvailability}
+            onSaveRate={saveRate}
+          />
         )}
       </div>
+
+      {loadingMore ? (
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-40 flex w-36 items-center justify-end pr-4 sm:w-44"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label="Loading more dates"
+        >
+          <div
+            aria-hidden
+            className="absolute inset-0 bg-gradient-to-l from-card via-card/70 to-transparent"
+          />
+          <div className="relative flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-md">
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-brand" />
+            <span>Loading dates</span>
+          </div>
+        </div>
+      ) : null}
 
       <InventoryBlockDialog
         open={blockOpen}
