@@ -17,13 +17,15 @@ export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onMobileClose
   const visibleNavigationItems = navigationItems.filter((item) =>
     canAccessNavigationItem(item, session?.perms),
   );
+  // Inventory auto-collapses the desktop rail; keep a full labeled drawer on mobile.
+  const iconRail = collapsed && !mobileOpen;
 
   return (
     <>
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-0 z-30 bg-overlay backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-40 bg-overlay backdrop-blur-[2px] lg:hidden"
           onClick={onMobileClose}
           aria-label="Close sidebar overlay"
         />
@@ -31,30 +33,30 @@ export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onMobileClose
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 lg:translate-x-0',
-          collapsed ? 'w-[60px]' : 'w-64',
+          'fixed inset-y-0 left-0 z-50 flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 lg:translate-x-0',
+          iconRail ? 'w-[60px]' : 'w-64',
           mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0',
         )}
       >
         <div
           className={cn(
             'flex h-14 shrink-0 items-center border-b border-sidebar-border',
-            collapsed ? 'justify-center px-0' : 'justify-between px-4',
+            iconRail ? 'justify-center px-0' : 'justify-between px-4',
           )}
         >
-          <div className={cn('flex items-center gap-2', collapsed && 'justify-center')}>
+          <div className={cn('flex items-center gap-2', iconRail && 'justify-center')}>
             <img
-              src={collapsed ? '/favicon.svg' : '/logo.png'}
+              src={iconRail ? '/favicon.svg' : '/logo.png'}
               alt="Hotel Yuvaan"
               className={cn(
                 'shrink-0 object-contain',
-                collapsed ? 'h-7 w-7' : 'h-8 w-auto max-w-[140px]',
+                iconRail ? 'h-7 w-7' : 'h-8 w-auto max-w-[140px]',
               )}
             />
-            {!collapsed ? <span className="sr-only">Hotel Yuvaan</span> : null}
+            {!iconRail ? <span className="sr-only">Hotel Yuvaan</span> : null}
           </div>
 
-          {!collapsed ? (
+          {!iconRail ? (
             <button
               type="button"
               onClick={onToggleCollapse}
@@ -75,11 +77,11 @@ export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onMobileClose
                   key={item.href}
                   to={item.href}
                   onClick={onMobileClose}
-                  title={collapsed ? item.label : undefined}
+                  title={iconRail ? item.label : undefined}
                   className={({ isActive }) =>
                     cn(
                       'group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors duration-150',
-                      collapsed && 'justify-center px-2',
+                      iconRail && 'justify-center px-2',
                       isActive
                         ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
                         : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
@@ -87,14 +89,14 @@ export function Sidebar({ collapsed, mobileOpen, onToggleCollapse, onMobileClose
                   }
                 >
                   <Icon className="h-5 w-5 shrink-0" />
-                  {!collapsed ? <span className="truncate">{item.label}</span> : null}
+                  {!iconRail ? <span className="truncate">{item.label}</span> : null}
                 </NavLink>
               );
             })}
           </nav>
         </div>
 
-        {collapsed ? (
+        {iconRail ? (
           <div className="hidden justify-center border-t border-sidebar-border py-3 lg:flex">
             <button
               type="button"

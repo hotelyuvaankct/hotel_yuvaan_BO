@@ -41,13 +41,13 @@ function RoomTypeActions({
 
   return (
     <div className="flex flex-wrap justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-      <Button variant="outline" size="sm">
+      <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="View">
         <Link to={`/room-types/${roomType.id}`} className="inline-flex items-center gap-2">
           <Eye className="h-4 w-4" />
-          View
+          <span className="hidden sm:inline">View</span>
         </Link>
       </Button>
-      <Button variant="outline" size="sm" disabled={!canUpdate}>
+      <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Edit" disabled={!canUpdate}>
         <Link
           to={canUpdate ? `/room-types/${roomType.id}/edit` : '#'}
           className="inline-flex items-center gap-2"
@@ -56,7 +56,7 @@ function RoomTypeActions({
           }}
         >
           <Edit className="h-4 w-4" />
-          Edit
+          <span className="hidden sm:inline">Edit</span>
         </Link>
       </Button>
       <Button
@@ -184,24 +184,24 @@ export function RoomTypesPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle>Room types</CardTitle>
-            <CardDescription>
+            <CardDescription className="hidden sm:block">
               Manage hotel-specific room categories, occupancy, amenities, and base pricing.
             </CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Refresh" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button variant="primary" size="sm" disabled={!canCreate}>
+            <Button variant="primary" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Add room type" disabled={!canCreate}>
               <Link to="/room-types/new" className="inline-flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add room type
+                <span className="hidden sm:inline">Add room type</span>
               </Link>
             </Button>
           </div>
@@ -220,18 +220,26 @@ export function RoomTypesPage() {
                     {optionLabel(recordStatusOptions, roomType.status)}
                   </Badge>
                 </div>
-                <div className="grid grid-cols-2 gap-y-1 text-sm">
-                  <span className="text-muted-foreground">Hotel</span>
-                  <span className="text-foreground">{roomType.hotelName || '-'}</span>
-                  <span className="text-muted-foreground">Occupancy</span>
-                  <span className="text-foreground">
-                    {roomType.maxAdults ?? 2} adults, {roomType.maxChildren ?? 0} children
-                  </span>
-                  <span className="text-muted-foreground">Base price</span>
-                  <span className="text-foreground">{formatCurrency(roomType.basePrice)} / night</span>
-                  <span className="text-muted-foreground">Rooms</span>
-                  <span className="text-foreground">{roomType.totalRooms ?? 0}</span>
-                </div>
+                <dl className="space-y-2 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="shrink-0 text-muted-foreground">Hotel</dt>
+                    <dd className="min-w-0 text-right text-foreground">{roomType.hotelName || '-'}</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="shrink-0 text-muted-foreground">Occupancy</dt>
+                    <dd className="min-w-0 text-right text-foreground">
+                      {roomType.maxAdults ?? 2} adults, {roomType.maxChildren ?? 0} children
+                    </dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="shrink-0 text-muted-foreground">Base price</dt>
+                    <dd className="min-w-0 text-right text-foreground">{formatCurrency(roomType.basePrice)} / night</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <dt className="shrink-0 text-muted-foreground">Rooms</dt>
+                    <dd className="min-w-0 text-right text-foreground">{roomType.totalRooms ?? 0}</dd>
+                  </div>
+                </dl>
                 <RoomTypeActions
                   roomType={roomType}
                   canUpdate={canUpdate}

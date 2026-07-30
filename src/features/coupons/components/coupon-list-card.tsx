@@ -165,7 +165,7 @@ export function CouponListCard({
           <p className="line-clamp-2 text-sm leading-relaxed text-muted-foreground">{coupon.description}</p>
         ) : null}
 
-        <div className="grid grid-cols-3 divide-x divide-border/70 overflow-hidden rounded-xl border border-border/60 bg-muted/25">
+        <div className="grid grid-cols-1 divide-y divide-border/70 overflow-hidden rounded-xl border border-border/60 bg-muted/25 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="px-3 py-3">
             <div className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {coupon.discountType === 1 ? (

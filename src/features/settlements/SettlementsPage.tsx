@@ -204,20 +204,26 @@ export function SettlementsPage() {
     !canSettle || !instantEnabled || (dashboard?.inFlightInstantCount ?? 0) > 0 || settling;
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
-          <div>
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <CardTitle>Settlements</CardTitle>
             <CardDescription>
-              Razorpay → bank settlements. Recon syncs automatically from the backend. Review UTRs and
-              trigger Instant Settlements when enabled.
+              Razorpay → bank settlements.
+              <span className="hidden sm:inline">
+                {' '}
+                Recon syncs automatically from the backend. Review UTRs and trigger Instant Settlements when
+                enabled.
+              </span>
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
               variant="primary"
               size="sm"
+              className="h-9 w-9 px-0 sm:w-auto sm:px-3"
+              aria-label="Settle now"
               disabled={settleDisabled}
               onClick={() => setSettleOpen(true)}
               title={
@@ -231,40 +237,40 @@ export function SettlementsPage() {
               }
             >
               <Landmark className="h-4 w-4" />
-              Settle now
+              <span className="hidden sm:inline">Settle now</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
+        <CardContent className="min-w-0 space-y-6 overflow-hidden">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+            <div className="min-w-0 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
               <p className="text-xs text-muted-foreground">Settled (processed)</p>
-              <p className="mt-1 text-xl font-semibold">{formatCurrency(dashboard?.settledAmount)}</p>
+              <p className="mt-1 text-lg font-semibold sm:text-xl">{formatCurrency(dashboard?.settledAmount)}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 {dashboard?.processedCount ?? 0} processed batches
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
               <p className="text-xs text-muted-foreground">Pending (estimate)</p>
-              <p className="mt-1 text-xl font-semibold">
+              <p className="mt-1 text-lg font-semibold sm:text-xl">
                 {formatCurrency(dashboard?.pendingUnsettledEstimate)}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">{dashboard?.pendingNote}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{dashboard?.pendingNote}</p>
             </div>
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
               <p className="text-xs text-muted-foreground">Last sync</p>
-              <p className="mt-1 text-base font-semibold">{formatDateTime(dashboard?.lastSyncedAt)}</p>
+              <p className="mt-1 text-sm font-semibold sm:text-base">{formatDateTime(dashboard?.lastSyncedAt)}</p>
               {dashboard?.lastSyncError ? (
-                <p className="mt-1 text-xs text-destructive">{dashboard.lastSyncError}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-destructive">{dashboard.lastSyncError}</p>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Instant Settlements: {instantEnabled ? 'enabled' : 'not enabled / unknown'}
                 </p>
               )}
             </div>
-            <div className="rounded-xl border border-border bg-muted/30 p-4">
+            <div className="min-w-0 rounded-xl border border-border bg-muted/30 p-3 sm:p-4">
               <p className="text-xs text-muted-foreground">Failed / reversed</p>
-              <p className="mt-1 text-xl font-semibold">{dashboard?.failedCount ?? 0}</p>
+              <p className="mt-1 text-lg font-semibold sm:text-xl">{dashboard?.failedCount ?? 0}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 In-flight Instant: {dashboard?.inFlightInstantCount ?? 0}
               </p>
@@ -370,20 +376,30 @@ export function SettlementsPage() {
                       {row.status}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-y-1 text-sm">
-                    <span className="text-muted-foreground">Created</span>
-                    <span className="text-foreground">{formatDateTime(row.gatewayCreatedAt)}</span>
-                    <span className="text-muted-foreground">Kind</span>
-                    <span className="text-foreground">{row.kind}</span>
-                    <span className="text-muted-foreground">Amount</span>
-                    <span className="text-foreground">{formatCurrency(row.amount)}</span>
-                    <span className="text-muted-foreground">Fees+Tax</span>
-                    <span className="text-foreground">
-                      {formatCurrency((row.fees ?? 0) + (row.tax ?? 0))}
-                    </span>
-                    <span className="text-muted-foreground">UTR</span>
-                    <span className="font-mono text-xs text-foreground">{row.utr || '-'}</span>
-                  </div>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Created</dt>
+                      <dd className="min-w-0 text-right text-foreground">{formatDateTime(row.gatewayCreatedAt)}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Kind</dt>
+                      <dd className="min-w-0 text-right text-foreground">{row.kind}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Amount</dt>
+                      <dd className="min-w-0 text-right font-medium text-foreground">{formatCurrency(row.amount)}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Fees+Tax</dt>
+                      <dd className="min-w-0 text-right text-foreground">
+                        {formatCurrency((row.fees ?? 0) + (row.tax ?? 0))}
+                      </dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">UTR</dt>
+                      <dd className="min-w-0 truncate text-right font-mono text-xs text-foreground">{row.utr || '-'}</dd>
+                    </div>
+                  </dl>
                 </div>
               )}
             />

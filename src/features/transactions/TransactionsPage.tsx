@@ -288,10 +288,10 @@ export function TransactionsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
-          <div>
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <CardTitle>Transactions</CardTitle>
             <CardDescription>
               All platform payments, refunds, and checkout orders linked to bookings.
@@ -299,35 +299,44 @@ export function TransactionsPage() {
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={exportCsv} disabled={!rows.length}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9 w-9 px-0 sm:w-auto sm:px-3"
+              aria-label="Export page CSV"
+              onClick={exportCsv}
+              disabled={!rows.length}
+            >
               <Download className="h-4 w-4" />
-              Export page CSV
+              <span className="hidden sm:inline">Export page CSV</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Refresh" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <CardContent className="min-w-0 space-y-4 overflow-hidden">
+          <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
             {kpiCards.map((card) => (
-              <Card key={card.label}>
-                <CardHeader className="pb-2">
-                  <CardDescription>{card.label}</CardDescription>
-                  <CardTitle className="text-xl">{card.value}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-xs text-muted-foreground">{card.sub}</p>
-                </CardContent>
-              </Card>
+              <div
+                key={card.label}
+                className="min-w-0 rounded-xl border border-border bg-muted/20 p-3 sm:p-4"
+              >
+                <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
+                <p className="mt-1.5 text-lg font-semibold tracking-tight text-foreground sm:text-xl">{card.value}</p>
+                {card.sub ? (
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{card.sub}</p>
+                ) : null}
+              </div>
             ))}
           </div>
 
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <SelectField
               variant="filter"
               label="Type"
+              wrapperClassName="min-w-0"
               value={type}
               onChange={(e) => setType(e.target.value)}
               placeholder="All types"
@@ -339,6 +348,7 @@ export function TransactionsPage() {
             <SelectField
               variant="filter"
               label="Status"
+              wrapperClassName="min-w-0"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               placeholder="All statuses"
@@ -352,12 +362,14 @@ export function TransactionsPage() {
             />
             <TextField
               label="Booking code"
+              wrapperClassName="min-w-0"
               value={bookingCode}
               onChange={(e) => setBookingCode(e.target.value)}
               placeholder="HYV..."
             />
             <TextField
               label="Gateway id"
+              wrapperClassName="min-w-0"
               value={gatewayId}
               onChange={(e) => setGatewayId(e.target.value)}
               placeholder="pay_ / order_ / rfnd_"
@@ -375,25 +387,35 @@ export function TransactionsPage() {
             renderMobileCard={(row) => {
               const paymentId = gatewayIdForRow(row);
               return (
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="truncate font-semibold">{row.bookingCode || row.id}</p>
+                <div className="min-w-0 space-y-3">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <p className="min-w-0 truncate font-semibold text-foreground">{row.bookingCode || row.id}</p>
                     <Badge tone={statusTone(row.statusLabel)} className="shrink-0">
                       {row.statusLabel || '-'}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-y-1 text-sm">
-                    <span className="text-muted-foreground">When</span>
-                    <span className="text-foreground">{formatDateTime(row.occurredAt)}</span>
-                    <span className="text-muted-foreground">Guest</span>
-                    <span className="text-foreground">{row.guestName || '-'}</span>
-                    <span className="text-muted-foreground">Amount</span>
-                    <span className="text-foreground">{formatCurrency(row.amount)}</span>
-                    <span className="text-muted-foreground">Settled</span>
-                    <span className="text-foreground">{row.settled ? 'Yes' : 'No'}</span>
-                    <span className="text-muted-foreground">Payment id</span>
-                    <span className="truncate font-mono text-xs text-foreground">{paymentId || '-'}</span>
-                  </div>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">When</dt>
+                      <dd className="min-w-0 text-right text-foreground">{formatDateTime(row.occurredAt)}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Guest</dt>
+                      <dd className="min-w-0 truncate text-right text-foreground">{row.guestName || '-'}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Amount</dt>
+                      <dd className="min-w-0 text-right font-medium text-foreground">{formatCurrency(row.amount)}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Settled</dt>
+                      <dd className="min-w-0 text-right text-foreground">{row.settled ? 'Yes' : 'No'}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Payment id</dt>
+                      <dd className="min-w-0 truncate text-right font-mono text-xs text-foreground">{paymentId || '-'}</dd>
+                    </div>
+                  </dl>
                   {row.warning ? <p className="text-xs text-warning">{row.warning}</p> : null}
                   <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                     {paymentId ? (

@@ -93,24 +93,24 @@ export function CouponsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle>Coupons</CardTitle>
-            <CardDescription>
+            <CardDescription className="hidden sm:block">
               Create discount codes with expiry dates, usage limits, and track redemptions per booking.
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Refresh" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button variant="primary" size="sm" disabled={!canCreate}>
+            <Button variant="primary" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Add coupon" disabled={!canCreate}>
               <Link to="/coupons/new" className="inline-flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add coupon
+                <span className="hidden sm:inline">Add coupon</span>
               </Link>
             </Button>
           </div>
@@ -119,8 +119,7 @@ export function CouponsPage() {
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
             <div className="min-w-0 space-y-1.5">
               <p className="text-sm font-medium text-foreground">Status</p>
-              <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
-                <div className="flex w-max min-w-full flex-nowrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                   <div className="inline-flex shrink-0 rounded-xl border border-border bg-muted/30 p-1">
                     {(['active', 'deactivated'] as CouponTab[]).map((value) => (
                       <button
@@ -149,7 +148,6 @@ export function CouponsPage() {
                       {search ? ` matching "${search}"` : ''}
                     </p>
                   ) : null}
-                </div>
               </div>
             </div>
 

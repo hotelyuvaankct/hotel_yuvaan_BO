@@ -107,37 +107,46 @@ export function GalleryPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
-          <div>
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-2 !py-3 sm:gap-3 sm:!py-4">
+          <div className="min-w-0">
             <CardTitle>Gallery</CardTitle>
-            <CardDescription>
+            <CardDescription className="hidden sm:block">
               Manage photos shown on the public website. Drag to reorder, then changes save automatically.
               Each image must be under {GALLERY_MAX_FILE_SIZE_LABEL}.
             </CardDescription>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => void load(categoryFilter)} disabled={loading || reordering}>
+          <div className="flex shrink-0 gap-1.5 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 px-0 sm:h-9 sm:w-9 md:w-auto md:px-3"
+              aria-label="Refresh"
+              onClick={() => void load(categoryFilter)}
+              disabled={loading || reordering}
+            >
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden md:inline">Refresh</span>
             </Button>
-            <Button variant="primary" size="sm" disabled={!canCreate} asChild={canCreate}>
-              {canCreate ? (
-                <Link to="/gallery/new" className="inline-flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Upload images
-                </Link>
-              ) : (
-                <span className="inline-flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Upload images
-                </span>
-              )}
-            </Button>
+            {canCreate ? (
+              <Link
+                to="/gallery/new"
+                aria-label="Upload images"
+                className="inline-flex h-8 w-8 items-center justify-center gap-2 rounded-sm bg-brand px-0 text-sm font-semibold text-brand-foreground transition-colors hover:bg-brand-hover sm:h-9 sm:w-9 md:w-auto md:px-3"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden md:inline">Upload images</span>
+              </Link>
+            ) : (
+              <Button variant="primary" size="sm" className="h-8 w-8 px-0 sm:h-9 md:w-auto md:px-3" aria-label="Upload images" disabled>
+                <Plus className="h-4 w-4" />
+                <span className="hidden md:inline">Upload images</span>
+              </Button>
+            )}
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 pt-0 sm:space-y-4">
           <SelectField
             variant="filter"
             label="Category"

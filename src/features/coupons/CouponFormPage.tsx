@@ -141,7 +141,7 @@ export function CouponFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit coupon' : 'Create coupon'}</CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden sm:block">
             Website coupons appear on the public site. Backoffice coupons are for staff bookings only.
           </CardDescription>
         </CardHeader>

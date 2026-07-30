@@ -248,13 +248,13 @@ export function InventoryPage() {
           sticky left + measured width keeps filters on-screen while scrolling dates sideways.
         */}
         <div
-          className="sticky left-0 z-50 border-b border-border bg-card"
+          className="sticky left-0 z-20 border-b border-border bg-card"
           style={portWidth > 0 ? { width: portWidth } : undefined}
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
+          <div className="flex flex-col gap-2 px-4 py-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:px-5">
             <div className="min-w-0">
               <h1 className="text-lg font-semibold tracking-tight text-foreground">Inventory</h1>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="hidden truncate text-xs text-muted-foreground sm:block">
                 Set sellable rooms and guest rates by date
               </p>
             </div>
@@ -264,7 +264,8 @@ export function InventoryPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 min-w-[96px]"
+                  className="h-9 w-9 px-0 sm:w-auto sm:min-w-[96px] sm:px-3"
+                  aria-label="Block dates"
                   onClick={() => {
                     setBlockMode('block');
                     setConflicts([]);
@@ -272,13 +273,14 @@ export function InventoryPage() {
                   }}
                 >
                   <Lock className="h-3.5 w-3.5" />
-                  Block
+                  <span className="hidden sm:inline">Block</span>
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="h-9 min-w-[96px]"
+                  className="h-9 w-9 px-0 sm:w-auto sm:min-w-[96px] sm:px-3"
+                  aria-label="Unblock dates"
                   onClick={() => {
                     setBlockMode('unblock');
                     setConflicts([]);
@@ -286,18 +288,18 @@ export function InventoryPage() {
                   }}
                 >
                   <Unlock className="h-3.5 w-3.5" />
-                  Unblock
+                  <span className="hidden sm:inline">Unblock</span>
                 </Button>
               </div>
             ) : null}
           </div>
 
-          <div className="flex flex-wrap items-end gap-2 border-t border-border px-4 py-2 sm:gap-3 sm:px-5">
+          <div className="flex flex-col gap-3 border-t border-border px-4 py-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3 sm:px-5">
             <Button
               type="button"
               variant="outline"
               size="sm"
-              className="h-9"
+              className="h-10 w-full shrink-0 sm:w-auto"
               onClick={() => {
                 if (!hotelId) return;
                 void loadInitial(hotelId);
@@ -309,7 +311,7 @@ export function InventoryPage() {
             <DateRangePicker
               variant="filter"
               label="Stay dates"
-              wrapperClassName="min-w-[220px]"
+              wrapperClassName="w-full min-w-0 sm:min-w-[220px] sm:w-auto"
               startValue={rangeStart}
               endValue={rangeEnd}
               minDate={todayIso()}
@@ -323,7 +325,7 @@ export function InventoryPage() {
             <SelectField
               variant="filter"
               label="Rooms"
-              wrapperClassName="min-w-[160px]"
+              wrapperClassName="w-full min-w-0 sm:min-w-[160px] sm:w-auto"
               value={roomFilter}
               onChange={(event) => setRoomFilter(event.target.value)}
               options={[
@@ -370,7 +372,7 @@ export function InventoryPage() {
 
       {loadingMore ? (
         <div
-          className="pointer-events-none absolute inset-y-0 right-0 z-40 flex w-36 items-center justify-end pr-4 sm:w-44"
+          className="pointer-events-none absolute inset-y-0 right-0 z-20 flex w-36 items-center justify-end pr-4 sm:w-44"
           aria-live="polite"
           aria-busy="true"
           aria-label="Loading more dates"

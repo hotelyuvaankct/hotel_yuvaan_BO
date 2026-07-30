@@ -54,9 +54,11 @@ export function InventoryEditPopover({
   useEffect(() => {
     function onPointerDown(event: PointerEvent) {
       if (saving) return;
-      const target = event.target as Node | null;
+      const target = event.target as HTMLElement | null;
       if (!target) return;
       if (panelRef.current?.contains(target)) return;
+      // Allow dragging cells / selection handles without dismissing the editor.
+      if (target.closest('[data-cell], [data-selection-handle]')) return;
       onCancel();
     }
     document.addEventListener('pointerdown', onPointerDown, true);
@@ -89,15 +91,6 @@ export function InventoryEditPopover({
   const canSave = value.trim() !== '' && !Number.isNaN(parsed) && parsed >= 0 && !saving;
 
   return createPortal(
-    <>
-      <div
-        aria-hidden
-        className="fixed inset-0 z-[200] bg-overlay backdrop-blur-[1px]"
-        onPointerDown={(event) => {
-          event.preventDefault();
-          if (!saving) onCancel();
-        }}
-      />
       <div
         ref={panelRef}
         role="dialog"
@@ -158,8 +151,7 @@ export function InventoryEditPopover({
             {saving ? 'Saving…' : 'Save'}
           </Button>
         </div>
-      </div>
-    </>,
+      </div>,
     document.body,
   );
 }

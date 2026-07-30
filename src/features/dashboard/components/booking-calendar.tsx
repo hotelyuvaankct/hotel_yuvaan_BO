@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 import {
   BedDouble,
   CalendarClock,
   ChevronLeft,
   ChevronRight,
+  Eye,
   Users,
-  X,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { DashboardCalendar, DashboardCalendarEvent } from '@/lib/api-types';
 import { bookingSourceOptions, bookingStatusOptions, optionLabel } from '@/lib/enums';
 import { Badge } from '@/components/ui/badge';
+import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { SelectField, TextField } from '@/components/ui/form-fields';
 import { LoadingOverlay } from '@/features/dashboard/components/charts';
@@ -205,12 +205,11 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
           <h2 className="text-base font-semibold text-foreground">Booking calendar</h2>
           <p className="text-sm text-muted-foreground">Every active booking across its stay window.</p>
         </div>
-        <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
-          <div className="flex w-max min-w-full flex-nowrap items-end gap-3">
+        <div className="grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
             <SelectField
               variant="filter"
               label="View"
-              wrapperClassName="min-w-[120px]"
+              wrapperClassName="min-w-0 col-span-2 sm:col-auto sm:min-w-[120px]"
               value={view}
               onChange={(event) => setView(event.target.value as CalendarView)}
               options={VIEW_OPTIONS}
@@ -221,7 +220,7 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
                 <SelectField
                   variant="filter"
                   label="Month"
-                  wrapperClassName="min-w-[140px]"
+                  wrapperClassName="min-w-0 sm:min-w-[140px]"
                   value={cursor.getMonth()}
                   onChange={(event) =>
                     setCursor(new Date(cursor.getFullYear(), Number(event.target.value), 1))
@@ -231,7 +230,7 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
                 <SelectField
                   variant="filter"
                   label="Year"
-                  wrapperClassName="min-w-[100px]"
+                  wrapperClassName="min-w-0 sm:min-w-[100px]"
                   value={cursor.getFullYear()}
                   onChange={(event) =>
                     setCursor(new Date(Number(event.target.value), cursor.getMonth(), 1))
@@ -246,7 +245,7 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
                 <SelectField
                   variant="filter"
                   label="Week"
-                  wrapperClassName="min-w-[240px]"
+                  wrapperClassName="min-w-0 col-span-2 sm:col-auto sm:min-w-[240px]"
                   value={weekInfo.weekNo}
                   onChange={(event) => {
                     const target = weekOptions.find((w) => w.weekNo === Number(event.target.value));
@@ -264,7 +263,7 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
                 <SelectField
                   variant="filter"
                   label="Year"
-                  wrapperClassName="min-w-[100px]"
+                  wrapperClassName="min-w-0 col-span-2 sm:col-auto sm:min-w-[100px]"
                   value={weekInfo.year}
                   onChange={(event) => {
                     const nextYear = Number(event.target.value);
@@ -281,7 +280,7 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
               <TextField
                 label="Date"
                 type="date"
-                wrapperClassName="min-w-[180px]"
+                wrapperClassName="min-w-0 col-span-2 sm:col-auto sm:min-w-[180px]"
                 className="[color-scheme:light] dark:[color-scheme:dark]"
                 value={toDateKey(cursor)}
                 onChange={(event) => {
@@ -290,18 +289,17 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
               />
             ) : null}
 
-            <div className="flex items-end gap-2">
+            <div className="col-span-2 flex items-end gap-2 sm:col-auto">
               <Button variant="outline" size="icon" className="shrink-0" disabled={loading} onClick={() => shift(-1)} aria-label="Previous">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <Button variant="outline" size="icon" className="shrink-0" disabled={loading} onClick={() => shift(1)} aria-label="Next">
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" className="h-10 shrink-0" disabled={loading} onClick={() => setCursor(new Date())}>
+              <Button variant="outline" className="h-10 min-w-0 flex-1 sm:flex-none" disabled={loading} onClick={() => setCursor(new Date())}>
                 Today
               </Button>
             </div>
-          </div>
         </div>
       </div>
 
@@ -348,22 +346,21 @@ export function BookingCalendar({ canRead }: { canRead: boolean }) {
           ) : null}
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
           <StatusLegend />
-          <p className="text-xs text-muted-foreground">{calendar?.totalEvents ?? 0} booking(s) in view</p>
+          <p className="shrink-0 text-xs text-muted-foreground">
+            {calendar?.totalEvents ?? 0} booking(s) in view
+          </p>
         </div>
       </div>
 
-      {selectedDay
-        ? createPortal(
-            <DayDetailModal
-              dayKey={selectedDay}
-              events={eventsForSelectedDay}
-              onClose={() => setSelectedDay(null)}
-            />,
-            document.body,
-          )
-        : null}
+      {selectedDay ? (
+        <DayDetailSheet
+          dayKey={selectedDay}
+          events={eventsForSelectedDay}
+          onClose={() => setSelectedDay(null)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -557,63 +554,102 @@ function DayList({
   );
 }
 
-function EventRow({ event }: { event: DashboardCalendarEvent }) {
+function EventRow({
+  event,
+  layout = 'list',
+}: {
+  event: DashboardCalendarEvent;
+  layout?: 'list' | 'tile';
+}) {
   const money = formatMoney(event.totalAmount);
+  const status = optionLabel(bookingStatusOptions, event.bookingStatus);
+  const source = optionLabel(bookingSourceOptions, event.source);
+  const isTile = layout === 'tile';
+
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/40">
-      <div className="flex min-w-0 items-start gap-3">
-        <span className={cn('mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full', STATUS_DOT[event.bookingStatus] ?? 'bg-muted-foreground')} />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">
-            {event.guestName} <span className="font-normal text-muted-foreground">· {event.bookingCode}</span>
-          </p>
-          <p className="truncate text-xs text-muted-foreground">{event.hotelName}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1">
-              <CalendarClock className="h-3 w-3" />
-              {formatStayDate(event.checkIn)} → {formatStayDate(event.checkOut)}
-            </span>
-            {event.totalRooms ? (
-              <span className="inline-flex items-center gap-1">
-                <BedDouble className="h-3 w-3" />
-                {event.totalRooms} room{event.totalRooms === 1 ? '' : 's'}
-              </span>
-            ) : null}
-            {event.totalGuests ? (
-              <span className="inline-flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                {event.totalGuests} guest{event.totalGuests === 1 ? '' : 's'}
-              </span>
-            ) : null}
+    <li className={cn('min-w-0', !isTile && 'sm:px-4 sm:py-3')}>
+      <article
+        className={cn(
+          'min-w-0 space-y-2.5',
+          isTile
+            ? 'h-full rounded-xl border border-border bg-card p-3.5 shadow-sm'
+            : 'rounded-xl border border-border bg-card p-3 shadow-sm sm:space-y-2 sm:rounded-none sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none',
+        )}
+      >
+        <div className="flex min-w-0 items-start gap-2.5">
+          <span
+            className={cn(
+              'mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full',
+              STATUS_DOT[event.bookingStatus] ?? 'bg-muted-foreground',
+            )}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-foreground">{event.guestName}</p>
+                <p className="truncate text-xs text-muted-foreground">{event.bookingCode}</p>
+              </div>
+              <Badge
+                tone={statusTone(event.bookingStatus)}
+                className={cn(
+                  'shrink-0',
+                  (event.bookingStatus === 3 || event.bookingStatus === 4) &&
+                    'bg-brand text-brand-foreground',
+                )}
+              >
+                {status}
+              </Badge>
+            </div>
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">{event.hotelName}</p>
           </div>
         </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="text-right">
-          <Badge
-            tone={statusTone(event.bookingStatus)}
-            className={cn(
-              (event.bookingStatus === 3 || event.bookingStatus === 4) &&
-                'bg-brand text-brand-foreground',
-            )}
-          >
-            {optionLabel(bookingStatusOptions, event.bookingStatus)}
-          </Badge>
-          {money ? <p className="mt-1 text-sm font-semibold">{money}</p> : null}
-          <p className="text-[10px] text-muted-foreground">{optionLabel(bookingSourceOptions, event.source)}</p>
+
+        <div className="flex flex-wrap gap-x-3 gap-y-1 pl-5 text-[11px] text-muted-foreground">
+          <span className="inline-flex min-w-0 max-w-full items-center gap-1">
+            <CalendarClock className="h-3 w-3 shrink-0" />
+            <span className="truncate">
+              {formatStayDate(event.checkIn)} → {formatStayDate(event.checkOut)}
+            </span>
+          </span>
+          {event.totalRooms ? (
+            <span className="inline-flex items-center gap-1">
+              <BedDouble className="h-3 w-3 shrink-0" />
+              {event.totalRooms} room{event.totalRooms === 1 ? '' : 's'}
+            </span>
+          ) : null}
+          {event.totalGuests ? (
+            <span className="inline-flex items-center gap-1">
+              <Users className="h-3 w-3 shrink-0" />
+              {event.totalGuests} guest{event.totalGuests === 1 ? '' : 's'}
+            </span>
+          ) : null}
         </div>
-        <Link
-          to={`/bookings/${event.bookingId}`}
-          className="inline-flex h-8 items-center rounded-md border border-border bg-background px-3 text-xs font-semibold transition-colors hover:bg-muted"
+
+        <div
+          className={cn(
+            'flex items-center justify-between gap-2 pl-5',
+            isTile ? 'border-t border-border/60 pt-2.5' : 'border-t border-border/60 pt-2.5 sm:border-0 sm:pt-1',
+          )}
         >
-          View
-        </Link>
-      </div>
+          <div className="min-w-0">
+            {money ? <p className="text-sm font-semibold text-foreground">{money}</p> : null}
+            <p className="text-[10px] text-muted-foreground">{source}</p>
+          </div>
+          <Link
+            to={`/bookings/${event.bookingId}`}
+            aria-label={`View booking ${event.bookingCode}`}
+            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold transition-colors hover:bg-muted"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            View
+          </Link>
+        </div>
+      </article>
     </li>
   );
 }
 
-function DayDetailModal({
+function DayDetailSheet({
   dayKey,
   events,
   onClose,
@@ -622,14 +658,6 @@ function DayDetailModal({
   events: DashboardCalendarEvent[];
   onClose: () => void;
 }) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   const dayLabel = new Intl.DateTimeFormat('en-IN', {
     weekday: 'long',
     day: 'numeric',
@@ -637,48 +665,32 @@ function DayDetailModal({
     year: 'numeric',
   }).format(new Date(`${dayKey}T00:00:00`));
 
-  return (
-    <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-4"
-      onClick={onClose}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={`Bookings on ${dayLabel}`}
-        className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-t-2xl border border-border bg-card text-card-foreground shadow-2xl sm:rounded-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-border p-5">
-          <div>
-            <h2 className="text-lg font-semibold">{dayLabel}</h2>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {events.length} booking{events.length === 1 ? '' : 's'} on this day
-            </p>
-          </div>
-          <button
-            type="button"
-            className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-            onClick={onClose}
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+  const shortDayLabel = new Intl.DateTimeFormat('en-IN', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${dayKey}T00:00:00`));
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {events.length === 0 ? (
-            <p className="px-5 py-12 text-center text-sm text-muted-foreground">No bookings on this day.</p>
-          ) : (
-            <ul className="divide-y divide-border">
-              {events.map((event) => (
-                <EventRow key={event.bookingId} event={event} />
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    </div>
+  return (
+    <BottomSheet isOpen onClose={onClose} maxHeight="90dvh" className="sm:max-w-4xl lg:max-w-5xl">
+      <BottomSheet.Header title={shortDayLabel} />
+      <BottomSheet.Body className="space-y-3 px-3 py-3 sm:px-5 sm:py-4">
+        <p className="text-xs text-muted-foreground sm:text-sm">
+          <span className="hidden sm:inline">{dayLabel} · </span>
+          {events.length} booking{events.length === 1 ? '' : 's'} on this day
+        </p>
+        {events.length === 0 ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">No bookings on this day.</p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {events.map((event) => (
+              <EventRow key={event.bookingId} event={event} layout="tile" />
+            ))}
+          </ul>
+        )}
+      </BottomSheet.Body>
+    </BottomSheet>
   );
 }
 
@@ -691,17 +703,15 @@ function StatusLegend() {
     { label: 'Cancelled', dot: STATUS_DOT[6] },
   ];
   return (
-    <div className="space-y-1.5">
+    <div className="w-full min-w-0 max-w-full space-y-1.5">
       <p className="text-sm font-medium text-foreground">Status</p>
-      <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
-        <div className="flex w-max min-w-full flex-nowrap items-center gap-x-4">
-          {items.map((item) => (
-            <span key={item.label} className="inline-flex shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground">
-              <span className={cn('h-2 w-2 rounded-full', item.dot)} />
-              {item.label}
-            </span>
-          ))}
-        </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        {items.map((item) => (
+          <span key={item.label} className="inline-flex max-w-full items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span className={cn('h-2 w-2 shrink-0 rounded-full', item.dot)} />
+            <span className="whitespace-nowrap">{item.label}</span>
+          </span>
+        ))}
       </div>
     </div>
   );

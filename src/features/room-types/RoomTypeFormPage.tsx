@@ -306,7 +306,7 @@ export function RoomTypeFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update room type' : 'Add room type'}</CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden sm:block">
             Set occupancy, base price, amenities, and rate plans for this room category.
           </CardDescription>
         </CardHeader>

@@ -100,16 +100,16 @@ function RoomActions({
 }) {
   return (
     <div className="flex flex-wrap justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-      <Button variant="outline" size="sm">
+      <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="View">
         <Link to={`/rooms/${room.id}`} className="inline-flex items-center gap-2">
           <Eye className="h-4 w-4" />
-          View
+          <span className="hidden sm:inline">View</span>
         </Link>
       </Button>
-      <Button variant="outline" size="sm" disabled={!canUpdate}>
+      <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Edit" disabled={!canUpdate}>
         <Link to={`/rooms/${room.id}/edit`} className="inline-flex items-center gap-2">
           <Edit className="h-4 w-4" />
-          Edit
+          <span className="hidden sm:inline">Edit</span>
         </Link>
       </Button>
       <Button
@@ -372,32 +372,49 @@ export function RoomsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle>Room listing</CardTitle>
             <CardDescription>
-              {hasDateFilterErrors
-                ? 'Fix the availability dates below to load rooms.'
-                : `${totalElements} room${totalElements === 1 ? '' : 's'} found for ${formatAvailabilityDate(filters.checkIn)} to ${formatAvailabilityDate(filters.checkOut)}.`}
+              {hasDateFilterErrors ? (
+                'Fix the availability dates below to load rooms.'
+              ) : (
+                <>
+                  {totalElements} room{totalElements === 1 ? '' : 's'} found
+                  <span className="hidden sm:inline">
+                    {' '}
+                    for {formatAvailabilityDate(filters.checkIn)} to {formatAvailabilityDate(filters.checkOut)}
+                  </span>
+                  .
+                </>
+              )}
             </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
             {selectedRoomCount > 0 ? (
-              <Button variant="outline" size="sm" disabled={!canDelete} onClick={() => void deleteSelectedRooms()}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 px-0 sm:w-auto sm:px-3"
+                aria-label={`Delete ${selectedRoomCount} selected rooms`}
+                disabled={!canDelete}
+                onClick={() => void deleteSelectedRooms()}
+              >
                 <Trash2 className="h-4 w-4" />
-                Delete selected ({selectedRoomCount})
+                <span className="sm:hidden">({selectedRoomCount})</span>
+                <span className="hidden sm:inline">Delete selected ({selectedRoomCount})</span>
               </Button>
             ) : null}
-            <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Refresh" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button variant="primary" size="sm" disabled={!canCreate}>
+            <Button variant="primary" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Add room" disabled={!canCreate}>
               <Link to="/rooms/new" className="inline-flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add room
+                <span className="hidden sm:inline">Add room</span>
               </Link>
             </Button>
           </div>
@@ -505,16 +522,24 @@ export function RoomsPage() {
                       {optionLabel(roomStatusOptions, availability)}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-y-1 text-sm">
-                    <span className="text-muted-foreground">Hotel</span>
-                    <span className="text-foreground">{room.hotelName || '-'}</span>
-                    <span className="text-muted-foreground">Type</span>
-                    <span className="text-foreground">{room.roomTypeName || '-'}</span>
-                    <span className="text-muted-foreground">Floor</span>
-                    <span className="text-foreground">{room.floor ?? '-'}</span>
-                    <span className="text-muted-foreground">Record</span>
-                    <span className="text-foreground">{optionLabel(recordStatusOptions, room.status)}</span>
-                  </div>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Hotel</dt>
+                      <dd className="min-w-0 text-right text-foreground">{room.hotelName || '-'}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Type</dt>
+                      <dd className="min-w-0 text-right text-foreground">{room.roomTypeName || '-'}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Floor</dt>
+                      <dd className="min-w-0 text-right text-foreground">{room.floor ?? '-'}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Record</dt>
+                      <dd className="min-w-0 text-right text-foreground">{optionLabel(recordStatusOptions, room.status)}</dd>
+                    </div>
+                  </dl>
                   <RoomActions room={room} canUpdate={canUpdate} canDelete={canDelete} onDelete={deleteRoom} />
                 </div>
               );

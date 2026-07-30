@@ -132,7 +132,9 @@ export function BookingFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>Update booking</CardTitle>
-          <CardDescription>Check-out must be after check-in. Guest email or phone is required.</CardDescription>
+          <CardDescription className="hidden sm:block">
+            Check-out must be after check-in. Guest email or phone is required.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit} noValidate>

@@ -47,7 +47,7 @@ export function RoomViewPage() {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle>{room ? `Room ${room.roomNumber}` : 'Room details'}</CardTitle>
             <CardDescription>
@@ -55,10 +55,10 @@ export function RoomViewPage() {
             </CardDescription>
           </div>
           {room && canUpdate ? (
-            <Button variant="primary" size="sm" onClick={() => undefined}>
+            <Button variant="primary" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Update room">
               <Link to={`/rooms/${room.id}/edit`} className="inline-flex items-center gap-2">
                 <Edit className="h-4 w-4" />
-                Update room
+                <span className="hidden sm:inline">Update room</span>
               </Link>
             </Button>
           ) : null}

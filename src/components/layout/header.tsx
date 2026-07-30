@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -5,9 +6,11 @@ import { useAuth } from '@/lib/auth';
 
 export type HeaderProps = {
   onMenuClick: () => void;
+  /** Desktop-only slot (e.g. breadcrumbs) — fills the empty center of the bar. */
+  children?: ReactNode;
 };
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, children }: HeaderProps) {
   const { logout, session } = useAuth();
   const { confirm } = useConfirm();
 
@@ -28,43 +31,61 @@ export function Header({ onMenuClick }: HeaderProps) {
     if (confirmed) logout();
   }
 
+  const logoutButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => void confirmLogout()}
+      aria-label="Sign out"
+      className="h-9 w-9 shrink-0 text-muted-foreground hover:text-foreground"
+    >
+      <LogOut className="h-4 w-4" />
+    </Button>
+  );
+
   return (
-    <header className="sticky top-0 z-20 flex h-14 items-center gap-2 border-b border-border bg-background/90 px-3 backdrop-blur-xl sm:px-4">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="shrink-0 lg:hidden"
-        onClick={onMenuClick}
-        aria-label="Open sidebar"
-      >
-        <Menu className="h-5 w-5" />
-      </Button>
-
-      <div className="flex items-center gap-2 lg:hidden">
-        <img src="/logo.png" alt="Hotel Yuvaan" className="h-7 w-auto max-w-[120px] object-contain" />
-      </div>
-
-      <div className="flex-1" />
-
-      <div className="flex items-center gap-1.5">
-        <div className="flex items-center gap-2 rounded-lg px-2 py-1">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground">
-            {initials || 'HY'}
-          </div>
-          <span className="hidden max-w-[120px] truncate text-sm font-medium text-foreground sm:block">
-            {userName}
-          </span>
-        </div>
-
+    <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-xl">
+      {/* Mobile / tablet: menu · centered logo · logout */}
+      <div className="grid h-14 grid-cols-[2.75rem_1fr_2.75rem] items-center px-2 sm:px-3 lg:hidden">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => void confirmLogout()}
-          aria-label="Sign out"
-          className="text-muted-foreground hover:text-foreground"
+          className="h-9 w-9 justify-self-start"
+          onClick={onMenuClick}
+          aria-label="Open sidebar"
         >
-          <LogOut className="h-4 w-4" />
+          <Menu className="h-5 w-5" />
         </Button>
+
+        <div className="flex min-w-0 justify-center">
+          <img
+            src="/logo.png"
+            alt="Hotel Yuvaan"
+            className="h-8 w-auto max-w-[140px] object-contain"
+          />
+        </div>
+
+        <div className="justify-self-end">{logoutButton}</div>
+      </div>
+
+      {/* Desktop: breadcrumbs (or other content) · user · logout */}
+      <div className="hidden h-14 items-center gap-4 px-4 lg:flex lg:px-6">
+        <div className="min-w-0 flex-1">{children}</div>
+
+        <div className="flex shrink-0 items-center gap-2 border-l border-border pl-4">
+          <div className="flex items-center gap-2.5">
+            <div
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground"
+              aria-hidden
+            >
+              {initials || 'HY'}
+            </div>
+            <span className="max-w-[160px] truncate text-sm font-medium text-foreground">
+              {userName}
+            </span>
+          </div>
+          {logoutButton}
+        </div>
       </div>
     </header>
   );

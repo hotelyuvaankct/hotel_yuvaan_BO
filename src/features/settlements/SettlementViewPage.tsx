@@ -146,9 +146,9 @@ export function SettlementViewPage() {
   return (
     <div className="space-y-4 animate-fade-in-up">
       <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
-          <div>
-            <CardTitle>{settlement.gatewaySettlementId}</CardTitle>
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <CardTitle className="truncate font-mono">{settlement.gatewaySettlementId}</CardTitle>
             <CardDescription>
               <span className="inline-flex flex-wrap items-center gap-2">
                 <Badge tone="neutral">{settlement.kind}</Badge>

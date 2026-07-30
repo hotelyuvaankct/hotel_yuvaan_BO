@@ -227,7 +227,9 @@ export function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
-            <CardDescription>Authenticated user and permissions loaded from the profile API.</CardDescription>
+            <CardDescription className="hidden sm:block">
+              Authenticated user and permissions loaded from the profile API.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-muted/40 p-4">
@@ -240,9 +242,9 @@ export function SettingsPage() {
                   </p>
                 ) : null}
               </div>
-              <Button variant="outline" onClick={() => void refreshProfile()}>
+              <Button variant="outline" className="h-9 w-9 px-0 sm:h-10 sm:w-auto sm:px-4" aria-label="Refresh profile" onClick={() => void refreshProfile()}>
                 <RefreshCw className="h-4 w-4" />
-                Refresh profile
+                <span className="hidden sm:inline">Refresh profile</span>
               </Button>
             </div>
           </CardContent>
@@ -251,7 +253,7 @@ export function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Security</CardTitle>
-            <CardDescription>
+            <CardDescription className="hidden sm:block">
               Change your password with a one-time email code. All sessions end after a successful change.
             </CardDescription>
           </CardHeader>
@@ -264,14 +266,21 @@ export function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Tax & payment fees</CardTitle>
-              <CardDescription>
-                Configure room GST, Razorpay processing fee, and GST on that fee. Changes apply to new checkouts.
+              <CardDescription className="hidden sm:block">
+                Configure room GST, Razorpay processing fee, and GST on that fee. Changes apply to new
+                checkouts.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button type="button" onClick={() => setConfigOpen(true)}>
+              <Button
+                type="button"
+                size="sm"
+                className="h-9 w-9 px-0 sm:w-auto sm:px-3"
+                aria-label="Config"
+                onClick={() => setConfigOpen(true)}
+              >
                 <Settings2 className="h-4 w-4" />
-                Config
+                <span className="hidden sm:inline">Config</span>
               </Button>
             </CardContent>
           </Card>
@@ -281,14 +290,20 @@ export function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Cancellation refund policy</CardTitle>
-              <CardDescription>
+              <CardDescription className="hidden sm:block">
                 Guest cancel tiers by hours before check-in, plus admin cancel refund percent.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button type="button" onClick={() => setPolicyOpen(true)}>
+              <Button
+                type="button"
+                size="sm"
+                className="h-9 w-9 px-0 sm:w-auto sm:px-3"
+                aria-label="Edit policy"
+                onClick={() => setPolicyOpen(true)}
+              >
                 <Settings2 className="h-4 w-4" />
-                Edit policy
+                <span className="hidden sm:inline">Edit policy</span>
               </Button>
             </CardContent>
           </Card>

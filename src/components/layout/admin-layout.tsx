@@ -43,11 +43,13 @@ export function AdminLayout() {
 
           <div
             className={cn(
-              'relative flex flex-col',
+              'relative z-0 flex flex-col',
               isFullBleed ? 'h-screen overflow-hidden' : 'min-h-screen',
             )}
           >
-        <Header onMenuClick={() => setMobileOpen((o) => !o)} />
+        <Header onMenuClick={() => setMobileOpen((o) => !o)}>
+          <Breadcrumbs />
+        </Header>
 
         <main
           className={cn(
@@ -61,12 +63,15 @@ export function AdminLayout() {
               isFullBleed ? 'max-w-none gap-0 overflow-hidden' : 'mx-auto max-w-7xl gap-6',
             )}
           >
+            {/* Breadcrumbs live in the header on desktop; keep under header on small screens */}
             {isFullBleed ? (
-              <div className="shrink-0 border-b border-border bg-card px-3 py-1.5 sm:px-4">
+              <div className="shrink-0 border-b border-border bg-card px-3 py-1.5 lg:hidden sm:px-4">
                 <Breadcrumbs />
               </div>
             ) : (
-              <Breadcrumbs />
+              <div className="lg:hidden">
+                <Breadcrumbs />
+              </div>
             )}
             <div className={cn(isFullBleed && 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden')}>
               <Outlet />

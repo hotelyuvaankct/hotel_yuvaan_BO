@@ -140,7 +140,7 @@ export function LoginPage() {
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs font-medium text-gold-300 underline-offset-4 hover:underline"
+                  className="text-xs font-semibold text-white underline underline-offset-4 hover:text-white/80"
                 >
                   Forgot password?
                 </Link>
@@ -173,7 +173,7 @@ export function LoginPage() {
 
             {info ? (
               <div
-                className="rounded-xl border border-gold-border/40 bg-gold/15 px-3 py-2 text-sm text-gold-muted backdrop-blur-sm"
+                className="rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-sm text-white/90 backdrop-blur-sm"
                 role="status"
               >
                 {info}
@@ -205,9 +205,9 @@ export function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-5 text-center text-xs text-white/55">
+          <p className="mt-5 text-center text-xs text-white/70">
             Have an activation link?{' '}
-            <Link to="/set-password" className="font-semibold text-gold-300 underline-offset-4 hover:underline">
+            <Link to="/set-password" className="font-semibold text-white underline underline-offset-4 hover:text-white/80">
               Set your password
             </Link>
           </p>

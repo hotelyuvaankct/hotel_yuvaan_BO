@@ -36,16 +36,16 @@ function UserActions({
 }) {
   return (
     <div className="flex flex-wrap justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-      <Button variant="outline" size="sm">
+      <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="View">
         <Link to={`/users/${user.id}`} className="inline-flex items-center gap-2">
           <Eye className="h-4 w-4" />
-          View
+          <span className="hidden sm:inline">View</span>
         </Link>
       </Button>
-      <Button variant="outline" size="sm" disabled={!canUpdate}>
+      <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Edit" disabled={!canUpdate}>
         <Link to={`/users/${user.id}/edit`} className="inline-flex items-center gap-2">
           <Edit className="h-4 w-4" />
-          Edit
+          <span className="hidden sm:inline">Edit</span>
         </Link>
       </Button>
       <Button variant="ghost" size="icon" onClick={() => onDelete(user)} disabled={!canDelete} aria-label="Delete user">
@@ -149,22 +149,22 @@ export function UsersPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle>Users</CardTitle>
-            <CardDescription>Listing table is loaded from the users API.</CardDescription>
+            <CardDescription className="hidden sm:block">Listing table is loaded from the users API.</CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Button variant="outline" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Refresh" onClick={() => void load()}>
               <RefreshCw className="h-4 w-4" />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-            <Button variant="primary" size="sm" disabled={!canCreate}>
+            <Button variant="primary" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Add user" disabled={!canCreate}>
               <Link to="/users/new" className="inline-flex items-center gap-2">
                 <Plus className="h-4 w-4" />
-                Add user
+                <span className="hidden sm:inline">Add user</span>
               </Link>
             </Button>
           </div>
@@ -183,12 +183,16 @@ export function UsersPage() {
                       {optionLabel(userStatusOptions, user.status)}
                     </Badge>
                   </div>
-                  <div className="grid grid-cols-2 gap-y-1 text-sm">
-                    <span className="text-muted-foreground">Email</span>
-                    <span className="truncate text-foreground">{user.email}</span>
-                    <span className="text-muted-foreground">Gender</span>
-                    <span className="text-foreground">{optionLabel(genderOptions, user.gender)}</span>
-                  </div>
+                  <dl className="space-y-2 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Email</dt>
+                      <dd className="min-w-0 truncate text-right text-foreground">{user.email}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <dt className="shrink-0 text-muted-foreground">Gender</dt>
+                      <dd className="min-w-0 text-right text-foreground">{optionLabel(genderOptions, user.gender)}</dd>
+                    </div>
+                  </dl>
                   <UserActions
                     user={user}
                     canUpdate={canUpdate}

@@ -157,7 +157,7 @@ export function BookingViewPage() {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle>Booking details</CardTitle>
             <CardDescription>Reservation summary, guest information, and room lines.</CardDescription>
@@ -168,17 +168,26 @@ export function BookingViewPage() {
                 <Button
                   variant="primary"
                   size="sm"
+                  className="h-9 w-9 px-0 sm:w-auto sm:px-3"
+                  aria-label={checkingOut ? 'Checking out' : 'Check out'}
                   disabled={checkingOut}
                   onClick={() => void checkOutBooking()}
                 >
                   <LogOut className="h-4 w-4" />
-                  {checkingOut ? 'Checking out...' : 'Check out'}
+                  <span className="hidden sm:inline">{checkingOut ? 'Checking out...' : 'Check out'}</span>
                 </Button>
               ) : null}
               {canDelete && booking.bookingStatus !== 6 && booking.bookingStatus !== 5 ? (
-                <Button variant="outline" size="sm" disabled={cancelBusy} onClick={() => void openCancelFlow()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 w-9 px-0 sm:w-auto sm:px-3"
+                  aria-label="Cancel booking"
+                  disabled={cancelBusy}
+                  onClick={() => void openCancelFlow()}
+                >
                   <Ban className="h-4 w-4" />
-                  Cancel booking
+                  <span className="hidden sm:inline">Cancel booking</span>
                 </Button>
               ) : null}
             </div>

@@ -103,16 +103,16 @@ export function CouponViewPage() {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle className="font-mono">{coupon?.code ?? 'Coupon details'}</CardTitle>
             <CardDescription>{coupon?.title ?? 'Coupon information and usage history.'}</CardDescription>
           </div>
           {coupon && canUpdate ? (
-            <Button variant="primary" size="sm" asChild>
+            <Button variant="primary" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Edit coupon">
               <Link to={`/coupons/${coupon.id}/edit`} className="inline-flex items-center gap-2">
                 <Edit className="h-4 w-4" />
-                Edit coupon
+                <span className="hidden sm:inline">Edit coupon</span>
               </Link>
             </Button>
           ) : null}

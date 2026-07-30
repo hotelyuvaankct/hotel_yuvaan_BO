@@ -7,16 +7,37 @@ import {
   type InventoryEditKind,
 } from '@/features/inventory/components/inventory-edit-popover';
 
-const LABEL_WIDTH = 248;
+const LABEL_WIDTH_DESKTOP = 248;
+const LABEL_WIDTH_MOBILE = 168;
 const COL_WIDTH = 80;
 
-/** Sticky left label column — solid bg + edge so horizontal scroll keeps labels pinned */
+/** Sticky left label column — solid bg + edge so horizontal scroll keeps labels pinned.
+ *  Keep z-index below layout chrome (sidebar z-50 / overlay z-40 / header z-30).
+ */
 const stickyLabelClass =
-  'sticky left-0 z-20 border-r border-border shadow-[2px_0_0_0_hsl(var(--border))]';
+  'sticky left-0 z-10 border-r border-border bg-card shadow-[2px_0_0_0_hsl(var(--border))]';
 const stickyLabelHeaderClass =
-  'sticky left-0 top-0 z-40 border-b border-r border-border bg-muted shadow-[2px_0_0_0_hsl(var(--border))]';
+  'sticky left-0 top-0 z-20 border-b border-r border-border bg-muted shadow-[2px_0_0_0_hsl(var(--border))]';
 const stickyDateHeaderClass =
-  'sticky top-0 z-30 border-b border-r border-border';
+  'sticky top-0 z-10 border-b border-r border-border';
+
+function useLabelWidth() {
+  const [width, setWidth] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches
+      ? LABEL_WIDTH_DESKTOP
+      : LABEL_WIDTH_MOBILE,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 640px)');
+    const sync = () => setWidth(mq.matches ? LABEL_WIDTH_DESKTOP : LABEL_WIDTH_MOBILE);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  return width;
+}
 
 export type InventorySelection = {
   roomTypeId: number;
@@ -112,6 +133,19 @@ function datesInRange(dates: string[], start: string, end: string) {
   return dates.filter((date) => date >= start && date <= end);
 }
 
+function parseCellKey(key: string): { roomTypeId: number; rowKey: string; date: string } | null {
+  const first = key.indexOf('|');
+  const last = key.lastIndexOf('|');
+  if (first <= 0 || last <= first) return null;
+  const roomTypeId = Number(key.slice(0, first));
+  if (!Number.isFinite(roomTypeId)) return null;
+  return {
+    roomTypeId,
+    rowKey: key.slice(first + 1, last),
+    date: key.slice(last + 1),
+  };
+}
+
 export function InventoryCalendarGrid({
   roomTypes,
   dates,
@@ -122,12 +156,21 @@ export function InventoryCalendarGrid({
   onSaveRate,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const labelWidth = useLabelWidth();
   const [selection, setSelection] = useState<InventorySelection | null>(null);
   const [dragging, setDragging] = useState(false);
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const [containerRect, setContainerRect] = useState<DOMRect | null>(null);
+  const [chromeVisible, setChromeVisible] = useState(true);
   const [saving, setSaving] = useState(false);
   const dragOrigin = useRef<{ roomTypeId: number; rowKey: string; date: string } | null>(null);
+  const selectionRef = useRef<InventorySelection | null>(null);
+  const draggingRef = useRef(false);
+  const labelWidthRef = useRef(labelWidth);
+
+  selectionRef.current = selection;
+  draggingRef.current = dragging;
+  labelWidthRef.current = labelWidth;
 
   const selectedSet = useMemo(() => {
     if (!selection) return new Set<string>();
@@ -142,39 +185,61 @@ export function InventoryCalendarGrid({
     if (!next || !rootRef.current) {
       setAnchorRect(null);
       setContainerRect(null);
+      setChromeVisible(false);
       return;
     }
-    const container = rootRef.current.getBoundingClientRect();
-    const startEl = rootRef.current.querySelector(
+    const root = rootRef.current;
+    const container = root.getBoundingClientRect();
+    const startEl = root.querySelector(
       `[data-cell="${next.roomTypeId}|${next.rowKey}|${next.startDate}"]`,
     ) as HTMLElement | null;
-    const endEl = rootRef.current.querySelector(
+    const endEl = root.querySelector(
       `[data-cell="${next.roomTypeId}|${next.rowKey}|${next.endDate}"]`,
     ) as HTMLElement | null;
     if (!startEl || !endEl) {
       setAnchorRect(null);
       setContainerRect(container);
+      setChromeVisible(false);
       return;
     }
     const start = startEl.getBoundingClientRect();
     const end = endEl.getBoundingClientRect();
+    const rawLeft = Math.min(start.left, end.left) - container.left;
+    const rawTop = Math.min(start.top, end.top) - container.top;
+    const rawWidth = Math.abs(end.right - start.left);
+    const rawHeight = Math.max(start.height, end.height);
+
+    // Clip under the sticky Rooms & rates column so chrome doesn't float over labels.
+    const clipLeft = labelWidthRef.current;
+    const clippedLeft = Math.max(rawLeft, clipLeft);
+    const clippedWidth = Math.max(0, rawLeft + rawWidth - clippedLeft);
+    const visible = clippedWidth >= 8;
+
     setContainerRect(container);
+    setChromeVisible(visible);
     setAnchorRect(
-      new DOMRect(
-        Math.min(start.left, end.left),
-        Math.min(start.top, end.top),
-        Math.abs(end.right - start.left),
-        Math.max(start.height, end.height),
-      ),
+      visible
+        ? new DOMRect(clippedLeft + container.left, rawTop + container.top, clippedWidth, rawHeight)
+        : new DOMRect(
+            Math.min(start.left, end.left),
+            Math.min(start.top, end.top),
+            rawWidth,
+            rawHeight,
+          ),
     );
   }
 
   useEffect(() => {
-    if (!selection) return;
+    if (!selection) {
+      setChromeVisible(false);
+      return;
+    }
     measureSelection(selection);
 
+    let frame = 0;
     function onReposition() {
-      measureSelection(selection);
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => measureSelection(selectionRef.current));
     }
 
     const scrollParent = rootRef.current?.closest('.overflow-auto, .overflow-x-auto, .overflow-y-auto');
@@ -182,26 +247,46 @@ export function InventoryCalendarGrid({
     scrollParent?.addEventListener('scroll', onReposition, { passive: true });
     document.addEventListener('scroll', onReposition, true);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('resize', onReposition);
       scrollParent?.removeEventListener('scroll', onReposition);
       document.removeEventListener('scroll', onReposition, true);
     };
-  }, [selection, dragging, dates, collapsed]);
+  }, [selection, dragging, dates, collapsed, labelWidth]);
 
   useEffect(() => {
     function onPointerUp() {
-      if (!dragging) return;
+      if (!draggingRef.current) return;
       setDragging(false);
       dragOrigin.current = null;
-      setSelection((current) => {
-        if (current) {
-          requestAnimationFrame(() => measureSelection(current));
-        }
-        return current;
-      });
+      const current = selectionRef.current;
+      if (current) {
+        requestAnimationFrame(() => measureSelection(current));
+      }
     }
     window.addEventListener('pointerup', onPointerUp);
-    return () => window.removeEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+    };
+  }, []);
+
+  // Touch / pointer drag: pointerenter does not fire across cells on mobile.
+  useEffect(() => {
+    if (!dragging) return;
+
+    function onPointerMove(event: PointerEvent) {
+      if (!draggingRef.current || !dragOrigin.current) return;
+      const hit = document.elementFromPoint(event.clientX, event.clientY);
+      const cell = hit?.closest('[data-cell]') as HTMLElement | null;
+      const parsed = cell?.dataset.cell ? parseCellKey(cell.dataset.cell) : null;
+      if (!parsed) return;
+      extendSelect(parsed.roomTypeId, parsed.rowKey, parsed.date);
+    }
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onPointerMove);
   }, [dragging]);
 
   function beginSelect(
@@ -213,6 +298,34 @@ export function InventoryCalendarGrid({
     guestCount?: number,
   ) {
     if (!canUpdate) return;
+
+    const existing = selectionRef.current;
+    if (
+      existing &&
+      existing.roomTypeId === roomTypeId &&
+      existing.rowKey === rowKey &&
+      existing.kind === kind
+    ) {
+      const startIdx = dates.indexOf(existing.startDate);
+      const endIdx = dates.indexOf(existing.endDate);
+      const clickIdx = dates.indexOf(date);
+      if (startIdx >= 0 && endIdx >= 0 && clickIdx >= 0) {
+        const mid = (startIdx + endIdx) / 2;
+        const originDate = clickIdx <= mid ? existing.endDate : existing.startDate;
+        dragOrigin.current = { roomTypeId, rowKey, date: originDate };
+        setDragging(true);
+        const range = orderedRange(originDate, date);
+        const next: InventorySelection = {
+          ...existing,
+          startDate: range.start,
+          endDate: range.end,
+        };
+        setSelection(next);
+        requestAnimationFrame(() => measureSelection(next));
+        return;
+      }
+    }
+
     dragOrigin.current = { roomTypeId, rowKey, date };
     setDragging(true);
     const next: InventorySelection = {
@@ -228,12 +341,25 @@ export function InventoryCalendarGrid({
     requestAnimationFrame(() => measureSelection(next));
   }
 
+  function resizeFromEdge(edge: 'start' | 'end') {
+    const current = selectionRef.current;
+    if (!current || !canUpdate) return;
+    const originDate = edge === 'start' ? current.endDate : current.startDate;
+    dragOrigin.current = {
+      roomTypeId: current.roomTypeId,
+      rowKey: current.rowKey,
+      date: originDate,
+    };
+    setDragging(true);
+  }
+
   function extendSelect(roomTypeId: number, rowKey: string, date: string) {
-    if (!dragging || !dragOrigin.current) return;
+    if (!draggingRef.current || !dragOrigin.current) return;
     if (dragOrigin.current.roomTypeId !== roomTypeId || dragOrigin.current.rowKey !== rowKey) return;
     const range = orderedRange(dragOrigin.current.date, date);
     setSelection((current) => {
       if (!current) return current;
+      if (current.startDate === range.start && current.endDate === range.end) return current;
       const next = {
         ...current,
         startDate: range.start,
@@ -247,6 +373,7 @@ export function InventoryCalendarGrid({
   function clearSelection() {
     setSelection(null);
     setAnchorRect(null);
+    setChromeVisible(false);
     setDragging(false);
     dragOrigin.current = null;
   }
@@ -289,7 +416,11 @@ export function InventoryCalendarGrid({
   }
 
   return (
-    <div ref={rootRef} className="relative w-max min-w-full select-none">
+    <div
+      ref={rootRef}
+      className={cn('relative w-max min-w-full select-none', dragging && 'touch-none')}
+      style={{ ['--inv-label-width' as string]: `${labelWidth}px` }}
+    >
       <table className="w-max border-separate border-spacing-0 text-sm">
         <thead>
           <tr>
@@ -298,7 +429,7 @@ export function InventoryCalendarGrid({
                 stickyLabelHeaderClass,
                 'bg-muted px-4 py-2.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground uppercase',
               )}
-              style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
+              style={{ width: 'var(--inv-label-width)', minWidth: 'var(--inv-label-width)', maxWidth: 'var(--inv-label-width)' }}
             >
               Rooms & rates
             </th>
@@ -349,7 +480,7 @@ export function InventoryCalendarGrid({
         </tbody>
       </table>
 
-      {selection && anchorRect && containerRect ? (
+      {selection && anchorRect && containerRect && chromeVisible ? (
         <>
           <SelectionChrome
             anchorRect={anchorRect}
@@ -358,6 +489,8 @@ export function InventoryCalendarGrid({
               datesInRange(dates, selection.startDate, selection.endDate).length
             }
             showBadge={dragging}
+            canResize={canUpdate}
+            onResizeStart={resizeFromEdge}
           />
           {!dragging ? (
             <InventoryEditPopover
@@ -380,17 +513,21 @@ function SelectionChrome({
   containerRect,
   dayCount,
   showBadge,
+  canResize,
+  onResizeStart,
 }: {
   anchorRect: DOMRect;
   containerRect: DOMRect;
   dayCount: number;
   showBadge: boolean;
+  canResize?: boolean;
+  onResizeStart?: (edge: 'start' | 'end') => void;
 }) {
   const left = anchorRect.left - containerRect.left;
   const top = anchorRect.top - containerRect.top;
   return (
     <div
-      className="pointer-events-none absolute z-30 box-border rounded-sm border-2 border-brand bg-transparent"
+      className="pointer-events-none absolute z-[5] box-border rounded-sm border-2 border-brand bg-transparent"
       style={{
         left,
         top,
@@ -398,12 +535,52 @@ function SelectionChrome({
         height: anchorRect.height,
       }}
     >
-      <span className="absolute top-1/2 left-0 flex h-4 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm bg-brand text-brand-foreground ring-2 ring-card">
+      <button
+        type="button"
+        data-selection-handle
+        aria-label="Resize selection start"
+        disabled={!canResize}
+        className={cn(
+          'absolute top-1/2 left-0 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm bg-brand text-brand-foreground ring-2 ring-card',
+          canResize && 'pointer-events-auto cursor-ew-resize touch-none',
+        )}
+        onPointerDown={(event) => {
+          if (!canResize || !onResizeStart) return;
+          event.preventDefault();
+          event.stopPropagation();
+          try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          } catch {
+            // ignore
+          }
+          onResizeStart('start');
+        }}
+      >
         <Grip className="h-2.5 w-2.5" />
-      </span>
-      <span className="absolute top-1/2 right-0 flex h-4 w-4 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm bg-brand text-brand-foreground ring-2 ring-card">
+      </button>
+      <button
+        type="button"
+        data-selection-handle
+        aria-label="Resize selection end"
+        disabled={!canResize}
+        className={cn(
+          'absolute top-1/2 right-0 flex h-5 w-5 translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-sm bg-brand text-brand-foreground ring-2 ring-card',
+          canResize && 'pointer-events-auto cursor-ew-resize touch-none',
+        )}
+        onPointerDown={(event) => {
+          if (!canResize || !onResizeStart) return;
+          event.preventDefault();
+          event.stopPropagation();
+          try {
+            event.currentTarget.setPointerCapture(event.pointerId);
+          } catch {
+            // ignore
+          }
+          onResizeStart('end');
+        }}
+      >
         <Grip className="h-2.5 w-2.5" />
-      </span>
+      </button>
       {showBadge && dayCount > 0 ? (
         <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-sm bg-brand px-2 py-0.5 text-[11px] font-semibold text-brand-foreground">
           {dayCount} day{dayCount === 1 ? '' : 's'} selected
@@ -448,7 +625,7 @@ function RoomTypeSection({
       <tr className="bg-muted">
         <td
           className={cn(stickyLabelClass, 'border-y bg-muted px-3 py-3')}
-          style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
+          style={{ width: 'var(--inv-label-width)', minWidth: 'var(--inv-label-width)', maxWidth: 'var(--inv-label-width)' }}
         >
           <button
             type="button"
@@ -624,7 +801,7 @@ function RatePlanOccupancyBlock({
       <tr>
         <td
           className={cn(stickyLabelClass, 'border-b bg-muted px-4 py-2.5')}
-          style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
+          style={{ width: 'var(--inv-label-width)', minWidth: 'var(--inv-label-width)', maxWidth: 'var(--inv-label-width)' }}
         >
           <span className="inline-flex max-w-full items-center gap-2">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-card text-muted-foreground ring-1 ring-border">
@@ -734,7 +911,7 @@ function EditableRow({
           'border-b bg-card py-2.5',
           indent ? 'pl-8 pr-3' : 'px-4',
         )}
-        style={{ width: LABEL_WIDTH, minWidth: LABEL_WIDTH, maxWidth: LABEL_WIDTH }}
+        style={{ width: 'var(--inv-label-width)', minWidth: 'var(--inv-label-width)', maxWidth: 'var(--inv-label-width)' }}
       >
         <span className="inline-flex max-w-full items-center gap-2">
           {icon}
@@ -779,6 +956,12 @@ function EditableRow({
             onPointerDown={(event) => {
               if (!isEditable) return;
               event.preventDefault();
+              event.stopPropagation();
+              try {
+                event.currentTarget.setPointerCapture(event.pointerId);
+              } catch {
+                // Some browsers reject capture on non-primary pointers.
+              }
               onBeginSelect(roomTypeId, rowKey, kind, date, ratePlanCode, guestCount);
             }}
             onPointerEnter={() => {

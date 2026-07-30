@@ -345,9 +345,9 @@ export function ForgotPasswordPage() {
             </form>
           ) : null}
 
-          <p className="mt-5 text-center text-xs text-white/55">
+          <p className="mt-5 text-center text-xs text-white/70">
             Remembered your password?{' '}
-            <Link to="/login" className="font-semibold text-gold-300 underline-offset-4 hover:underline">
+            <Link to="/login" className="font-semibold text-white underline underline-offset-4 hover:text-white/80">
               Back to sign in
             </Link>
           </p>

@@ -171,7 +171,7 @@ export function SetPasswordPage() {
               <p className="text-sm text-white/70">
                 Your account is ready. Redirecting you to sign in…
               </p>
-              <Link to="/login" className="inline-flex text-sm font-semibold text-gold-300 underline-offset-4 hover:underline">
+              <Link to="/login" className="inline-flex text-sm font-semibold text-white underline underline-offset-4 hover:text-white/80">
                 Continue to sign in
               </Link>
             </div>

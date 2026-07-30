@@ -161,7 +161,9 @@ export function RoleFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update role' : 'Add role'}</CardTitle>
-          <CardDescription>Select modules and CRUD permissions for this role.</CardDescription>
+          <CardDescription className="hidden sm:block">
+            Select modules and CRUD permissions for this role.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form className="space-y-6" onSubmit={onSubmit}>

@@ -120,7 +120,7 @@ export function UserFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update user' : 'Add user'}</CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden sm:block">
             {isEdit
               ? 'Each user is assigned exactly one role.'
               : 'Each user is assigned exactly one role. They will receive an email to set their password.'}

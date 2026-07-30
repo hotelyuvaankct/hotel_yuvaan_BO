@@ -192,7 +192,7 @@ export function GalleryFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Edit gallery image' : 'Upload gallery images'}</CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden sm:block">
             {isEdit
               ? 'Update title, category, display order, or visibility on the public website.'
               : `Select one or more JPEG, PNG, WebP, or GIF images. Each file must be under ${GALLERY_MAX_FILE_SIZE_LABEL}.`}

@@ -170,7 +170,7 @@ export function RoomFormPage() {
       <Card>
         <CardHeader>
           <CardTitle>{isEdit ? 'Update room' : 'Add room'}</CardTitle>
-          <CardDescription>
+          <CardDescription className="hidden sm:block">
             {isEdit ? 'Update room details and images.' : 'Create one room or add up to 500 rooms in a single request.'}
           </CardDescription>
         </CardHeader>

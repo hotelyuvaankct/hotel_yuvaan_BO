@@ -14,12 +14,13 @@ import type { DashboardStats } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { getFirstAccessiblePath } from '@/lib/navigation-access';
 import { hasPermission } from '@/lib/permissions';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FullPageLoader } from '@/components/common/loading-state';
-import { fieldControlClass } from '@/components/ui/form-fields';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { BarChart, DonutChart, LoadingOverlay, type ChartDatum } from '@/features/dashboard/components/charts';
 import { BookingCalendar } from '@/features/dashboard/components/booking-calendar';
+import { parseIsoDate, todayIso } from '@/lib/form-validation';
 import { cn } from '@/lib/utils';
 
 const STATUS_COLORS = {
@@ -36,16 +37,23 @@ function formatCurrency(value?: number) {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
 }
 
-function pad(n: number) {
-  return String(n).padStart(2, '0');
+function startOfMonthIso(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}-01`;
 }
 
-function toDateTimeLocal(date: Date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+/** Local calendar day → start/end of day as ISO for the API. */
+function dateToStartIso(value: string) {
+  const date = parseIsoDate(value);
+  if (!date) return undefined;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0).toISOString();
 }
 
-function startOfMonth(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
+function dateToEndIso(value: string) {
+  const date = parseIsoDate(value);
+  if (!date) return undefined;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999).toISOString();
 }
 
 export function DashboardPage() {
@@ -53,13 +61,10 @@ export function DashboardPage() {
   const canReadDashboard = hasPermission(session?.perms, 'dashboard', 'read');
   const canReadBookings = hasPermission(session?.perms, 'bookings', 'read');
 
-  const now = useMemo(() => new Date(), []);
-  const defaultFrom = useMemo(() => toDateTimeLocal(startOfMonth(now)), [now]);
-  const defaultTo = useMemo(() => toDateTimeLocal(now), [now]);
+  const defaultFrom = useMemo(() => startOfMonthIso(), []);
+  const defaultTo = useMemo(() => todayIso(), []);
 
-  const [fromInput, setFromInput] = useState(defaultFrom);
-  const [toInput, setToInput] = useState(defaultTo);
-  const [appliedRange, setAppliedRange] = useState<{ from: string; to: string }>({
+  const [range, setRange] = useState<{ from: string; to: string }>({
     from: defaultFrom,
     to: defaultTo,
   });
@@ -76,15 +81,18 @@ export function DashboardPage() {
     setStatsLoading(true);
     setStatsError('');
     try {
-      const fromIso = appliedRange.from ? new Date(appliedRange.from).toISOString() : undefined;
-      const toIso = appliedRange.to ? new Date(appliedRange.to).toISOString() : undefined;
-      setStats(await api.getDashboardStats({ from: fromIso, to: toIso }));
+      setStats(
+        await api.getDashboardStats({
+          from: dateToStartIso(range.from),
+          to: dateToEndIso(range.to),
+        }),
+      );
     } catch (err) {
       setStatsError(err instanceof Error ? err.message : 'Unable to load KPI data.');
     } finally {
       setStatsLoading(false);
     }
-  }, [appliedRange, canReadDashboard]);
+  }, [range, canReadDashboard]);
 
   useEffect(() => {
     void loadStats();
@@ -168,66 +176,52 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader className="gap-4">
-          <div>
-            <CardTitle>Dashboard</CardTitle>
-            <CardDescription>
-              {canReadDashboard
-                ? 'KPIs, booking trends, and stay calendar in one place.'
-                : 'Booking calendar for your accessible date range.'}
-            </CardDescription>
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <Card className="min-w-0 overflow-hidden">
+        <div className="space-y-3 border-b border-border px-4 py-4 sm:space-y-4 sm:px-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle>Dashboard</CardTitle>
+              <CardDescription>
+                {canReadDashboard ? (
+                  <>
+                    KPIs, booking trends,
+                    <span className="hidden sm:inline"> and stay calendar in one place.</span>
+                  </>
+                ) : (
+                  'Booking calendar for your accessible date range.'
+                )}
+              </CardDescription>
+            </div>
+            {canReadDashboard ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-9 shrink-0 px-0 sm:w-auto sm:px-3"
+                aria-label="Reset"
+                disabled={statsLoading}
+                onClick={() => setRange({ from: defaultFrom, to: defaultTo })}
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span className="hidden sm:inline">Reset</span>
+              </Button>
+            ) : null}
           </div>
           {canReadDashboard ? (
-            <div className="-mx-1 overflow-x-auto overscroll-x-contain px-1 pb-1">
-              <div className="flex w-max min-w-full flex-nowrap items-end gap-3">
-                <label className="space-y-1.5 text-sm font-medium text-foreground">
-                  <span>From</span>
-                  <input
-                    type="datetime-local"
-                    value={fromInput}
-                    max={toInput}
-                    onChange={(event) => setFromInput(event.target.value)}
-                    className={cn(fieldControlClass, 'w-[210px] [color-scheme:light] dark:[color-scheme:dark]')}
-                  />
-                </label>
-                <label className="space-y-1.5 text-sm font-medium text-foreground">
-                  <span>To</span>
-                  <input
-                    type="datetime-local"
-                    value={toInput}
-                    min={fromInput}
-                    onChange={(event) => setToInput(event.target.value)}
-                    className={cn(fieldControlClass, 'w-[210px] [color-scheme:light] dark:[color-scheme:dark]')}
-                  />
-                </label>
-                <Button
-                  className="shrink-0"
-                  onClick={() => setAppliedRange({ from: fromInput, to: toInput })}
-                  disabled={statsLoading}
-                >
-                  Apply
-                </Button>
-                <Button
-                  variant="outline"
-                  className="shrink-0"
-                  disabled={statsLoading}
-                  onClick={() => {
-                    setFromInput(defaultFrom);
-                    setToInput(defaultTo);
-                    setAppliedRange({ from: defaultFrom, to: defaultTo });
-                  }}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Reset
-                </Button>
-              </div>
-            </div>
+            <DateRangePicker
+              variant="filter"
+              label="Date range"
+              allowSameDay
+              wrapperClassName="min-w-0 w-full sm:max-w-sm"
+              startValue={range.from}
+              endValue={range.to}
+              maxDate={todayIso()}
+              onChange={(start, end) => setRange({ from: start, to: end })}
+            />
           ) : null}
-        </CardHeader>
+        </div>
 
-        <CardContent className="space-y-6">
+        <CardContent className="min-w-0 space-y-6 overflow-hidden px-4 sm:px-5">
           {canReadDashboard ? (
             <>
               {statsError ? (
@@ -242,24 +236,24 @@ export function DashboardPage() {
                 <div className="relative space-y-6">
                   <LoadingOverlay show={statsLoading} />
 
-                  <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                  <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
                     {kpiCards.map((item) => {
                       const Icon = item.icon;
                       return (
                         <div
                           key={item.label}
-                          className="rounded-xl border border-border bg-card p-5 transition-shadow duration-200 hover:shadow-md"
+                          className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-3 transition-shadow duration-200 hover:shadow-md sm:p-4 lg:p-5"
                         >
-                          <div className="flex flex-col gap-3">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                          <div className="flex min-w-0 flex-col gap-2 lg:gap-3">
+                            <div className="flex min-w-0 items-start justify-between gap-2">
+                              <p className="min-w-0 flex-1 break-words text-[10px] font-medium uppercase leading-snug tracking-wide text-muted-foreground sm:text-xs">
                                 {item.label}
                               </p>
-                              <div className={cn('rounded-lg p-2', item.icon_class)}>
-                                <Icon className="h-4 w-4" />
+                              <div className={cn('shrink-0 rounded-lg p-1.5 lg:p-2', item.icon_class)}>
+                                <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                               </div>
                             </div>
-                            <p className={cn('text-2xl font-bold tracking-tight', item.value_class)}>
+                            <p className={cn('truncate text-lg font-bold tracking-tight sm:text-xl lg:text-2xl', item.value_class)}>
                               {item.value}
                             </p>
                           </div>
@@ -268,8 +262,8 @@ export function DashboardPage() {
                     })}
                   </section>
 
-                  <section className="grid gap-4 lg:grid-cols-2">
-                    <div className="rounded-xl border border-border bg-card p-5">
+                  <section className="grid min-w-0 gap-4 lg:grid-cols-2">
+                    <div className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
                       <div className="mb-4">
                         <h2 className="text-base font-semibold text-foreground">Bookings by status</h2>
                         <p className="text-sm text-muted-foreground">Selected range comparison.</p>
@@ -277,7 +271,7 @@ export function DashboardPage() {
                       <BarChart data={statusBars} />
                     </div>
 
-                    <div className="rounded-xl border border-border bg-card p-5">
+                    <div className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
                       <div className="mb-4">
                         <h2 className="text-base font-semibold text-foreground">Outcome split</h2>
                         <p className="text-sm text-muted-foreground">Completed vs cancelled vs in-progress.</p>

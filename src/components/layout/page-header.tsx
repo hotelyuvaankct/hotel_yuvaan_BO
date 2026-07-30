@@ -24,10 +24,12 @@ export function PageHeader({
   return (
     <div className={cn('space-y-3', className)}>
       {showBreadcrumbs ? <Breadcrumbs /> : null}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
-          {description ? <div className="text-sm font-normal text-muted-foreground">{description}</div> : null}
+          <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">{title}</h1>
+          {description ? (
+            <div className="hidden text-sm font-normal text-muted-foreground sm:block">{description}</div>
+          ) : null}
         </div>
         {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
       </div>

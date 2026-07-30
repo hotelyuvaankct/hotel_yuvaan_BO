@@ -53,16 +53,16 @@ export function RoleViewPage() {
   return (
     <div className="space-y-6 animate-fade-in-up">
       <Card>
-        <CardHeader className="flex-row flex-wrap items-start justify-between gap-4">
+        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div>
             <CardTitle>Role details</CardTitle>
             <CardDescription>Role metadata and selected module CRUD permissions.</CardDescription>
           </div>
           {role && canUpdate ? (
-            <Button variant="primary" size="sm" onClick={() => undefined}>
+            <Button variant="primary" size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Update role">
               <Link to={`/roles/${role.id}/edit`} className="inline-flex items-center gap-2">
                 <Edit className="h-4 w-4" />
-                Update role
+                <span className="hidden sm:inline">Update role</span>
               </Link>
             </Button>
           ) : null}
