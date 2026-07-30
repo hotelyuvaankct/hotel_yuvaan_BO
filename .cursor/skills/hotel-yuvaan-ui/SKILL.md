@@ -318,6 +318,7 @@ import {
 | Bookings | Hospitality | InitialsAvatar, stay strip, SoftFact, InfoChip, BottomSheet cancel |
 | Transactions | Ledger | Amount-first, StatusTimeline, CopyableRow, SoftFact |
 | Settlements | Ledger | Same as transactions |
+| Room types | Catalog | Thumbnail cards, image gallery, SoftFact occupancy/price, amenity chips, rate-plan cards |
 | Lists (all) | ResponsiveList + Pagination + Badge |
 
 Do not clone booking guest cards into transactions.

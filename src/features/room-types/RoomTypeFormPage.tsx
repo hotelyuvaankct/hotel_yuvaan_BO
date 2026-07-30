@@ -1,19 +1,21 @@
-import { createPortal } from 'react-dom';
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Save, X, Image as ImageIcon } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Image as ImageIcon, Save, X } from 'lucide-react';
 import { ApiError, api } from '@/lib/api';
 import type { UpsertRoomTypePayload, RoomImage, RoomTypeRatePlan } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { Status } from '@/lib/constants';
 import { hasPermission } from '@/lib/permissions';
-import { useToast } from '@/components/ui/toast';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FullPageLoader } from '@/components/common/loading-state';
-import { TextField, inputClass } from '@/components/ui/form-fields';
 import { AMENITY_GROUPS, normalizeAmenity, parseAmenities } from '@/lib/amenities';
 import { RATE_PLAN_OPTIONS } from '@/lib/rate-plans';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/components/ui/toast';
+import { useBreadcrumbLabel } from '@/components/common/breadcrumb-labels';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Modal } from '@/components/ui/modal';
+import { FullPageLoader } from '@/components/common/loading-state';
+import { TextField } from '@/components/ui/form-fields';
 
 type VariantDraft = {
   id?: number;
@@ -75,6 +77,7 @@ export function RoomTypeFormPage() {
   const [variants, setVariants] = useState<VariantDraft[]>(() => buildDefaultVariants(2));
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [customAmenities, setCustomAmenities] = useState('');
+  const [roomTypeName, setRoomTypeName] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -83,6 +86,10 @@ export function RoomTypeFormPage() {
     basePrice: '',
     sortOrder: '1',
   });
+
+  const crumbPath = isEdit && id ? `/room-types/${id}/edit` : '/room-types/new';
+  useBreadcrumbLabel(crumbPath, isEdit ? roomTypeName ?? 'Edit' : 'Add');
+  useBreadcrumbLabel(id, roomTypeName);
 
   const capacity = useMemo(() => {
     const adults = Number(form.maxAdults);
@@ -111,11 +118,9 @@ export function RoomTypeFormPage() {
         const defaultHotelId = String(hotelList[0]?.id ?? '');
         if (roomTypeId) {
           const roomType = await api.getRoomType(roomTypeId);
-          const nextCapacity = Math.max(
-            (roomType.maxAdults ?? 2) + (roomType.maxChildren ?? 0),
-            1,
-          );
+          const nextCapacity = Math.max((roomType.maxAdults ?? 2) + (roomType.maxChildren ?? 0), 1);
           setHotelId(String(roomType.hotelId ?? defaultHotelId));
+          setRoomTypeName(roomType.name);
           setForm({
             name: roomType.name,
             description: roomType.description ?? '',
@@ -147,10 +152,7 @@ export function RoomTypeFormPage() {
               const occupancyPrices: Record<number, string> = {};
               for (let guest = 1; guest <= nextCapacity; guest += 1) {
                 const saved = plan?.occupancyPrices?.find((item) => item.guestCount === guest);
-                occupancyPrices[guest] =
-                  saved?.price != null
-                    ? String(saved.price)
-                    : '';
+                occupancyPrices[guest] = saved?.price != null ? String(saved.price) : '';
               }
               return {
                 id: plan?.id,
@@ -178,7 +180,7 @@ export function RoomTypeFormPage() {
 
   function toggleAmenity(value: string) {
     setSelectedAmenities((prev) =>
-      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
+      prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value],
     );
   }
 
@@ -207,13 +209,13 @@ export function RoomTypeFormPage() {
     setFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleRemoveExisting(id: number) {
+  function handleRemoveExisting(imageId: number) {
     if (existingImages.length + files.length <= 1) {
       showToast('At least one image is required for this room type.', 'error');
       return;
     }
-    setExistingImages((prev) => prev.filter((img) => img.id !== id));
-    setDeletedImageIds((prev) => [...prev, id]);
+    setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+    setDeletedImageIds((prev) => [...prev, imageId]);
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -232,7 +234,10 @@ export function RoomTypeFormPage() {
       for (let guest = 1; guest <= capacity; guest += 1) {
         const raw = variant.occupancyPrices[guest];
         if (raw == null || raw.trim() === '' || Number.isNaN(Number(raw)) || Number(raw) < 0) {
-          showToast(`Enter a valid price for ${variant.label} · ${guest} guest${guest === 1 ? '' : 's'}.`, 'error');
+          showToast(
+            `Enter a valid price for ${variant.label} · ${guest} guest${guest === 1 ? '' : 's'}.`,
+            'error',
+          );
           return;
         }
       }
@@ -242,14 +247,20 @@ export function RoomTypeFormPage() {
       return;
     }
     setSaving(true);
-    const customList = customAmenities.split(',').map((value) => value.trim()).filter(Boolean);
+    const customList = customAmenities
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
     const amenities = Array.from(new Set([...selectedAmenities, ...customList]));
     const ratePlans: RoomTypeRatePlan[] = variants.map((variant, index) => ({
       id: variant.id,
       code: variant.code,
       label: variant.label.trim(),
       description: variant.description.trim() || undefined,
-      features: variant.featuresText.split(',').map((value) => value.trim()).filter(Boolean),
+      features: variant.featuresText
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
       sortOrder: index,
       isDefault: variant.isDefault,
       occupancyPrices: Array.from({ length: capacity }, (_, offset) => {
@@ -288,7 +299,9 @@ export function RoomTypeFormPage() {
     }
   }
 
-  if (loading) return <FullPageLoader label={isEdit ? 'Loading room type...' : 'Preparing room type form...'} />;
+  if (loading) {
+    return <FullPageLoader label={isEdit ? 'Loading room type...' : 'Preparing room type form...'} />;
+  }
 
   if (!canRead) {
     return (
@@ -302,288 +315,311 @@ export function RoomTypeFormPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <Card>
-        <CardHeader>
-          <CardTitle>{isEdit ? 'Update room type' : 'Add room type'}</CardTitle>
-          <CardDescription className="hidden sm:block">
-            Set occupancy, base price, amenities, and rate plans for this room category.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form className="grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-            <TextField
-              label="Name"
-              required
-              wrapperClassName="md:col-span-2"
-              value={form.name}
-              onChange={(event) => setForm((value) => ({ ...value, name: event.target.value }))}
-            />
-            <TextField
-              label="Maximum adults"
-              required
-              min={1}
-              type="number"
-              value={form.maxAdults}
-              onChange={(event) => setForm((value) => ({ ...value, maxAdults: event.target.value }))}
-            />
-            <TextField
-              label="Maximum children"
-              required
-              min={0}
-              type="number"
-              value={form.maxChildren}
-              onChange={(event) => setForm((value) => ({ ...value, maxChildren: event.target.value }))}
-            />
-            <TextField
-              label="Base price"
-              required
-              min={0}
-              step="0.01"
-              type="number"
-              value={form.basePrice}
-              onChange={(event) => setForm((value) => ({ ...value, basePrice: event.target.value }))}
-            />
-            <TextField
-              label="Order"
-              required
-              min={1}
-              type="number"
-              value={form.sortOrder}
-              onChange={(event) => setForm((value) => ({ ...value, sortOrder: event.target.value }))}
-              hint="1 = top / best room. Higher numbers are lower tiers (e.g. Super=1, Deluxe=2, Twin=3). Upgrades offer the next lower number."
-            />
-            <TextField
-              label="Description"
-              wrapperClassName="md:col-span-2"
-              value={form.description}
-              onChange={(event) => setForm((value) => ({ ...value, description: event.target.value }))}
-            />
-            <div className="space-y-3 md:col-span-2">
-              <div>
-                <span className="text-sm font-medium">Amenities</span>
-                <p className="text-xs text-muted-foreground">
-                  Tick the facilities available in this room. Selected amenities are shown to guests on the website.
-                </p>
-              </div>
-              <div className="space-y-4">
-                {AMENITY_GROUPS.map((group) => (
-                  <div key={group.category} className="space-y-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {group.category}
-                    </span>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {group.items.map((item) => {
-                        const Icon = item.icon;
-                        const checked = selectedAmenities.includes(item.code);
-                        return (
-                          <label
-                            key={item.code}
-                            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors ${
-                              checked
-                                ? 'border-primary bg-primary/10 text-foreground'
-                                : 'border-border hover:border-ring/40 hover:bg-muted/50'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 shrink-0 accent-primary"
-                              checked={checked}
-                              onChange={() => toggleAmenity(item.code)}
-                            />
-                            <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <span className="truncate">{item.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
+    <div className="min-w-0 space-y-6 animate-fade-in-up">
+      <form className="space-y-6" onSubmit={onSubmit}>
+        <Card>
+          <CardHeader>
+            <CardTitle>{isEdit ? 'Update room type' : 'Add room type'}</CardTitle>
+            <CardDescription className="hidden sm:block">
+              Basics guests see first — name, occupancy, and base price.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
               <TextField
-                label="Other amenities"
-                placeholder="e.g. Sea view, Jacuzzi"
-                hint="Add any extra amenities not listed above, separated by commas."
-                value={customAmenities}
-                onChange={(event) => setCustomAmenities(event.target.value)}
+                label="Name"
+                required
+                wrapperClassName="md:col-span-2"
+                value={form.name}
+                onChange={(event) => {
+                  const name = event.target.value;
+                  setForm((value) => ({ ...value, name }));
+                  if (isEdit) setRoomTypeName(name.trim() || null);
+                }}
+              />
+              <TextField
+                label="Maximum adults"
+                required
+                min={1}
+                type="number"
+                value={form.maxAdults}
+                onChange={(event) => setForm((value) => ({ ...value, maxAdults: event.target.value }))}
+              />
+              <TextField
+                label="Maximum children"
+                required
+                min={0}
+                type="number"
+                value={form.maxChildren}
+                onChange={(event) => setForm((value) => ({ ...value, maxChildren: event.target.value }))}
+              />
+              <TextField
+                label="Base price"
+                required
+                min={0}
+                step="0.01"
+                type="number"
+                value={form.basePrice}
+                onChange={(event) => setForm((value) => ({ ...value, basePrice: event.target.value }))}
+              />
+              <TextField
+                label="Order"
+                required
+                min={1}
+                type="number"
+                value={form.sortOrder}
+                onChange={(event) => setForm((value) => ({ ...value, sortOrder: event.target.value }))}
+                hint="1 = top / best room. Higher numbers are lower tiers."
+              />
+              <TextField
+                label="Description"
+                wrapperClassName="md:col-span-2"
+                value={form.description}
+                onChange={(event) => setForm((value) => ({ ...value, description: event.target.value }))}
               />
             </div>
-            <div className="space-y-3 md:col-span-2">
-              <div>
-                <span className="text-sm font-medium">Room variants</span>
-                <p className="text-xs text-muted-foreground">
-                  Fixed meal options for this room. Set an absolute nightly price for each guest count up to room
-                  capacity ({capacity}).
-                </p>
-              </div>
-              <div className="space-y-4">
-                {variants.map((variant, index) => (
-                  <div key={variant.code} className="space-y-3 rounded-xl border border-border p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold">{variant.label}</p>
-                        <p className="text-xs text-muted-foreground">{variant.code}</p>
-                      </div>
-                      <label className="inline-flex items-center gap-2 text-xs font-medium">
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Amenities</CardTitle>
+            <CardDescription className="hidden sm:block">
+              Tick facilities available in this room. Shown to guests on the website.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {AMENITY_GROUPS.map((group) => (
+              <div key={group.category} className="space-y-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  {group.category}
+                </span>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const checked = selectedAmenities.includes(item.code);
+                    return (
+                      <label
+                        key={item.code}
+                        className={cn(
+                          'flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors',
+                          checked
+                            ? 'border-brand bg-brand/10 text-foreground'
+                            : 'border-border hover:border-ring/40 hover:bg-muted/50',
+                        )}
+                      >
                         <input
                           type="checkbox"
-                          checked={variant.isDefault}
-                          onChange={(event) => {
-                            const checked = event.target.checked;
-                            setVariants((prev) =>
-                              prev.map((item, i) => ({
-                                ...item,
-                                isDefault: i === index ? checked : checked ? false : item.isDefault,
-                              })),
-                            );
-                          }}
+                          className="h-4 w-4 shrink-0 accent-brand"
+                          checked={checked}
+                          onChange={() => toggleAmenity(item.code)}
                         />
-                        Default variant
+                        <Icon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                        <span className="truncate">{item.label}</span>
                       </label>
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <label className="space-y-1 md:col-span-2">
-                        <span className="text-xs font-medium">Short description</span>
-                        <input
-                          className={inputClass}
-                          value={variant.description}
-                          onChange={(event) => updateVariant(index, { description: event.target.value })}
-                        />
-                      </label>
-                      <label className="space-y-1 md:col-span-2">
-                        <span className="text-xs font-medium">Features / services</span>
-                        <input
-                          className={inputClass}
-                          value={variant.featuresText}
-                          onChange={(event) => updateVariant(index, { featuresText: event.target.value })}
-                        />
-                      </label>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {Array.from({ length: capacity }, (_, offset) => {
-                        const guestCount = offset + 1;
-                        return (
-                          <label key={`${variant.code}-${guestCount}`} className="space-y-1">
-                            <span className="text-xs font-medium">
-                              {guestCount} guest{guestCount === 1 ? '' : 's'} price
-                            </span>
-                            <input
-                              className={inputClass}
-                              type="number"
-                              min={0}
-                              step="0.01"
-                              value={variant.occupancyPrices[guestCount] ?? ''}
-                              onChange={(event) => updateOccupancyPrice(index, guestCount, event.target.value)}
-                            />
-                          </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <TextField
+              label="Other amenities"
+              placeholder="e.g. Sea view, Jacuzzi"
+              hint="Add any extra amenities not listed above, separated by commas."
+              value={customAmenities}
+              onChange={(event) => setCustomAmenities(event.target.value)}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Rate plans</CardTitle>
+            <CardDescription className="hidden sm:block">
+              Meal options with a nightly price for each guest count up to capacity ({capacity}).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {variants.map((variant, index) => (
+              <div key={variant.code} className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold">{variant.label}</p>
+                    <p className="font-mono text-[11px] text-muted-foreground">{variant.code}</p>
+                  </div>
+                  <label className="inline-flex items-center gap-2 text-xs font-medium">
+                    <input
+                      type="checkbox"
+                      className="accent-brand"
+                      checked={variant.isDefault}
+                      onChange={(event) => {
+                        const checked = event.target.checked;
+                        setVariants((prev) =>
+                          prev.map((item, i) => ({
+                            ...item,
+                            isDefault: i === index ? checked : checked ? false : item.isDefault,
+                          })),
                         );
-                      })}
-                    </div>
+                      }}
+                    />
+                    Default variant
+                  </label>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <TextField
+                    label="Short description"
+                    wrapperClassName="md:col-span-2"
+                    value={variant.description}
+                    onChange={(event) => updateVariant(index, { description: event.target.value })}
+                  />
+                  <TextField
+                    label="Features / services"
+                    wrapperClassName="md:col-span-2"
+                    value={variant.featuresText}
+                    onChange={(event) => updateVariant(index, { featuresText: event.target.value })}
+                  />
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.from({ length: capacity }, (_, offset) => {
+                    const guestCount = offset + 1;
+                    return (
+                      <TextField
+                        key={`${variant.code}-${guestCount}`}
+                        label={`${guestCount} guest${guestCount === 1 ? '' : 's'} price`}
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={variant.occupancyPrices[guestCount] ?? ''}
+                        onChange={(event) => updateOccupancyPrice(index, guestCount, event.target.value)}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Images</CardTitle>
+            <CardDescription className="hidden sm:block">
+              At least one image is required. PNG, JPG, or WebP up to 5MB — max 5 files.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <label className="flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/40 py-8 transition-colors hover:bg-muted">
+              <div className="text-center">
+                <ImageIcon className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden />
+                <span className="mt-2 block text-sm font-medium text-foreground">Click to upload images</span>
+                <span className="block text-xs text-muted-foreground">PNG, JPG, WebP · max 5</span>
+              </div>
+              <input
+                type="file"
+                multiple
+                accept="image/png, image/jpeg, image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) {
+                    const newFiles = Array.from(e.target.files);
+                    const uniqueNewFiles = newFiles.filter(
+                      (newFile) =>
+                        !files.some(
+                          (prevFile) => prevFile.name === newFile.name && prevFile.size === newFile.size,
+                        ),
+                    );
+
+                    if (uniqueNewFiles.length < newFiles.length) {
+                      showToast('Duplicate images were ignored.', 'error');
+                    }
+
+                    const totalFiles = [...files, ...uniqueNewFiles];
+                    if (totalFiles.length > 5) {
+                      showToast('You can only upload a maximum of 5 images.', 'error');
+                      setFiles(totalFiles.slice(0, 5));
+                    } else {
+                      setFiles(totalFiles);
+                    }
+                  }
+                  e.target.value = '';
+                }}
+              />
+            </label>
+
+            {existingImages.length > 0 || files.length > 0 ? (
+              <div className="flex flex-wrap gap-3 pt-1">
+                {existingImages.map((img) => (
+                  <div
+                    key={img.id}
+                    className="group relative h-20 w-20 overflow-hidden rounded-xl border border-border"
+                  >
+                    <button
+                      type="button"
+                      className="h-full w-full"
+                      onClick={() => setPreviewImage(img.publicUrl)}
+                      aria-label="Preview image"
+                    >
+                      <img src={img.publicUrl} alt="" className="h-full w-full object-cover" />
+                    </button>
+                    <button
+                      type="button"
+                      className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-foreground/70 text-background transition-colors hover:bg-destructive hover:text-destructive-foreground"
+                      onClick={() => handleRemoveExisting(img.id)}
+                      aria-label="Remove image"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 ))}
-              </div>
-            </div>
-            <div className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium">Images</span>
-              <label className="flex cursor-pointer items-center justify-center rounded-xl border-2 border-dashed border-border bg-muted/50 py-6 transition-colors hover:bg-muted">
-                <div className="text-center">
-                  <ImageIcon className="mx-auto h-8 w-8 text-muted-foreground" />
-                  <span className="mt-2 block text-sm font-medium text-foreground">Click to upload images</span>
-                  <span className="block text-xs text-muted-foreground">PNG, JPG up to 5MB</span>
-                </div>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/png, image/jpeg, image/webp"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) {
-                      const newFiles = Array.from(e.target.files);
-                      const uniqueNewFiles = newFiles.filter(
-                        (newFile) => !files.some((prevFile) => prevFile.name === newFile.name && prevFile.size === newFile.size)
-                      );
-                      
-                      if (uniqueNewFiles.length < newFiles.length) {
-                        showToast('Duplicate images were ignored.', 'error');
-                      }
-                      
-                      const totalFiles = [...files, ...uniqueNewFiles];
-                      if (totalFiles.length > 5) {
-                        showToast('You can only upload a maximum of 5 images.', 'error');
-                        setFiles(totalFiles.slice(0, 5));
-                      } else {
-                        setFiles(totalFiles);
-                      }
-                    }
-                    // Reset the input value so the same file can be selected again if removed
-                    e.target.value = '';
-                  }}
-                />
-              </label>
-              {(existingImages.length > 0 || files.length > 0) ? (
-                <div className="flex flex-wrap gap-4 pt-2">
-                  {existingImages.map((img) => (
-                    <div key={img.id} className="relative h-20 w-20 overflow-hidden rounded-lg border border-border group">
-                      <img
-                        src={img.publicUrl}
-                        alt="Existing"
-                        className="h-full w-full cursor-pointer object-cover hover:opacity-80"
-                        onClick={() => setPreviewImage(img.publicUrl)}
-                      />
+                {files.map((file, index) => {
+                  const url = URL.createObjectURL(file);
+                  return (
+                    <div
+                      key={`${file.name}-${file.size}-${index}`}
+                      className="group relative h-20 w-20 overflow-hidden rounded-xl border border-border"
+                    >
                       <button
                         type="button"
-                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-destructive"
-                        onClick={() => handleRemoveExisting(img.id)}
-                        aria-label="Remove image"
+                        className="h-full w-full"
+                        onClick={() => setPreviewImage(url)}
+                        aria-label="Preview image"
                       >
-                        <X className="h-3.5 w-3.5" />
+                        <img src={url} alt="" className="h-full w-full object-cover" />
                       </button>
-                    </div>
-                  ))}
-                  {files.map((file, index) => (
-                    <div key={index} className="relative h-20 w-20 overflow-hidden rounded-lg border border-border group">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Preview ${index}`}
-                        className="h-full w-full cursor-pointer object-cover hover:opacity-80"
-                        onClick={() => setPreviewImage(URL.createObjectURL(file))}
-                      />
                       <button
                         type="button"
-                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-destructive"
+                        className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-foreground/70 text-background transition-colors hover:bg-destructive hover:text-destructive-foreground"
                         onClick={() => handleRemoveFile(index)}
                         aria-label="Remove image"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <div className="flex gap-2 md:col-span-2">
-              <Button type="submit" variant="primary" disabled={!canSave || saving}>
-                <Save className="h-4 w-4" />
-                {saving ? 'Saving...' : 'Save room type'}
-              </Button>
-              <Link to="/room-types" className="inline-flex h-10 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold">Cancel</Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-      {previewImage && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4 animate-in fade-in zoom-in-95 duration-200">
-          <button
-            type="button"
-            className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
-            onClick={() => setPreviewImage(null)}
-          >
-            <X className="h-6 w-6" />
-          </button>
-          <img src={previewImage} alt="Preview" className="max-h-full max-w-full rounded-xl object-contain shadow-2xl" />
-        </div>,
-        document.body
-      )}
+                  );
+                })}
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-wrap gap-2">
+          <Button type="submit" variant="primary" disabled={!canSave} isLoading={saving} leftIcon={<Save className="h-4 w-4" />}>
+            Save room type
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate('/room-types')}>
+            Cancel
+          </Button>
+        </div>
+      </form>
+
+      <Modal isOpen={Boolean(previewImage)} onClose={() => setPreviewImage(null)} size="xl">
+        <Modal.Header title="Image preview" />
+        <Modal.Body className="flex justify-center p-4">
+          {previewImage ? (
+            <img src={previewImage} alt="Preview" className="max-h-[70vh] max-w-full rounded-xl object-contain" />
+          ) : null}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 }
