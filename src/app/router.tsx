@@ -1,11 +1,11 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { RootLayout } from '@/components/layout/root-layout';
 import { useAuth } from '@/lib/auth';
 import { getFirstAccessiblePath } from '@/lib/navigation-access';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { BookingsPage } from '@/features/bookings/BookingsPage';
-import { BookingFormPage } from '@/features/bookings/BookingFormPage';
 import { BookingViewPage } from '@/features/bookings/BookingViewPage';
 import { RoomsPage } from '@/features/rooms/RoomsPage';
 import { RoomFormPage } from '@/features/rooms/RoomFormPage';
@@ -41,53 +41,61 @@ function DefaultRoute() {
 }
 
 export const router = createBrowserRouter([
-  { path: '/login', element: <LoginPage /> },
-  { path: '/forgot-password', element: <ForgotPasswordPage /> },
-  { path: '/set-password', element: <SetPasswordPage /> },
   {
-    path: '/',
-    element: <ProtectedRoute />,
+    element: <RootLayout />,
     children: [
+      { path: '/login', element: <LoginPage /> },
+      { path: '/forgot-password', element: <ForgotPasswordPage /> },
+      { path: '/set-password', element: <SetPasswordPage /> },
       {
-        element: <AdminLayout />,
+        path: '/',
+        element: <ProtectedRoute />,
         children: [
-          { index: true, element: <DefaultRoute /> },
-          { path: 'dashboard', element: <DashboardPage /> },
-          { path: 'bookings', element: <BookingsPage /> },
-          { path: 'bookings/:id', element: <BookingViewPage /> },
-          { path: 'bookings/:id/edit', element: <BookingFormPage /> },
-          { path: 'rooms', element: <RoomsPage /> },
-          { path: 'rooms/new', element: <RoomFormPage /> },
-          { path: 'rooms/:id', element: <RoomViewPage /> },
-          { path: 'rooms/:id/edit', element: <RoomFormPage /> },
-          { path: 'room-types', element: <RoomTypesPage /> },
-          { path: 'room-types/new', element: <RoomTypeFormPage /> },
-          { path: 'room-types/:id', element: <RoomTypeViewPage /> },
-          { path: 'room-types/:id/edit', element: <RoomTypeFormPage /> },
-          { path: 'inventory', element: <InventoryPage /> },
-          { path: 'gallery', element: <GalleryPage /> },
-          { path: 'gallery/new', element: <GalleryFormPage /> },
-          { path: 'gallery/:id/edit', element: <GalleryFormPage /> },
-          { path: 'coupons', element: <CouponsPage /> },
-          { path: 'coupons/new', element: <CouponFormPage /> },
-          { path: 'coupons/:id', element: <CouponViewPage /> },
-          { path: 'coupons/:id/edit', element: <CouponFormPage /> },
-          { path: 'transactions', element: <TransactionsPage /> },
-          { path: 'transactions/:id', element: <TransactionViewPage /> },
-          { path: 'settlements', element: <SettlementsPage /> },
-          { path: 'settlements/:id', element: <SettlementViewPage /> },
-          { path: 'users', element: <UsersPage /> },
-          { path: 'users/new', element: <UserFormPage /> },
-          { path: 'users/:id', element: <UserViewPage /> },
-          { path: 'users/:id/edit', element: <UserFormPage /> },
-          { path: 'roles', element: <RolesPage /> },
-          { path: 'roles/new', element: <RoleFormPage /> },
-          { path: 'roles/:id', element: <RoleViewPage /> },
-          { path: 'roles/:id/edit', element: <RoleFormPage /> },
-          { path: 'settings', element: <SettingsPage /> },
+          {
+            element: <AdminLayout />,
+            children: [
+              { index: true, element: <DefaultRoute /> },
+              { path: 'dashboard', element: <DashboardPage /> },
+              { path: 'bookings', element: <BookingsPage /> },
+              { path: 'bookings/:id', element: <BookingViewPage /> },
+              {
+                path: 'bookings/:id/edit',
+                element: <Navigate to=".." relative="path" replace />,
+              },
+              { path: 'rooms', element: <RoomsPage /> },
+              { path: 'rooms/new', element: <RoomFormPage /> },
+              { path: 'rooms/:id', element: <RoomViewPage /> },
+              { path: 'rooms/:id/edit', element: <RoomFormPage /> },
+              { path: 'room-types', element: <RoomTypesPage /> },
+              { path: 'room-types/new', element: <RoomTypeFormPage /> },
+              { path: 'room-types/:id', element: <RoomTypeViewPage /> },
+              { path: 'room-types/:id/edit', element: <RoomTypeFormPage /> },
+              { path: 'inventory', element: <InventoryPage /> },
+              { path: 'gallery', element: <GalleryPage /> },
+              { path: 'gallery/new', element: <GalleryFormPage /> },
+              { path: 'gallery/:id/edit', element: <GalleryFormPage /> },
+              { path: 'coupons', element: <CouponsPage /> },
+              { path: 'coupons/new', element: <CouponFormPage /> },
+              { path: 'coupons/:id', element: <CouponViewPage /> },
+              { path: 'coupons/:id/edit', element: <CouponFormPage /> },
+              { path: 'transactions', element: <TransactionsPage /> },
+              { path: 'transactions/:id', element: <TransactionViewPage /> },
+              { path: 'settlements', element: <SettlementsPage /> },
+              { path: 'settlements/:id', element: <SettlementViewPage /> },
+              { path: 'users', element: <UsersPage /> },
+              { path: 'users/new', element: <UserFormPage /> },
+              { path: 'users/:id', element: <UserViewPage /> },
+              { path: 'users/:id/edit', element: <UserFormPage /> },
+              { path: 'roles', element: <RolesPage /> },
+              { path: 'roles/new', element: <RoleFormPage /> },
+              { path: 'roles/:id', element: <RoleViewPage /> },
+              { path: 'roles/:id/edit', element: <RoleFormPage /> },
+              { path: 'settings', element: <SettingsPage /> },
+            ],
+          },
         ],
       },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
-  { path: '*', element: <NotFoundPage /> },
 ]);

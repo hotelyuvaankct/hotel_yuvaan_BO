@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { Breadcrumbs } from '@/components/common/breadcrumbs';
+import { BreadcrumbLabelProvider } from '@/components/common/breadcrumb-labels';
 import { cn } from '@/lib/utils';
 
 export function AdminLayout() {
@@ -33,52 +34,53 @@ export function AdminLayout() {
   const sidebarWidth = collapsed ? 'lg:pl-[60px]' : 'lg:pl-64';
 
   return (
-    <div className={`min-h-screen bg-background text-foreground transition-all duration-300 ${sidebarWidth}`}>
-      <Sidebar
-        collapsed={collapsed}
-        mobileOpen={mobileOpen}
-        onToggleCollapse={() => setCollapsed((c) => !c)}
-        onMobileClose={() => setMobileOpen(false)}
-      />
+    <BreadcrumbLabelProvider>
+      <div className={`min-h-screen bg-background text-foreground transition-all duration-300 ${sidebarWidth}`}>
+        <Sidebar
+          collapsed={collapsed}
+          mobileOpen={mobileOpen}
+          onToggleCollapse={() => setCollapsed((c) => !c)}
+          onMobileClose={() => setMobileOpen(false)}
+        />
 
-          <div
-            className={cn(
-              'relative z-0 flex flex-col',
-              isFullBleed ? 'h-screen overflow-hidden' : 'min-h-screen',
-            )}
-          >
-        <Header onMenuClick={() => setMobileOpen((o) => !o)}>
-          <Breadcrumbs />
-        </Header>
-
-        <main
+        <div
           className={cn(
-            'flex min-h-0 min-w-0 flex-1 flex-col',
-            isFullBleed ? 'overflow-hidden p-0' : 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8',
+            'relative z-0 flex flex-col',
+            isFullBleed ? 'h-screen overflow-hidden' : 'min-h-screen',
           )}
         >
-          <div
+          <Header onMenuClick={() => setMobileOpen((o) => !o)}>
+            <Breadcrumbs />
+          </Header>
+
+          <main
             className={cn(
-              'flex w-full min-h-0 min-w-0 flex-1 flex-col',
-              isFullBleed ? 'max-w-none gap-0 overflow-hidden' : 'mx-auto max-w-7xl gap-6',
+              'flex min-h-0 min-w-0 flex-1 flex-col',
+              isFullBleed ? 'overflow-hidden p-0' : 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8',
             )}
           >
-            {/* Breadcrumbs live in the header on desktop; keep under header on small screens */}
-            {isFullBleed ? (
-              <div className="shrink-0 border-b border-border bg-card px-3 py-1.5 lg:hidden sm:px-4">
-                <Breadcrumbs />
+            <div
+              className={cn(
+                'flex w-full min-h-0 min-w-0 flex-1 flex-col',
+                isFullBleed ? 'max-w-none gap-0 overflow-hidden' : 'mx-auto max-w-7xl gap-6',
+              )}
+            >
+              {isFullBleed ? (
+                <div className="shrink-0 border-b border-border bg-card px-3 py-1.5 lg:hidden sm:px-4">
+                  <Breadcrumbs />
+                </div>
+              ) : (
+                <div className="lg:hidden">
+                  <Breadcrumbs />
+                </div>
+              )}
+              <div className={cn(isFullBleed && 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden')}>
+                <Outlet />
               </div>
-            ) : (
-              <div className="lg:hidden">
-                <Breadcrumbs />
-              </div>
-            )}
-            <div className={cn(isFullBleed && 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden')}>
-              <Outlet />
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </BreadcrumbLabelProvider>
   );
 }

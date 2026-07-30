@@ -1,5 +1,6 @@
 import { ChevronRight, Home } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useBreadcrumbLabels } from '@/components/common/breadcrumb-labels';
 import { navigationItems } from '@/config/navigation';
 
 const actionLabels: Record<string, string> = {
@@ -16,23 +17,26 @@ type Crumb = {
 
 export function Breadcrumbs() {
   const { pathname } = useLocation();
+  const { labels } = useBreadcrumbLabels();
   const segments = pathname.split('/').filter(Boolean);
   const section = navigationItems.find((item) => item.href === `/${segments[0]}`);
 
   const crumbs: Crumb[] = segments.map((segment, index) => {
     const path = `/${segments.slice(0, index + 1).join('/')}`;
+    const override = labels[path] ?? labels[segment];
     const isId = /^\d+$/.test(segment) || /^[A-Z0-9_-]{8,}$/i.test(segment);
     const label =
-      index === 0
+      override ??
+      (index === 0
         ? section?.label ?? titleCase(segment)
-        : actionLabels[segment] ?? (isId ? truncateLabel(segment) : titleCase(segment));
+        : actionLabels[segment] ?? (isId ? truncateLabel(segment) : titleCase(segment)));
 
     return { label, path, isLast: index === segments.length - 1 };
   });
 
-  // List: Home > Section. Nested: Home > … > Current (ellipsis links to parent)
+  // Nested: Home > Section > Current when 2 levels; Home > … > Current when deeper
   const displayCrumbs: Crumb[] =
-    crumbs.length > 1
+    crumbs.length > 2
       ? [
           {
             label: '…',
