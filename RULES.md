@@ -43,6 +43,7 @@
 12. Work phase-by-phase from `docs/DESIGN_SYSTEM.md`; confirm before starting the next phase.
 
 ## Workflow for every change
+0. **Read** `.cursor/skills/hotel-yuvaan-ui/SKILL.md` before UI work — reuse SoftFact, CopyableRow, StatusTimeline, InitialsAvatar, InfoChip, `formatCurrency` / dates from `src/lib/format.ts`, `copyToClipboard`, and **all enums + status→badge maps from `src/lib/enums.ts`**. Never copy local `statusTone` helpers into features. Update that skill when you add a new shared primitive.
 1. State which existing components/tokens you're reusing before writing new code.
 2. If a new visual pattern is genuinely needed, propose the token/variant addition to this file /
    `docs/DESIGN_SYSTEM.md` first.

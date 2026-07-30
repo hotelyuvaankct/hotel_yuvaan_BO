@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { DashboardCalendar, DashboardCalendarEvent } from '@/lib/api-types';
-import { bookingSourceOptions, bookingStatusOptions, optionLabel } from '@/lib/enums';
+import { bookingSourceOptions, bookingStatusOptions, bookingStatusTone, optionLabel } from '@/lib/enums';
 import { Badge } from '@/components/ui/badge';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
@@ -50,13 +50,6 @@ const STATUS_DOT: Record<number, string> = {
   7: 'bg-destructive',
   8: 'bg-muted-foreground',
 };
-
-function statusTone(status: number): 'neutral' | 'warning' | 'danger' | 'info' {
-  if (status === 3 || status === 4) return 'info';
-  if (status === 5) return 'warning';
-  if (status === 6 || status === 7) return 'danger';
-  return 'neutral';
-}
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -590,7 +583,7 @@ function EventRow({
                 <p className="truncate text-xs text-muted-foreground">{event.bookingCode}</p>
               </div>
               <Badge
-                tone={statusTone(event.bookingStatus)}
+                tone={bookingStatusTone(event.bookingStatus)}
                 className={cn(
                   'shrink-0',
                   (event.bookingStatus === 3 || event.bookingStatus === 4) &&

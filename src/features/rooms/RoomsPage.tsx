@@ -4,11 +4,17 @@ import { Edit, Eye, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { HotelSummary, Room, RoomType } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { optionLabel, recordStatusOptions, roomStatusOptions } from '@/lib/enums';
+import {
+  optionLabel,
+  recordStatusOptions,
+  recordStatusTone,
+  roomAvailabilityTone,
+  roomStatusOptions,
+} from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
@@ -75,16 +81,6 @@ function buildDeletePayload(
     };
   }
   return { roomIds: selection.ids };
-}
-
-function availabilityTone(status?: number): BadgeTone {
-  if (status === 1) return 'success';
-  if (status === 2) return 'warning';
-  return 'warning';
-}
-
-function recordStatusTone(status?: number): BadgeTone {
-  return status === Status.ACTIVE ? 'success' : 'neutral';
 }
 
 function RoomActions({
@@ -337,7 +333,7 @@ export function RoomsPage() {
         render: (room) => {
           const status = displayAvailabilityStatus(room);
           return (
-            <Badge tone={availabilityTone(status)}>{optionLabel(roomStatusOptions, status)}</Badge>
+            <Badge tone={roomAvailabilityTone(status)}>{optionLabel(roomStatusOptions, status)}</Badge>
           );
         },
       },
@@ -518,7 +514,7 @@ export function RoomsPage() {
                       />
                       <p className="truncate font-semibold">{room.roomNumber}</p>
                     </div>
-                    <Badge tone={availabilityTone(availability)} className="shrink-0">
+                    <Badge tone={roomAvailabilityTone(availability)} className="shrink-0">
                       {optionLabel(roomStatusOptions, availability)}
                     </Badge>
                   </div>

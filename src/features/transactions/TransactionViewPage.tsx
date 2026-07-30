@@ -1,84 +1,36 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Check, CheckCircle2, Circle, Copy } from 'lucide-react';
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  CheckCircle2,
+  Circle,
+  ExternalLink,
+} from 'lucide-react';
 import { api } from '@/lib/api';
 import type { TransactionDetail } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
 import { hasPermission } from '@/lib/permissions';
+import { formatCurrency, formatDate, formatDateTime, formatTimeOnly } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/toast';
-import { Badge, type BadgeTone } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useBreadcrumbLabel } from '@/components/common/breadcrumb-labels';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CopyableRow, CopyIconButton } from '@/components/ui/copyable';
+import { SoftFact } from '@/components/ui/soft-fact';
+import { StatusTimeline } from '@/components/ui/status-timeline';
 import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
+import { useState } from 'react';
+import { isRefundTransaction, paymentStatusTone } from '@/lib/enums';
 
-function formatCurrency(value?: number) {
-  if (value == null) return '₹0';
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: 'INR',
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatDateTime(value?: string) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return new Intl.DateTimeFormat('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
-
-function statusTone(status?: string): BadgeTone {
-  const value = (status ?? '').toUpperCase();
-  if (value === 'SUCCESS' || value === 'PAID' || value === 'CAPTURED') return 'success';
-  if (value === 'PROCESSING' || value === 'PENDING' || value === 'CREATED') return 'warning';
-  if (value === 'REFUNDED' || value === 'PARTIAL_REFUND') return 'warning';
-  if (value === 'FAILED' || value === 'CANCELLED' || value === 'EXPIRED') return 'danger';
-  return 'neutral';
-}
-
-function CopyableId({
-  label,
-  value,
-  onCopy,
-  copied,
-}: {
-  label: string;
-  value?: string | null;
-  onCopy: (value: string) => void;
-  copied: string | null;
-}) {
-  if (!value) {
-    return (
-      <p className="break-all">
-        <span className="text-muted-foreground">{label}:</span> -
-      </p>
-    );
-  }
-
+function MetaCell({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <p className="flex flex-wrap items-start gap-2 break-all">
-      <span className="text-muted-foreground">{label}:</span>
-      <button
-        type="button"
-        className="inline-flex max-w-full items-center gap-1.5 rounded-md px-1.5 py-0.5 font-mono text-xs text-foreground hover:bg-muted"
-        title={`Copy ${label.toLowerCase()}`}
-        onClick={() => onCopy(value)}
-      >
-        <span className="truncate">{value}</span>
-        {copied === value ? (
-          <Check className="h-3.5 w-3.5 shrink-0 text-success" />
-        ) : (
-          <Copy className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-        )}
-      </button>
-    </p>
+    <div className="min-w-0 border-b border-border/70 py-3 last:border-0 sm:border-b-0 sm:border-r sm:px-4 sm:py-0 sm:last:border-r-0 sm:first:pl-0 sm:last:pr-0">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      <div className="mt-1 text-sm font-medium text-foreground">{value}</div>
+    </div>
   );
 }
 
@@ -90,7 +42,19 @@ export function TransactionViewPage() {
 
   const [transaction, setTransaction] = useState<TransactionDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const crumbLabel = (() => {
+    if (!transaction) return null;
+    const rawId = transaction.id?.trim();
+    if (rawId && !/^HYV/i.test(rawId)) return rawId;
+    if (transaction.type && transaction.sourceId != null) {
+      return `${transaction.type}-${transaction.sourceId}`;
+    }
+    return transaction.type || 'Transaction';
+  })();
+  const crumbPath = id ? `/transactions/${id}` : undefined;
+  useBreadcrumbLabel(crumbPath, crumbLabel);
+  useBreadcrumbLabel(id, crumbLabel);
 
   useEffect(() => {
     async function load() {
@@ -109,16 +73,23 @@ export function TransactionViewPage() {
     void load();
   }, [canRead, id, showToast]);
 
-  async function copyId(value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopiedId(value);
-      showToast('Copied', 'success');
-      window.setTimeout(() => setCopiedId((current) => (current === value ? null : current)), 2000);
-    } catch {
-      showToast('Unable to copy', 'error');
-    }
-  }
+  const timeline = useMemo(() => {
+    if (!transaction) return [];
+    return [
+      { key: 'created', label: 'Created', at: transaction.createdAt },
+      { key: 'initiated', label: 'Initiated', at: transaction.initiatedAt },
+      { key: 'paid', label: 'Paid', at: transaction.paidAt },
+      { key: 'completed', label: 'Completed', at: transaction.completedAt },
+      { key: 'occurred', label: 'Occurred', at: transaction.occurredAt },
+    ]
+      .filter((step): step is { key: string; label: string; at: string } => Boolean(step.at))
+      .map((step) => ({
+        key: step.key,
+        label: step.label,
+        date: formatDate(step.at),
+        time: formatTimeOnly(step.at),
+      }));
+  }, [transaction]);
 
   if (!canRead) {
     return <EmptyState label="You do not have permission to view transactions." />;
@@ -136,266 +107,250 @@ export function TransactionViewPage() {
             <CardTitle>Transaction</CardTitle>
             <CardDescription>Transaction details</CardDescription>
           </CardHeader>
-          <CardContent>
+          <div className="p-6">
             <EmptyState label="Transaction not found." />
-          </CardContent>
+          </div>
         </Card>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-4 animate-fade-in-up">
-      <Card>
-        <CardHeader className="flex-col items-stretch gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <CardTitle className="truncate font-mono">{transaction.id}</CardTitle>
-            <CardDescription>
-              <span className="inline-flex flex-wrap items-center gap-2">
-                <Badge tone="neutral">{transaction.type}</Badge>
-                <Badge tone={statusTone(transaction.statusLabel)}>{transaction.statusLabel || '-'}</Badge>
-                <span>{formatDateTime(transaction.occurredAt)}</span>
-              </span>
-            </CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Transaction</CardTitle>
-            <CardDescription>Payment status, timing, and settlement.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Amount:</span>{' '}
-              {formatCurrency(transaction.amount)} {transaction.currency || 'INR'}
-            </p>
-            <p className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground">Status:</span>
-              <Badge tone={statusTone(transaction.statusLabel)}>
-                {transaction.statusLabel || '-'}
-                {transaction.statusCode != null ? ` (${transaction.statusCode})` : ''}
-              </Badge>
-            </p>
-            <p>
-              <span className="text-muted-foreground">Gateway:</span> {transaction.gateway || '-'}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Channel:</span>{' '}
-              {transaction.channel || transaction.gateway || '-'}
-            </p>
-            <p>
-              <span className="text-muted-foreground">When:</span> {formatDateTime(transaction.occurredAt)}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Created:</span> {formatDateTime(transaction.createdAt)}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Updated:</span> {formatDateTime(transaction.updatedAt)}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Paid at:</span> {formatDateTime(transaction.paidAt)}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Initiated:</span> {formatDateTime(transaction.initiatedAt)}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Completed:</span> {formatDateTime(transaction.completedAt)}
-            </p>
-            <p className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground">Settled:</span>
-              {transaction.settled ? (
-                <span className="inline-flex items-center gap-1.5 text-success">
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span className="text-xs font-medium">Yes</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                  <Circle className="h-4 w-4" />
-                  <span className="text-xs font-medium">No</span>
-                </span>
-              )}
-            </p>
-            <CopyableId
-              label="Settlement id"
-              value={transaction.gatewaySettlementId}
-              onCopy={(value) => void copyId(value)}
-              copied={copiedId}
-            />
-            {transaction.paymentMethodLabel ? (
-              <p>
-                <span className="text-muted-foreground">Method:</span> {transaction.paymentMethodLabel}
-              </p>
-            ) : null}
-            {transaction.receipt ? (
-              <p>
-                <span className="text-muted-foreground">Receipt:</span> {transaction.receipt}
-              </p>
-            ) : null}
-            {transaction.notes ? (
-              <p>
-                <span className="text-muted-foreground">Notes:</span> {transaction.notes}
-              </p>
-            ) : null}
-            {transaction.warning ? <p className="text-warning">{transaction.warning}</p> : null}
-            {transaction.failureReason ? (
-              <p className="text-destructive">{transaction.failureReason}</p>
-            ) : null}
-          </CardContent>
-        </Card>
+  const refund = isRefundTransaction(transaction.type);
+  const TypeIcon = refund ? ArrowDownLeft : ArrowUpRight;
+  const money = transaction.bookingMoney;
+  const hasGatewayIds = Boolean(
+    transaction.gatewayPaymentId ||
+      transaction.gatewayOrderId ||
+      transaction.gatewayRefundId ||
+      transaction.gatewaySettlementId ||
+      transaction.paymentId != null ||
+      transaction.receipt,
+  );
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Booking & guest</CardTitle>
-            <CardDescription>Linked booking and gateway identifiers.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Booking:</span>{' '}
-              {transaction.bookingId ? (
+  return (
+    <div className="min-w-0 space-y-4 animate-fade-in-up">
+      <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card">
+        <div
+          className={cn(
+            'flex items-center gap-2 border-b border-border px-4 py-2.5 sm:px-5',
+            refund ? 'bg-destructive/5' : 'bg-success/5',
+          )}
+        >
+          <TypeIcon className={cn('h-4 w-4', refund ? 'text-destructive' : 'text-success')} />
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {transaction.type} · TRX
+          </span>
+          <div className="ml-auto flex flex-wrap items-center gap-2">
+            <Badge tone={paymentStatusTone(transaction.statusLabel)}>
+              {transaction.statusLabel || '—'}
+            </Badge>
+            {transaction.settled ? (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Settled
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+                <Circle className="h-3.5 w-3.5" />
+                Unsettled
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="px-4 py-5 sm:px-5 sm:py-6">
+          <p
+            className={cn(
+              'text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl',
+              refund ? 'text-destructive' : 'text-foreground',
+            )}
+          >
+            {refund ? '−' : '+'}
+            {formatCurrency(transaction.amount)}
+            <span className="ml-2 text-sm font-medium text-muted-foreground">
+              {transaction.currency || 'INR'}
+            </span>
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+              {transaction.id}
+            </code>
+            <CopyIconButton value={transaction.id} label="Copy transaction id" />
+          </div>
+        </div>
+
+        <div className="grid gap-0 border-t border-border px-4 py-3 sm:grid-cols-4 sm:px-5 sm:py-4">
+          <MetaCell
+            label="Booking"
+            value={
+              transaction.bookingId ? (
                 <Link
                   to={`/bookings/${transaction.bookingId}`}
-                  className="font-medium text-brand hover:text-brand-hover hover:underline"
+                  className="inline-flex items-center gap-1 text-brand hover:underline"
                 >
-                  {transaction.bookingCode || transaction.bookingId}
+                  {transaction.bookingCode || `#${transaction.bookingId}`}
+                  <ExternalLink className="h-3 w-3" />
                 </Link>
               ) : (
-                '-'
-              )}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Guest:</span> {transaction.guestName || '-'}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Email:</span> {transaction.guestEmail || '-'}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Phone:</span> {transaction.guestPhone || '-'}
-            </p>
+                transaction.bookingCode || '—'
+              )
+            }
+          />
+          <MetaCell label="Guest" value={transaction.guestName || '—'} />
+          <MetaCell label="Gateway" value={transaction.gateway || transaction.channel || '—'} />
+          <MetaCell label="Method" value={transaction.paymentMethodLabel || '—'} />
+        </div>
 
-            <p className="pt-2 font-medium">Gateway ids</p>
-            <CopyableId
-              label="Payment"
-              value={transaction.gatewayPaymentId}
-              onCopy={(value) => void copyId(value)}
-              copied={copiedId}
-            />
-            <CopyableId
-              label="Order"
-              value={transaction.gatewayOrderId}
-              onCopy={(value) => void copyId(value)}
-              copied={copiedId}
-            />
-            <CopyableId
-              label="Refund"
-              value={transaction.gatewayRefundId}
-              onCopy={(value) => void copyId(value)}
-              copied={copiedId}
-            />
-            <p>
-              <span className="text-muted-foreground">Local payment id:</span>{' '}
-              {transaction.paymentId ?? '-'}
-            </p>
-          </CardContent>
-        </Card>
+        {(transaction.warning || transaction.failureReason) && (
+          <div className="space-y-2 border-t border-border px-4 py-3 sm:px-5">
+            {transaction.warning ? <p className="text-sm text-warning">{transaction.warning}</p> : null}
+            {transaction.failureReason ? (
+              <p className="text-sm text-destructive">{transaction.failureReason}</p>
+            ) : null}
+          </div>
+        )}
+      </section>
+
+      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Gateway references
+          </h2>
+          <div className="mt-2">
+            <CopyableRow label="Payment" value={transaction.gatewayPaymentId} />
+            <CopyableRow label="Order" value={transaction.gatewayOrderId} />
+            <CopyableRow label="Refund" value={transaction.gatewayRefundId} />
+            <CopyableRow label="Settlement" value={transaction.gatewaySettlementId} />
+            {transaction.paymentId != null ? (
+              <CopyableRow label="Local" value={String(transaction.paymentId)} />
+            ) : null}
+            <CopyableRow label="Receipt" value={transaction.receipt} />
+            {!hasGatewayIds ? (
+              <p className="py-3 text-sm text-muted-foreground">No gateway ids on this entry.</p>
+            ) : null}
+          </div>
+
+          {(transaction.guestEmail || transaction.guestPhone || transaction.notes) && (
+            <div className="mt-4 border-t border-border pt-4">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Contact / notes
+              </h2>
+              <div className="mt-2 space-y-1.5 text-sm">
+                {transaction.guestEmail ? (
+                  <a href={`mailto:${transaction.guestEmail}`} className="block text-brand hover:underline">
+                    {transaction.guestEmail}
+                  </a>
+                ) : null}
+                {transaction.guestPhone ? (
+                  <a href={`tel:${transaction.guestPhone}`} className="block text-brand hover:underline">
+                    {transaction.guestPhone}
+                  </a>
+                ) : null}
+                {transaction.notes ? (
+                  <p className="text-muted-foreground">{transaction.notes}</p>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Timeline
+          </h2>
+          <StatusTimeline className="mt-4" steps={timeline} />
+        </section>
       </div>
 
-      {transaction.type === 'REFUND' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Refund policy</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <p>
-              <span className="text-muted-foreground">Refund %:</span> {transaction.refundPercent ?? '-'}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Hours before check-in:</span>{' '}
-              {transaction.hoursBeforeCheckIn ?? '-'}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Cancelled by:</span> {transaction.cancelledBy || '-'}
-            </p>
-            {transaction.policySnapshot ? (
-              <pre className="overflow-x-auto rounded-lg bg-muted/40 p-3 text-xs">
-                {transaction.policySnapshot}
-              </pre>
-            ) : null}
-          </CardContent>
-        </Card>
+      {refund ? (
+        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Refund policy
+          </h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <SoftFact
+              label="Refund %"
+              value={transaction.refundPercent != null ? `${transaction.refundPercent}%` : '—'}
+            />
+            <SoftFact
+              label="Hours before CI"
+              value={
+                transaction.hoursBeforeCheckIn != null ? String(transaction.hoursBeforeCheckIn) : '—'
+              }
+            />
+            <SoftFact label="Cancelled by" value={transaction.cancelledBy || '—'} />
+          </div>
+          {transaction.policySnapshot ? (
+            <pre className="mt-4 overflow-x-auto rounded-lg border border-border bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">
+              {transaction.policySnapshot}
+            </pre>
+          ) : null}
+        </section>
       ) : null}
 
-      {transaction.bookingMoney ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Booking money breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2 text-sm sm:grid-cols-2">
-              <p>Subtotal: {formatCurrency(transaction.bookingMoney.subtotalAmount)}</p>
-              <p>Discount: {formatCurrency(transaction.bookingMoney.discountAmount)}</p>
-              <p>Room GST: {formatCurrency(transaction.bookingMoney.taxAmount)}</p>
-              <p>Processing fee: {formatCurrency(transaction.bookingMoney.processingFeeAmount)}</p>
-              <p>Fee GST: {formatCurrency(transaction.bookingMoney.processingFeeGstAmount)}</p>
-              <p className="font-medium">Total: {formatCurrency(transaction.bookingMoney.totalAmount)}</p>
+      {money ? (
+        <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Booking money
+          </h2>
+          <div className="mt-3 divide-y divide-border/70">
+            {(
+              [
+                ['Subtotal', money.subtotalAmount],
+                ['Discount', money.discountAmount],
+                ['Room GST', money.taxAmount],
+                ['Processing fee', money.processingFeeAmount],
+                ['Fee GST', money.processingFeeGstAmount],
+              ] as const
+            ).map(([label, value]) => (
+              <div key={label} className="flex justify-between gap-3 py-2 text-sm">
+                <span className="text-muted-foreground">{label}</span>
+                <span className="font-medium tabular-nums">{formatCurrency(value)}</span>
+              </div>
+            ))}
+            <div className="flex justify-between gap-3 py-2.5 text-sm">
+              <span className="font-semibold">Total</span>
+              <span className="font-semibold tabular-nums">{formatCurrency(money.totalAmount)}</span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       ) : null}
 
       {(transaction.linkedRefunds?.length ?? 0) > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Linked refunds</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="text-left text-xs uppercase text-muted-foreground">
-                  <tr>
-                    <th className="py-1 pr-3">Id</th>
-                    <th className="py-1 pr-3">Amount</th>
-                    <th className="py-1 pr-3">Status</th>
-                    <th className="py-1 pr-3">%</th>
-                    <th className="py-1 pr-3">By</th>
-                    <th className="py-1 pr-3">Gateway</th>
-                    <th className="py-1">Completed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transaction.linkedRefunds?.map((refund) => (
-                    <tr key={refund.id} className="border-t border-border/60">
-                      <td className="py-1.5 pr-3">
-                        <Link
-                          to={`/transactions/REFUND-${refund.id}`}
-                          className="font-medium text-brand hover:underline"
-                        >
-                          REFUND-{refund.id}
-                        </Link>
-                      </td>
-                      <td className="py-1.5 pr-3">{formatCurrency(refund.amount)}</td>
-                      <td className="py-1.5 pr-3">
-                        <Badge tone={statusTone(refund.statusLabel)}>
-                          {refund.statusLabel || refund.status || '-'}
-                        </Badge>
-                      </td>
-                      <td className="py-1.5 pr-3">{refund.refundPercent ?? '-'}</td>
-                      <td className="py-1.5 pr-3">{refund.cancelledBy || '-'}</td>
-                      <td className="py-1.5 pr-3 font-mono text-xs">{refund.gatewayRefundId || '-'}</td>
-                      <td className="py-1.5">
-                        {formatDateTime(refund.completedAt || refund.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <section className="min-w-0 space-y-2">
+          <h2 className="px-0.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Linked refunds ({transaction.linkedRefunds!.length})
+          </h2>
+          <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+            {transaction.linkedRefunds?.map((item) => (
+              <li key={item.id}>
+                <Link
+                  to={`/transactions/REFUND-${item.id}`}
+                  className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 transition-colors hover:bg-muted/40 sm:px-5"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold tabular-nums text-destructive">
+                      −{formatCurrency(item.amount)}
+                    </p>
+                    <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+                      REFUND-{item.id}
+                      {item.gatewayRefundId ? ` · ${item.gatewayRefundId}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge tone={paymentStatusTone(item.statusLabel)}>
+                      {item.statusLabel || item.status || '—'}
+                    </Badge>
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {formatDateTime(item.completedAt || item.createdAt)}
+                    </span>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
-        </CardContent>
-      </Card>
     </div>
   );
 }

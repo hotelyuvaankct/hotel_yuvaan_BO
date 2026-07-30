@@ -3,6 +3,7 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { LoadingState } from '@/components/common/loading-state';
+import { cn } from '@/lib/utils';
 
 type ResponsiveListProps<T extends { id?: string | number }> = {
   columns: Array<DataTableColumn<T>>;
@@ -43,7 +44,7 @@ export function ResponsiveList<T extends { id?: string | number }>({
         />
       </div>
 
-      <div className="grid gap-3 md:hidden">
+      <div className="grid min-w-0 gap-3 md:hidden">
         {isLoading ? <LoadingState /> : null}
         {!isLoading && data.length === 0 ? emptyState ?? <EmptyState /> : null}
         {!isLoading
@@ -52,9 +53,12 @@ export function ResponsiveList<T extends { id?: string | number }>({
               return (
                 <Card
                   key={rowId}
-                  padding="sm"
+                  padding="none"
                   hoverable={Boolean(onRowClick)}
-                  className={onRowClick ? 'cursor-pointer' : undefined}
+                  className={cn(
+                    'min-w-0 w-full px-4 py-4',
+                    onRowClick && 'cursor-pointer',
+                  )}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   {renderMobileCard(row)}

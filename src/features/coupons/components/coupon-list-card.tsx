@@ -25,7 +25,7 @@ import {
   formatCouponDiscount,
   formatCouponDiscountDetail,
 } from '@/lib/coupon-format';
-import { cn } from '@/lib/utils';
+import { cn, copyToClipboard } from '@/lib/utils';
 
 type CouponListCardProps = {
   coupon: Coupon;
@@ -99,13 +99,10 @@ export function CouponListCard({
   const expiryStatus = tab === 'active' ? couponExpiryStatus(coupon) : null;
 
   async function copyCode() {
-    try {
-      await navigator.clipboard.writeText(coupon.code);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard unavailable */
-    }
+    const ok = await copyToClipboard(coupon.code);
+    if (!ok) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
   }
 
   return (

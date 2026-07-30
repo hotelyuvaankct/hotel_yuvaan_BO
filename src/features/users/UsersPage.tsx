@@ -4,24 +4,17 @@ import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { User } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { genderOptions, optionLabel, userStatusOptions } from '@/lib/enums';
+import { genderOptions, optionLabel, userStatusOptions, userStatusTone } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { Pagination } from '@/components/common/pagination';
 import { ResponsiveList } from '@/components/ui/responsive-list';
 import type { DataTableColumn } from '@/components/ui/data-table';
-import { Status } from '@/lib/constants';
-
-function userStatusTone(status?: number): BadgeTone {
-  if (status === Status.ACTIVE) return 'success';
-  if (status === Status.PENDING) return 'warning';
-  return 'neutral';
-}
 
 function UserActions({
   user,

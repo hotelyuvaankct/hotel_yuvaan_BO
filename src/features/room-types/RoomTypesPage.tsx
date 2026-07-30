@@ -4,11 +4,11 @@ import { Edit, Eye, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import type { RoomType } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { optionLabel, recordStatusOptions } from '@/lib/enums';
+import { optionLabel, recordStatusOptions, recordStatusTone } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
-import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
@@ -16,15 +16,7 @@ import { ResponsiveList } from '@/components/ui/responsive-list';
 import type { DataTableColumn } from '@/components/ui/data-table';
 import { Status } from '@/lib/constants';
 import { sortRoomTypes } from '@/lib/room-types';
-
-function formatCurrency(value?: number) {
-  if (value == null) return '-';
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(value);
-}
-
-function recordStatusTone(status?: number): BadgeTone {
-  return status === Status.ACTIVE ? 'success' : 'neutral';
-}
+import { formatCurrency } from '@/lib/format';
 
 function RoomTypeActions({
   roomType,

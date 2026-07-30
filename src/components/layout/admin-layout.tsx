@@ -49,9 +49,7 @@ export function AdminLayout() {
             isFullBleed ? 'h-screen overflow-hidden' : 'min-h-screen',
           )}
         >
-          <Header onMenuClick={() => setMobileOpen((o) => !o)}>
-            <Breadcrumbs />
-          </Header>
+          <Header onMenuClick={() => setMobileOpen((o) => !o)} />
 
           <main
             className={cn(
@@ -66,11 +64,11 @@ export function AdminLayout() {
               )}
             >
               {isFullBleed ? (
-                <div className="shrink-0 border-b border-border bg-card px-3 py-1.5 lg:hidden sm:px-4">
+                <div className="shrink-0 border-b border-border bg-card px-3 py-1.5 sm:px-4">
                   <Breadcrumbs />
                 </div>
               ) : (
-                <div className="lg:hidden">
+                <div>
                   <Breadcrumbs />
                 </div>
               )}

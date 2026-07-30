@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { Menu, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -6,11 +5,9 @@ import { useAuth } from '@/lib/auth';
 
 export type HeaderProps = {
   onMenuClick: () => void;
-  /** Desktop-only slot (e.g. breadcrumbs) — fills the empty center of the bar. */
-  children?: ReactNode;
 };
 
-export function Header({ onMenuClick, children }: HeaderProps) {
+export function Header({ onMenuClick }: HeaderProps) {
   const { logout, session } = useAuth();
   const { confirm } = useConfirm();
 
@@ -68,24 +65,20 @@ export function Header({ onMenuClick, children }: HeaderProps) {
         <div className="justify-self-end">{logoutButton}</div>
       </div>
 
-      {/* Desktop: breadcrumbs (or other content) · user · logout */}
-      <div className="hidden h-14 items-center gap-4 px-4 lg:flex lg:px-6">
-        <div className="min-w-0 flex-1">{children}</div>
-
-        <div className="flex shrink-0 items-center gap-2 border-l border-border pl-4">
-          <div className="flex items-center gap-2.5">
-            <div
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground"
-              aria-hidden
-            >
-              {initials || 'HY'}
-            </div>
-            <span className="max-w-[160px] truncate text-sm font-medium text-foreground">
-              {userName}
-            </span>
+      {/* Desktop: user · logout only (breadcrumbs live in page content) */}
+      <div className="hidden h-14 items-center justify-end gap-4 px-4 lg:flex lg:px-6">
+        <div className="flex shrink-0 items-center gap-2.5">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-brand-foreground"
+            aria-hidden
+          >
+            {initials || 'HY'}
           </div>
-          {logoutButton}
+          <span className="max-w-[160px] truncate text-sm font-medium text-foreground">
+            {userName}
+          </span>
         </div>
+        {logoutButton}
       </div>
     </header>
   );

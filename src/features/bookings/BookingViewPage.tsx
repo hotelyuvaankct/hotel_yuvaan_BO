@@ -13,29 +13,23 @@ import {
 import { api } from '@/lib/api';
 import type { Booking, CancellationQuote } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { bookingSourceOptions, bookingStatusOptions, optionLabel } from '@/lib/enums';
+import { bookingSourceOptions, bookingStatusOptions, bookingStatusTone, optionLabel } from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useToast } from '@/components/ui/toast';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useBreadcrumbLabel } from '@/components/common/breadcrumb-labels';
-import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
 import { FullPageLoader } from '@/components/common/loading-state';
 import { TextField } from '@/components/ui/form-fields';
+import { InfoChip } from '@/components/ui/info-chip';
+import { InitialsAvatar } from '@/components/ui/initials-avatar';
+import { SoftFact } from '@/components/ui/soft-fact';
+import { formatCurrency, formatDate } from '@/lib/format';
 import { cn } from '@/lib/utils';
-
-function formatCurrency(value?: number) {
-  if (value == null) return '—';
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
-}
-
-function formatDate(value?: string) {
-  if (!value) return '—';
-  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(value));
-}
 
 function formatWeekday(value?: string) {
   if (!value) return '';
@@ -48,32 +42,6 @@ function nightsBetween(checkIn?: string, checkOut?: string) {
   const b = new Date(checkOut);
   const diff = Math.round((b.getTime() - a.getTime()) / 86_400_000);
   return diff > 0 ? diff : null;
-}
-
-function guestInitials(name?: string) {
-  if (!name) return 'G';
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? '')
-    .join('') || 'G';
-}
-
-function statusTone(status?: number): BadgeTone {
-  switch (status) {
-    case 2:
-      return 'warning';
-    case 3:
-    case 4:
-      return 'info';
-    case 5:
-      return 'success';
-    case 6:
-      return 'danger';
-    default:
-      return 'neutral';
-  }
 }
 
 export function BookingViewPage() {
@@ -237,7 +205,7 @@ export function BookingViewPage() {
             <div className="min-w-0 space-y-3">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge
-                  tone={statusTone(booking.bookingStatus)}
+                  tone={bookingStatusTone(booking.bookingStatus)}
                   className={cn(
                     (booking.bookingStatus === 3 || booking.bookingStatus === 4) &&
                       'bg-brand text-brand-foreground',
@@ -303,8 +271,8 @@ export function BookingViewPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <Chip icon={Users} label={`${booking.totalGuests ?? '—'} guests`} />
-              <Chip
+              <InfoChip icon={Users} label={`${booking.totalGuests ?? '—'} guests`} />
+              <InfoChip
                 icon={BedDouble}
                 label={`${rooms.reduce((sum, line) => sum + (line.quantity ?? 0), 0) || rooms.length} rooms`}
               />
@@ -345,9 +313,7 @@ export function BookingViewPage() {
       {/* Guest */}
       <section className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
-            {guestInitials(booking.guestName)}
-          </div>
+          <InitialsAvatar name={booking.guestName} size="lg" />
           <div className="min-w-0 flex-1 space-y-3">
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -359,22 +325,10 @@ export function BookingViewPage() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               {booking.guestEmail ? (
-                <a
-                  href={`mailto:${booking.guestEmail}`}
-                  className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-full bg-muted/60 px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
-                >
-                  <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  <span className="truncate">{booking.guestEmail}</span>
-                </a>
+                <InfoChip icon={Mail} label={booking.guestEmail} href={`mailto:${booking.guestEmail}`} />
               ) : null}
               {booking.guestPhone ? (
-                <a
-                  href={`tel:${booking.guestPhone}`}
-                  className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-muted"
-                >
-                  <Phone className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  {booking.guestPhone}
-                </a>
+                <InfoChip icon={Phone} label={booking.guestPhone} href={`tel:${booking.guestPhone}`} />
               ) : null}
               {!booking.guestEmail && !booking.guestPhone ? (
                 <p className="text-sm text-muted-foreground">No contact details on file.</p>
@@ -461,9 +415,9 @@ export function BookingViewPage() {
           <h2 className="text-base font-semibold text-foreground">Refund</h2>
           <p className="mt-1 text-xs text-muted-foreground">Cancellation refund summary</p>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <StatPill label="Amount" value={formatCurrency(booking.refund.amount)} highlight />
-            <StatPill label="Percent" value={`${booking.refund.percent ?? 0}%`} />
-            <StatPill label="Status" value={booking.refund.status || '—'} />
+            <SoftFact label="Amount" value={formatCurrency(booking.refund.amount)} highlight />
+            <SoftFact label="Percent" value={`${booking.refund.percent ?? 0}%`} />
+            <SoftFact label="Status" value={booking.refund.status || '—'} />
           </div>
           <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             <SoftFact label="Channel" value={booking.refund.channel || '—'} />
@@ -528,43 +482,6 @@ export function BookingViewPage() {
           )}
         </BottomSheet.Footer>
       </BottomSheet>
-    </div>
-  );
-}
-
-function Chip({ icon: Icon, label }: { icon: typeof Users; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-2.5 py-1 text-xs font-medium text-foreground">
-      <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-      {label}
-    </span>
-  );
-}
-
-function StatPill({
-  label,
-  value,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div className="rounded-xl bg-muted/40 px-3 py-3">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className={cn('mt-1 text-sm font-semibold', highlight ? 'text-brand' : 'text-foreground')}>
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function SoftFact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-muted/30 px-3 py-2.5">
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="mt-0.5 break-words text-sm font-medium text-foreground">{value}</p>
     </div>
   );
 }

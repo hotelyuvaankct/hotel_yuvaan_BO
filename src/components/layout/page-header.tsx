@@ -6,7 +6,7 @@ type PageHeaderProps = {
   title: string;
   description?: ReactNode;
   actions?: ReactNode;
-  /** When true, renders breadcrumbs under the title row. Default false — AdminLayout already shows crumbs. */
+  /** When true, renders breadcrumbs under the title row. Default false — AdminLayout already shows crumbs above the page. */
   showBreadcrumbs?: boolean;
   className?: string;
 };

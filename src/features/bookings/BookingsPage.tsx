@@ -4,11 +4,16 @@ import { Building2, Eye, LogOut, Moon, RefreshCw, Search, X } from 'lucide-react
 import { api } from '@/lib/api';
 import type { Booking } from '@/lib/api-types';
 import { useAuth } from '@/lib/auth';
-import { bookingStatusOptions, optionLabel } from '@/lib/enums';
+import {
+  BookingStatus,
+  bookingStatusDisplayLabel,
+  bookingStatusOptions,
+  bookingStatusTone,
+} from '@/lib/enums';
 import { hasPermission } from '@/lib/permissions';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { useToast } from '@/components/ui/toast';
-import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/common/empty-state';
@@ -17,43 +22,11 @@ import { fieldControlClass } from '@/components/ui/form-fields';
 import { ResponsiveList } from '@/components/ui/responsive-list';
 import type { DataTableColumn } from '@/components/ui/data-table';
 import { cn } from '@/lib/utils';
+import { formatCurrency, formatDate, formatDayMonth } from '@/lib/format';
+import { InitialsAvatar } from '@/components/ui/initials-avatar';
 
-const DEFAULT_STATUSES = [3, 4]; // Confirmed + Checked in
+const DEFAULT_STATUSES = [BookingStatus.CONFIRMED, BookingStatus.CHECKED_IN];
 const emptyFilters = { bookingStatuses: DEFAULT_STATUSES as number[], search: '' };
-
-function statusTone(status?: number): BadgeTone {
-  if (status === 3 || status === 4) return 'warning';
-  if (status === 5) return 'success';
-  if (status === 6) return 'danger';
-  if (status === 1 || status === 2) return 'warning';
-  return 'neutral';
-}
-
-function statusLabel(status?: number) {
-  if (status === 3 || status === 4) return 'Booked';
-  if (status === 5) return 'Completed';
-  if (status === 6) return 'Cancelled';
-  return optionLabel(bookingStatusOptions, status);
-}
-
-function formatCurrency(value?: number) {
-  if (value == null) return '—';
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
-}
-
-function formatDate(value?: string) {
-  if (!value) return '—';
-  const date = new Date(value.includes('T') ? value : `${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short' }).format(date);
-}
-
-function formatDateFull(value?: string) {
-  if (!value) return '—';
-  const date = new Date(value.includes('T') ? value : `${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
-}
 
 function nightsBetween(checkIn?: string, checkOut?: string) {
   if (!checkIn || !checkOut) return null;
@@ -61,18 +34,6 @@ function nightsBetween(checkIn?: string, checkOut?: string) {
   const b = new Date(checkOut.includes('T') ? checkOut : `${checkOut}T00:00:00`);
   const diff = Math.round((b.getTime() - a.getTime()) / 86_400_000);
   return diff > 0 ? diff : null;
-}
-
-function guestInitials(name?: string) {
-  if (!name) return 'G';
-  return (
-    name
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('') || 'G'
-  );
 }
 
 function BookingActions({
@@ -87,7 +48,10 @@ function BookingActions({
   const { confirm } = useConfirm();
   const { showToast } = useToast();
   const [checkingOut, setCheckingOut] = useState(false);
-  const showCheckout = canUpdate && (booking.bookingStatus === 3 || booking.bookingStatus === 4);
+  const showCheckout =
+    canUpdate &&
+    (booking.bookingStatus === BookingStatus.CONFIRMED ||
+      booking.bookingStatus === BookingStatus.CHECKED_IN);
 
   async function checkOutBooking(event?: React.MouseEvent) {
     event?.stopPropagation();
@@ -152,9 +116,7 @@ function BookingListCard({
   return (
     <div className="space-y-3.5">
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-sm font-semibold text-brand-foreground">
-          {guestInitials(booking.guestName)}
-        </div>
+        <InitialsAvatar name={booking.guestName} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
@@ -162,14 +124,15 @@ function BookingListCard({
               <p className="truncate text-xs text-muted-foreground">{booking.bookingCode}</p>
             </div>
             <Badge
-              tone={statusTone(booking.bookingStatus)}
+              tone={bookingStatusTone(booking.bookingStatus)}
               className={cn(
                 'shrink-0',
-                (booking.bookingStatus === 3 || booking.bookingStatus === 4) &&
+                (booking.bookingStatus === BookingStatus.CONFIRMED ||
+                  booking.bookingStatus === BookingStatus.CHECKED_IN) &&
                   'bg-brand text-brand-foreground',
               )}
             >
-              {statusLabel(booking.bookingStatus)}
+              {bookingStatusDisplayLabel(booking.bookingStatus)}
             </Badge>
           </div>
           {contact ? <p className="mt-0.5 truncate text-xs text-muted-foreground">{contact}</p> : null}
@@ -189,7 +152,7 @@ function BookingListCard({
               Check-in
             </p>
             <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
-              {formatDate(booking.checkIn)}
+              {formatDayMonth(booking.checkIn)}
             </p>
           </div>
 
@@ -209,7 +172,7 @@ function BookingListCard({
               Check-out
             </p>
             <p className="mt-0.5 text-sm font-semibold tabular-nums text-foreground">
-              {formatDate(booking.checkOut)}
+              {formatDayMonth(booking.checkOut)}
             </p>
           </div>
         </div>
@@ -280,9 +243,11 @@ export function BookingsPage() {
         header: 'Guest',
         render: (row) => (
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-semibold text-brand">
-              {guestInitials(row.guestName)}
-            </div>
+            <InitialsAvatar
+              name={row.guestName}
+              size="sm"
+              className="bg-brand/10 text-brand"
+            />
             <div className="min-w-0">
               <p className="truncate font-medium">{row.guestName}</p>
               <p className="truncate text-xs text-muted-foreground">{row.bookingCode}</p>
@@ -310,10 +275,10 @@ export function BookingsPage() {
           return (
             <div>
               <p className="font-medium">
-                {formatDate(row.checkIn)} → {formatDate(row.checkOut)}
+                {formatDayMonth(row.checkIn)} → {formatDayMonth(row.checkOut)}
               </p>
               <p className="text-xs text-muted-foreground">
-                {nights != null ? `${nights} night${nights === 1 ? '' : 's'}` : formatDateFull(row.checkIn)}
+                {nights != null ? `${nights} night${nights === 1 ? '' : 's'}` : formatDate(row.checkIn)}
               </p>
             </div>
           );
@@ -324,12 +289,14 @@ export function BookingsPage() {
         header: 'Status',
         render: (row) => (
           <Badge
-            tone={statusTone(row.bookingStatus)}
+            tone={bookingStatusTone(row.bookingStatus)}
             className={cn(
-              (row.bookingStatus === 3 || row.bookingStatus === 4) && 'bg-brand text-brand-foreground',
+              (row.bookingStatus === BookingStatus.CONFIRMED ||
+                row.bookingStatus === BookingStatus.CHECKED_IN) &&
+                'bg-brand text-brand-foreground',
             )}
           >
-            {statusLabel(row.bookingStatus)}
+            {bookingStatusDisplayLabel(row.bookingStatus)}
           </Badge>
         ),
       },
